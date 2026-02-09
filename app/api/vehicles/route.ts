@@ -6,7 +6,7 @@ export async function GET() {
     const API_URL = 'https://teable-production-bedd.up.railway.app';
     const API_KEY = process.env.TEABLE_API_KEY;
 
-    const response = await fetch(`${API_URL}/api/table/${TABLE_ID}/record?take=1000`, {
+    const response = await fetch(`${API_URL}/api/v1/table/${TABLE_ID}/record?take=1000`, {
       headers: {
         'Authorization': `Bearer ${API_KEY}`,
       },

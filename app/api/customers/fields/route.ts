@@ -6,7 +6,7 @@ const TABLE_ID = "tbl4dSxUqAf6vsuGCsM"
 
 export async function GET() {
   try {
-    const response = await fetch(`${TEABLE_API_URL}/api/table/${TABLE_ID}/field`, {
+    const response = await fetch(`${TEABLE_API_URL}/api/v1/table/${TABLE_ID}/field`, {
       headers: {
         Authorization: `Bearer ${TEABLE_APP_TOKEN}`,
       },
