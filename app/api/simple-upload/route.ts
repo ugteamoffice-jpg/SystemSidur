@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     const apiUrl = process.env.TEABLE_API_URL
     const token = process.env.TEABLE_APP_TOKEN
 
-    const uploadUrl = `${apiUrl}/api/v1/table/${tableId}/record/${recordId}/${fieldId}/uploadAttachment`
+    const uploadUrl = `${apiUrl}/api/table/${tableId}/record/${recordId}/${fieldId}/uploadAttachment`
 
     const uploadFormData = new FormData()
     uploadFormData.append("file", file)

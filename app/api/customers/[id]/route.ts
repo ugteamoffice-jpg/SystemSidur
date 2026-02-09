@@ -31,7 +31,7 @@ export async function PATCH(
 
     const { id } = params;
     const body = await request.json();
-    const endpoint = `${API_URL}/api/v1/table/${TABLE_ID}/record?fieldKeyType=id`;
+    const endpoint = `${API_URL}/api/table/${TABLE_ID}/record?fieldKeyType=id`;
 
     const response = await fetch(endpoint, {
       method: 'PATCH',

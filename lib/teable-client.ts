@@ -26,7 +26,7 @@ export const teableClient = {
       ...(options?.orderBy && { orderBy: JSON.stringify(options.orderBy) }),
     })
 
-    const response = await fetch(`${TEABLE_API_URL}/api/v1/table/${tableId}/record?${params}`, {
+    const response = await fetch(`${TEABLE_API_URL}/api/table/${tableId}/record?${params}`, {
       headers: {
         Authorization: `Bearer ${TEABLE_APP_TOKEN}`,
       },
@@ -40,7 +40,7 @@ export const teableClient = {
   },
 
   async fetchTableSchema(tableId: string) {
-    const response = await fetch(`${TEABLE_API_URL}/api/v1/table/${tableId}/field`, {
+    const response = await fetch(`${TEABLE_API_URL}/api/table/${tableId}/field`, {
       headers: {
         Authorization: `Bearer ${TEABLE_APP_TOKEN}`,
       },
@@ -54,7 +54,7 @@ export const teableClient = {
   },
 
   async updateRecord(tableId: string, recordId: string, fields: Record<string, any>) {
-    const response = await fetch(`${TEABLE_API_URL}/api/v1/table/${tableId}/record/${recordId}`, {
+    const response = await fetch(`${TEABLE_API_URL}/api/table/${tableId}/record/${recordId}`, {
       method: "PATCH",
       headers: {
         Authorization: `Bearer ${TEABLE_APP_TOKEN}`,
@@ -88,7 +88,7 @@ export const teableClient = {
 
     console.log("[v0] teableClient.createRecord: payload to send:", JSON.stringify(payload, null, 2))
 
-    const response = await fetch(`${TEABLE_API_URL}/api/v1/table/${tableId}/record`, {
+    const response = await fetch(`${TEABLE_API_URL}/api/table/${tableId}/record`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${TEABLE_APP_TOKEN}`,
@@ -118,7 +118,7 @@ export const teableClient = {
   },
 
   async deleteRecord(tableId: string, recordId: string) {
-    const response = await fetch(`${TEABLE_API_URL}/api/v1/table/${tableId}/record/${recordId}`, {
+    const response = await fetch(`${TEABLE_API_URL}/api/table/${tableId}/record/${recordId}`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${TEABLE_APP_TOKEN}`,

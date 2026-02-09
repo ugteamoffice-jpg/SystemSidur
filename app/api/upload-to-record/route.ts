@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     const uploadFormData = new FormData()
     uploadFormData.append("file", file)
 
-    const uploadUrl = `${TEABLE_API_URL}/api/v1/table/${tableId}/record/${recordId}/${fieldId}/uploadAttachment`
+    const uploadUrl = `${TEABLE_API_URL}/api/table/${tableId}/record/${recordId}/${fieldId}/uploadAttachment`
     console.log("[v0] Uploading to:", uploadUrl)
 
     const response = await fetch(uploadUrl, {

@@ -14,7 +14,7 @@ async function fetchAllRecords() {
   let hasMore = true;
 
   while (hasMore) {
-    const endpoint = `${API_URL}/api/v1/table/${TABLE_ID}/record?take=${take}&skip=${skip}&fieldKeyType=id`;
+    const endpoint = `${API_URL}/api/table/${TABLE_ID}/record?take=${take}&skip=${skip}&fieldKeyType=id`;
     
     console.log(`📡 Fetching from Teable: skip=${skip}, take=${take}`);
 
@@ -68,7 +68,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const endpoint = `${API_URL}/api/v1/table/${TABLE_ID}/record?fieldKeyType=id`;
+    const endpoint = `${API_URL}/api/table/${TABLE_ID}/record?fieldKeyType=id`;
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
@@ -84,7 +84,7 @@ export async function PATCH(request: Request) {
   try {
     const body = await request.json();
     const { recordId, fields } = body;
-    const endpoint = `${API_URL}/api/v1/table/${TABLE_ID}/record?fieldKeyType=id`;
+    const endpoint = `${API_URL}/api/table/${TABLE_ID}/record?fieldKeyType=id`;
     const response = await fetch(endpoint, {
       method: 'PATCH',
       headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },

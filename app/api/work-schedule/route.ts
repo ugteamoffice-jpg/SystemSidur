@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     const take = searchParams.get('take') || '1000';
     const dateParam = searchParams.get('date'); 
 
-    let endpoint = `${API_URL}/api/v1/table/${TABLE_ID}/record?take=${take}&fieldKeyType=id`;
+    let endpoint = `${API_URL}/api/table/${TABLE_ID}/record?take=${take}&fieldKeyType=id`;
 
     if (dateParam) {
       const filterObj = {
@@ -59,7 +59,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const endpoint = `${API_URL}/api/v1/table/${TABLE_ID}/record?fieldKeyType=id`;
+    const endpoint = `${API_URL}/api/table/${TABLE_ID}/record?fieldKeyType=id`;
     
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -96,7 +96,7 @@ export async function PATCH(request: Request) {
   try {
     const body = await request.json();
     const { recordId, fields } = body;
-    const endpoint = `${API_URL}/api/v1/table/${TABLE_ID}/record?fieldKeyType=id`;
+    const endpoint = `${API_URL}/api/table/${TABLE_ID}/record?fieldKeyType=id`;
 
     const response = await fetch(endpoint, {
       method: 'PATCH',
@@ -145,7 +145,7 @@ export async function DELETE(request: Request) {
     console.log(`🗑️ Attempting to delete record: ${id}`);
 
     // הפתרון: Teable דורש recordIds[] (עם סוגריים מרובעות!)
-    const teableUrl = new URL(`${API_URL}/api/v1/table/${TABLE_ID}/record`);
+    const teableUrl = new URL(`${API_URL}/api/table/${TABLE_ID}/record`);
     teableUrl.searchParams.append('recordIds[]', id);
 
     console.log(`📡 DELETE URL: ${teableUrl.toString()}`);
