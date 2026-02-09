@@ -1,0 +1,55 @@
+{
+  "id": "tblmEbfCCbmFMt1U3sm",
+  "name": "עובדים",
+  "description": null,
+  "fields": [
+    {
+      "id": "fldFrfgkFG0UUXvSDyh",
+      "name": "שם עובד",
+      "type": "singleLineText",
+      "description": null,
+      "options": {},
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": null
+    },
+    {
+      "id": "fldYWgwL406AFSfeqFO",
+      "name": "תפקיד",
+      "type": "singleSelect",
+      "description": null,
+      "options": [
+        "אדמין מערכת",
+        "מנהל",
+        "עובד"
+      ],
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": null
+    },
+    {
+      "id": "fldMGLxwNueFQpy8S2o",
+      "name": "אימייל",
+      "type": "singleLineText",
+      "description": null,
+      "options": {},
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": null
+    },
+    {
+      "id": "fldeGCyHED4yjto6r8k",
+      "name": "סיסמה",
+      "type": "singleLineText",
+      "description": "סיסמה מוצפנת",
+      "options": {},
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": null
+    }
+  ]
+}

@@ -1,0 +1,165 @@
+{
+  "id": "tblUgEhLuyCwEK2yWG4",
+  "name": "סידור עבודה",
+  "description": null,
+  "fields": [
+    {
+      "id": "fldvNsQbfzMWTc7jakp",
+      "name": "תאריך",
+      "type": "date",
+      "options": {
+        "formatting": {
+          "date": "D/M/YYYY",
+          "time": "None",
+          "timeZone": "Asia/Jerusalem"
+        }
+      },
+      "cellValueType": "dateTime"
+    },
+    {
+      "id": "fldVy6L2DCboXUTkjBX",
+      "name": "שם לקוח",
+      "type": "link",
+      "options": {
+        "relationship": "manyOne",
+        "foreignTableId": "tblmUkwbvrUmxI3q1gd" 
+      },
+      "cellValueType": "string"
+    },
+    {
+      "id": "fldLbXMREYfC8XVIghj",
+      "name": "התייצבות",
+      "type": "singleLineText",
+      "cellValueType": "string"
+    },
+    {
+      "id": "fldA6e7ul57abYgAZDh",
+      "name": "תיאור",
+      "type": "longText",
+      "cellValueType": "string"
+    },
+    {
+      "id": "fld56G8M1LyHRRROWiL",
+      "name": "חזור",
+      "type": "singleLineText",
+      "cellValueType": "string"
+    },
+    {
+      "id": "fldx4hl8FwbxfkqXf0B",
+      "name": "סוג רכב",
+      "type": "link",
+      "options": {
+        "relationship": "manyOne",
+        "foreignTableId": "tblbRTqAuL4OMkNnUu7"
+      },
+      "cellValueType": "string"
+    },
+    {
+      "id": "flddNPbrzOCdgS36kx5",
+      "name": "שם נהג",
+      "type": "link",
+      "options": {
+        "relationship": "oneOne",
+        "foreignTableId": "tbl39DxszH3whkjzovd"
+      },
+      "cellValueType": "string"
+    },
+    {
+      "id": "fldqStJV3KKIutTY9hW",
+      "name": "מספר רכב",
+      "type": "singleLineText",
+      "cellValueType": "string"
+    },
+    {
+      "id": "fldMv14lt0W7ZBkq1PH",
+      "name": "שלח",
+      "type": "checkbox",
+      "cellValueType": "boolean"
+    },
+    {
+      "id": "fldDOBGATSaTi5TxyHB",
+      "name": "מאושר",
+      "type": "checkbox",
+      "cellValueType": "boolean"
+    },
+    {
+      "id": "fldxXnfHHQWwXY8dlEV",
+      "name": "מחיר לקוח+ מע\"מ",
+      "type": "number",
+      "options": { "formatting": { "precision": 2 } },
+      "cellValueType": "number"
+    },
+    {
+      "id": "fldT7QLSKmSrjIHarDb",
+      "name": "מחיר לקוח כולל מע\"מ",
+      "type": "number",
+      "options": { "formatting": { "precision": 2 } },
+      "cellValueType": "number"
+    },
+    {
+      "id": "fldSNuxbM8oJfrQ3a9x",
+      "name": "מחיר נהג+ מע\"מ",
+      "type": "number",
+      "options": { "formatting": { "precision": 2 } },
+      "cellValueType": "number"
+    },
+    {
+      "id": "fldyQIhjdUeQwtHMldD",
+      "name": "מחיר נהג כולל מע\"מ",
+      "type": "number",
+      "options": { "formatting": { "precision": 2 } },
+      "cellValueType": "number"
+    },
+    {
+      "id": "fldT9IZTYlT4gCEnOK3",
+      "name": "רווח+ מע\"מ",
+      "type": "formula",
+      "isComputed": true,
+      "options": { "formatting": { "precision": 2 } },
+      "cellValueType": "number"
+    },
+    {
+      "id": "fldhNoiFEkEgrkxff02",
+      "name": "הערות לנהג",
+      "type": "longText",
+      "cellValueType": "string"
+    },
+    {
+      "id": "fldelKu7PLIBmCFfFPJ",
+      "name": "הערות מנהל",
+      "type": "longText",
+      "cellValueType": "string"
+    },
+    {
+      "id": "fldkvTaql1bPbifVKLt",
+      "name": "שם מזמין",
+      "type": "singleLineText",
+      "cellValueType": "string"
+    },
+    {
+      "id": "fld6NJPsiW8CtRIfnaY",
+      "name": "טלפון נייד",
+      "type": "singleLineText",
+      "cellValueType": "string"
+    },
+    {
+      "id": "fldAJPcCFUcDPlSCK1a",
+      "name": "ת\"ז",
+      "type": "singleLineText",
+      "cellValueType": "string"
+    },
+    {
+      "id": "fldKkq5oyBm8CwcAIvH",
+      "name": "טופס הזמנה",
+      "type": "attachment",
+      "cellValueType": "string",
+      "isMultipleCellValue": true
+    },
+    {
+      "id": "fldxZmnQzflBG9M0RYq",
+      "name": "תאריך ושעה העלאת קובץ",
+      "type": "singleLineText",
+      "cellValueType": "string"
+    }
+  ]
+}

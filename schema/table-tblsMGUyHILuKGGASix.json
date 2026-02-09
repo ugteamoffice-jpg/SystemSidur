@@ -1,0 +1,76 @@
+{
+  "id": "tblsMGUyHILuKGGASix",
+  "name": "קבלנים/נהגים",
+  "description": null,
+  "fields": [
+    {
+      "id": "fld1t6uHDVHJT7mL6Hv",
+      "name": "שם פרטי",
+      "type": "singleLineText",
+      "description": null,
+      "options": {},
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": null
+    },
+    {
+      "id": "fldNMqdJgpcSkEOhgdO",
+      "name": "טלפון נייד",
+      "type": "number",
+      "description": null,
+      "options": {
+        "formatting": {
+          "precision": 0,
+          "type": "decimal"
+        }
+      },
+      "cellValueType": "number",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": null
+    },
+    {
+      "id": "flddqCLBT7JAITEpwbl",
+      "name": "סוג רכב/ים",
+      "type": "link",
+      "description": null,
+      "options": {
+        "relationship": "manyMany",
+        "foreignTableId": "tblRSYoKFHCaDyivO9k",
+        "lookupFieldId": "fldUBeIPRhJ9JuUHXBL",
+        "fkHostTableName": "bse1pHlESYWysI2D4VR.junction_fldWm4V1XAY0p8Nl26o_flddqCLBT7JAITEpwbl",
+        "selfKeyName": "__fk_fldWm4V1XAY0p8Nl26o",
+        "foreignKeyName": "__fk_flddqCLBT7JAITEpwbl",
+        "symmetricFieldId": "fldWm4V1XAY0p8Nl26o",
+        "filter": null,
+        "filterByViewId": null,
+        "visibleFieldIds": null
+      },
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": true
+    },
+    {
+      "id": "fldpoS43gbAmvi2RZS1",
+      "name": "סידור עבודה",
+      "type": "link",
+      "description": null,
+      "options": {
+        "foreignTableId": "tblVAQgIYOLfvCZdqgj",
+        "relationship": "oneOne",
+        "isOneWay": false,
+        "symmetricFieldId": "fldGTTvqQ8lii1wfiS5",
+        "lookupFieldId": "fldT720jVmGMXFURUKL",
+        "fkHostTableName": "bse1pHlESYWysI2D4VR.qblnym_nhgym",
+        "selfKeyName": "__id",
+        "foreignKeyName": "__fk_fldpoS43gbAmvi2RZS1"
+      },
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": null
+    }
+  ]
+}

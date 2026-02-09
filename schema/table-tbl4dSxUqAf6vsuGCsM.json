@@ -1,0 +1,115 @@
+{
+  "id": "tbl4dSxUqAf6vsuGCsM",
+  "name": "לקוחות",
+  "description": null,
+  "fields": [
+    {
+      "id": "fldS0PNTKZseugMVhcA",
+      "name": "שם לקוח",
+      "type": "singleLineText",
+      "description": null,
+      "options": {},
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": null
+    },
+    {
+      "id": "fldxb23SnznfSCbKpeL",
+      "name": "ח.פ",
+      "type": "number",
+      "description": null,
+      "options": {
+        "formatting": {
+          "precision": 2,
+          "type": "decimal"
+        }
+      },
+      "cellValueType": "number",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": null
+    },
+    {
+      "id": "fldgRBM4pHqoTTUvo1t",
+      "name": "שם א.קשר",
+      "type": "singleLineText",
+      "description": null,
+      "options": {},
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": null
+    },
+    {
+      "id": "fldtHySe1pfoqbVlYYg",
+      "name": "טלפון נייד",
+      "type": "number",
+      "description": null,
+      "options": {
+        "formatting": {
+          "precision": 0,
+          "type": "decimal"
+        }
+      },
+      "cellValueType": "number",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": null
+    },
+    {
+      "id": "fldDyTLxPVXQdpVLCt0",
+      "name": "אימייל",
+      "type": "singleLineText",
+      "description": null,
+      "options": {},
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": null
+    },
+    {
+      "id": "fldmGFsQe5UJQH413Ps",
+      "name": "תשלום שוטף+",
+      "type": "number",
+      "description": null,
+      "options": {
+        "formatting": {
+          "precision": 2,
+          "type": "decimal"
+        }
+      },
+      "cellValueType": "number",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": null
+    },
+    {
+      "id": "fldpeiwjxWI7rXa3rTL",
+      "name": "אופן תשלום",
+      "type": "singleSelect",
+      "description": null,
+      "options": [
+        "מזומן",
+        "העברה בנקאית",
+        "צ'ק",
+        "אפלקציה"
+      ],
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": null
+    },
+    {
+      "id": "fldv3v8JEh0bQhRKWvV",
+      "name": "נוצר בהנהלת חשבונות",
+      "type": "checkbox",
+      "description": null,
+      "options": {},
+      "cellValueType": "boolean",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": null
+    }
+  ]
+}
