@@ -26,12 +26,12 @@ export const teableClient = {
   async createRecord(tableId: string, fields: any) {
     if (!API_KEY) throw new Error('Missing TEABLE_API_KEY');
     
-    // גם כאן נוסיף את זה לגוף הבקשה ליתר ביטחון
     const res = await fetch(`${TEABLE_API_URL}/table/${tableId}/record`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        fieldKeyType: 'id', // <--- הנה התוספת החשובה
+        fieldKeyType: 'id',
+        typecast: true, // <--- התיקון: מאפשר שליחת IDs כמחרוזות
         records: [{ fields }] 
       }),
     });
@@ -44,13 +44,13 @@ export const teableClient = {
     return await res.json();
   },
 
-  // 3. עדכון - התיקון הסופי
+  // 3. עדכון
   async updateRecord(tableId: string, recordId: string, fields: any) {
     if (!API_KEY) throw new Error('Missing TEABLE_API_KEY');
 
     const url = `${TEABLE_API_URL}/table/${tableId}/record`;
     
-    console.log(`[DEBUG] Sending Bulk PATCH with Body Config to: ${url}`);
+    console.log(`[DEBUG] Update Record: ${recordId}, Typecast: true`);
     
     const res = await fetch(url, {
       method: 'PATCH',
@@ -59,7 +59,8 @@ export const teableClient = {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        fieldKeyType: 'id', // <--- זה התיקון! השרת יקרא את זה מכאן
+        fieldKeyType: 'id',
+        typecast: true, // <--- התיקון: זה מה שיפתור את שגיאת ה-Validation
         records: [
           {
             id: recordId,
