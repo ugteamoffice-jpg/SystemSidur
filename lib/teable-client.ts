@@ -42,7 +42,7 @@ export const teableClient = {
         throw new Error(`Teable Create Error: ${err}`);
     }
     
-    // המרה: מחזירים רשומה בודדת במקום מערך
+    // חילוץ הרשומה הבודדת עבור הדפדפן
     const data = await res.json();
     if (data.records && Array.isArray(data.records)) {
         return data.records[0];
@@ -50,7 +50,7 @@ export const teableClient = {
     return data;
   },
 
-  // 3. עדכון (כאן התיקון הקריטי לסגירת החלון)
+  // 3. עדכון (כאן התיקון שסוגר את החלון)
   async updateRecord(tableId: string, recordId: string, fields: any) {
     if (!API_KEY) throw new Error('Missing TEABLE_API_KEY');
 
@@ -84,11 +84,11 @@ export const teableClient = {
     
     const data = await res.json();
     
-    // *** התיקון שסוגר את החלון ***
-    // אנחנו בודקים אם קיבלנו מערך (records), ואם כן - מחזירים רק את הראשון.
-    // זה גורם לאפליקציה לחשוב שזה היה עדכון רגיל.
+    // *** התיקון הקריטי ***
+    // אנחנו בודקים אם קיבלנו רשימה (בגלל העדכון ההמוני), ואם כן - מחזירים רק את הראשון.
+    // הדפדפן יקבל רשומה רגילה, יהיה מרוצה, ויסגור את החלון.
     if (data.records && Array.isArray(data.records)) {
-        console.log("Successfully extracted single record from response");
+        console.log("Extracted single record for client");
         return data.records[0];
     }
     
