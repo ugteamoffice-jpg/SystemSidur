@@ -209,9 +209,9 @@ export default function VehiclesGrid() {
       </div>
 
       <div
-        ref={tableContainerRef}
-        className="border rounded-lg overflow-auto"
-        style={{ height: "600px" }}
+  ref={tableContainerRef}
+  className="border rounded-lg flex-1 overflow-auto"
+  style={{}}
         onScroll={handleScroll}
       >
         <div style={{ height: `${totalHeight}px`, position: "relative" }}>
