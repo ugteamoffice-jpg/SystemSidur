@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const TABLE_ID = 'tblbRTqAuL4OMkNnUu7'; // מזהה טבלת רכבים
+    const TABLE_ID = 'tblbRTqAuL4OMkNnUu7';
     const API_URL = 'https://teable-production-bedd.up.railway.app';
     const API_KEY = process.env.TEABLE_API_KEY;
 
