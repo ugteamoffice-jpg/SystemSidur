@@ -1,42 +1,52 @@
-import { NextResponse } from "next/server"
+import { NextResponse } from "next/server";
+import { teableClient } from "@/lib/teable-client";
 
+// זה ה-ID של טבלת סידור העבודה שלקחתי מהקוד שלך
+const TABLE_ID = "tblVAQgfYOLfvCZdqqj"; 
+
+// 1. פונקציה לעדכון (PATCH) - זה מה שהיה חסר לך!
+export async function PATCH(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const { id } = params;
+    const body = await request.json();
+
+    console.log(`Updating work schedule record ${id}...`);
+
+    // שימוש בלקוח המתוקן שלנו לעדכון
+    // אנחנו שולחים את body.fields כי הלוג הראה שהנתונים מגיעים עטופים ב-fields
+    const result = await teableClient.updateRecord(TABLE_ID, id, body.fields);
+
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error("Update error:", error);
+    return NextResponse.json(
+      { error: "Failed to update record" },
+      { status: 500 }
+    );
+  }
+}
+
+// 2. פונקציה למחיקה (DELETE) - שמרתי אותה אבל שדרגתי לשימוש בלקוח
 export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const id = params.id
+    const { id } = params;
     
-    // שליפת משתני הסביבה - שים לב שאנחנו משתמשים ב-APP_TOKEN ו-BASE_ID
-    const TEABLE_API_URL = process.env.TEABLE_API_URL || "https://app.teable.io"
-    const TEABLE_APP_TOKEN = process.env.TEABLE_APP_TOKEN
-    const BASE_ID = "base_xxxxxxxxxxxx" // ה-ID של הבסיס שלך
-    const TABLE_ID = "tblVAQgfYOLfvCZdqqj" // ה-ID של הטבלה מהגיבוי שלך 
+    console.log(`Deleting work schedule record ${id}...`);
 
-    if (!TEABLE_APP_TOKEN) {
-      return NextResponse.json({ error: "Missing API Token" }, { status: 500 })
-    }
+    await teableClient.deleteRecord(TABLE_ID, id);
 
-    // הפנייה ישירה ל-API של Teable למחיקת רשומה
-    const response = await fetch(
-      `${TEABLE_API_URL}/api/base/${BASE_ID}/table/${TABLE_ID}/record/${id}`,
-      {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${TEABLE_APP_TOKEN}`,
-        },
-      }
-    )
-
-    if (!response.ok) {
-      const errorData = await response.json()
-      console.error("Teable error:", errorData)
-      return NextResponse.json({ error: "Failed to delete from Teable" }, { status: response.status })
-    }
-
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("API Route Error:", error)
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
+    console.error("Delete error:", error);
+    return NextResponse.json(
+      { error: "Failed to delete record" },
+      { status: 500 }
+    );
   }
 }
