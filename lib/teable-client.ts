@@ -42,7 +42,7 @@ export const teableClient = {
         throw new Error(`Teable Create Error: ${err}`);
     }
     
-    // חילוץ הרשומה הבודדת עבור הדפדפן
+    // ניקיון: מחזירים רשומה בודדת במקום מערך
     const data = await res.json();
     if (data.records && Array.isArray(data.records)) {
         return data.records[0];
@@ -50,13 +50,14 @@ export const teableClient = {
     return data;
   },
 
-  // 3. עדכון (כאן התיקון שסוגר את החלון)
+  // 3. עדכון (כאן התיקון שסוגר את החלון!)
   async updateRecord(tableId: string, recordId: string, fields: any) {
     if (!API_KEY) throw new Error('Missing TEABLE_API_KEY');
 
+    // משתמשים בכתובת הכללית (בלי ID בסוף) כדי שהשרת יסכים לקבל Typecast
     const url = `${TEABLE_API_URL}/table/${tableId}/record`;
     
-    console.log(`[DEBUG] Updating ${recordId}...`);
+    console.log(`[DEBUG] Updating record ${recordId}...`);
     
     const res = await fetch(url, {
       method: 'PATCH',
@@ -65,8 +66,8 @@ export const teableClient = {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        fieldKeyType: 'id',
-        typecast: true,
+        fieldKeyType: 'id', // מכריח שימוש ב-IDs
+        typecast: true,     // פותר את בעיית ה-Validation
         records: [
           {
             id: recordId,
@@ -85,10 +86,10 @@ export const teableClient = {
     const data = await res.json();
     
     // *** התיקון הקריטי ***
-    // אנחנו בודקים אם קיבלנו רשימה (בגלל העדכון ההמוני), ואם כן - מחזירים רק את הראשון.
-    // הדפדפן יקבל רשומה רגילה, יהיה מרוצה, ויסגור את החלון.
+    // אנחנו בודקים אם קיבלנו "רשימה" (records), ואם כן - שולפים רק את הראשון.
+    // זה גורם לאפליקציה לחשוב שזה עדכון רגיל לגמרי.
     if (data.records && Array.isArray(data.records)) {
-        console.log("Extracted single record for client");
+        console.log("Success: Extracted single record for client");
         return data.records[0];
     }
     
