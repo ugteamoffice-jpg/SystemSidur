@@ -582,7 +582,7 @@ function DataGrid({ schema }: { schema: any }) {
   const selectedCount = table.getFilteredSelectedRowModel().rows.length;
 
   return (
-    <div className="w-full h-[calc(100vh-2rem)] flex flex-col space-y-4 p-4" dir="rtl">
+    <div className="w-full h-[calc(100vh-2rem)] flex flex-col space-y-4 p-4 overflow-hidden" dir="rtl">
       <div className="flex flex-col gap-4 flex-none">
         {/* שורה אחת - הכל */}
         <div className="flex items-center gap-2">
@@ -631,7 +631,7 @@ function DataGrid({ schema }: { schema: any }) {
             <Trash2 className="h-4 w-4" />
           </Button>
           
-          <div className="flex-1 min-w-[200px]">
+          <div className="flex-1 min-w-[120px]">
             <Input 
                 placeholder="חיפוש..." 
                 value={globalFilter} 
