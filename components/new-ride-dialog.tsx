@@ -115,7 +115,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
     return new Date();
   })
 
-  // *** כאן התיקון: משתנה לשמירת התאריך המקורי ***
+  // רפרנס לשמירת התאריך המקורי
   const initialDateStrRef = React.useRef<string | null>(null);
 
   const [vatClient, setVatClient] = React.useState("18")
@@ -208,7 +208,6 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
         if (f[FIELDS.DATE]) {
           const d = new Date(f[FIELDS.DATE]);
           setDate(!isNaN(d.getTime()) ? d : undefined);
-          // שמירת התאריך המקורי
           initialDateStrRef.current = f[FIELDS.DATE];
         } else {
           initialDateStrRef.current = null;
@@ -220,7 +219,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
           pickup: f[FIELDS.PICKUP_TIME] || "",
           dropoff: f[FIELDS.DROPOFF_TIME] || "",
           vehicleType: getValFromRecord(f[FIELDS.VEHICLE_TYPE]),
-          driver: getValFromRecord(f[FIELDS.DRIVER]), // כאן הנהג נטען נכון
+          driver: getValFromRecord(f[FIELDS.DRIVER]), // טעינת הנהג
           vehicleNum: f[FIELDS.VEHICLE_NUM] || "",
           managerNotes: f[FIELDS.MANAGER_NOTES] || "",
           notes: f[FIELDS.DRIVER_NOTES] || "",
@@ -264,22 +263,9 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
     }
   }, [open, initialData, defaultDate])
 
-  // *** התיקון הגדול כאן ***
-  // האפקט הזה רץ רק אם התאריך באמת השתנה לעומת התאריך המקורי
-  React.useEffect(() => {
-    if (isEdit && isReady && date) {
-      const currentDateStr = format(date, "yyyy-MM-dd");
-      
-      // אם יש תאריך מקורי והוא שונה מהתאריך הנוכחי -> רק אז ננקה את הנהג והסטטוס
-      if (initialDateStrRef.current && currentDateStr !== initialDateStrRef.current) {
-        console.log("Date changed, clearing driver");
-        setForm(prev => ({ ...prev, driver: "" }));
-        setSelectedIds(prev => ({ ...prev, driverId: "" }));
-        setStatus({ sent: false, approved: false });
-      }
-    }
-  }, [date, isEdit, isReady]);
-
+  // *** כאן היה ה-useEffect הבעייתי - מחקתי אותו לגמרי! ***
+  // עכשיו אין שום קוד שרץ אוטומטית ומוחק את הנהג.
+  
   const calculateVat = (val: string, type: 'excl' | 'incl', side: 'client' | 'driver') => {
     const num = parseFloat(val) || 0
     const vat = parseFloat(side === 'client' ? vatClient : vatDriver) || 0
@@ -313,10 +299,6 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
       const driverId = findId(lists.drivers, form.driver, selectedIds.driverId)
       const vehicleTypeId = findId(lists.vehicles, form.vehicleType, selectedIds.vehicleTypeId)
 
-      // בדיקה בקונסול
-      console.log('Teable IDs found:', { customerId, driverId, vehicleTypeId });
-
-      // Teable דורש מערך של מחרוזות ["rec..."] ולא אובייקטים
       const body: any = {
         fields: {
           [FIELDS.DATE]: format(date, "yyyy-MM-dd"),
@@ -341,10 +323,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
         }
       }
 
-      // מחיקת מפתחות ריקים
       Object.keys(body.fields).forEach(k => body.fields[k] === undefined && delete body.fields[k])
-
-      console.log('Final Payload (Teable Format):', JSON.stringify(body, null, 2));
 
       if (isEdit) {
         const res = await fetch(`/api/work-schedule/${initialData.id}`, {
@@ -354,13 +333,10 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
         });
 
         if (!res.ok) {
-          const errorText = await res.text();
-          console.error("Server error:", errorText);
           throw new Error("Server rejected the data");
         }
 
         const result = await res.json();
-        // בדיקה גמישה כדי להתמודד עם התשובה המתוקנת מהשרת
         if (result.success || result.id || (result.fields && result.id)) {
           toast({ title: "עודכן בהצלחה!" });
           setOpen(false);
@@ -377,9 +353,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
       })
 
       if (!res.ok) {
-        const err = await res.text();
-        console.error("POST Error:", err);
-        throw new Error(err);
+        throw new Error(await res.text());
       }
 
       toast({ title: isEdit ? "עודכן בהצלחה!" : "נשמר בהצלחה!" })
@@ -388,7 +362,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
 
     } catch (err) {
       console.error(err);
-      toast({ title: "שגיאה בשמירה", description: "בדוק את הקונסול לפרטים נוספים", variant: "destructive" })
+      toast({ title: "שגיאה בשמירה", description: "אירעה שגיאה בעת השמירה", variant: "destructive" })
     } finally {
       setLoading(false)
     }
@@ -437,10 +411,26 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                       <Calendar
                         mode="single"
                         selected={date}
+                        
+                        // *** התיקון הגדול כאן ***
+                        // הלוגיקה של המחיקה עברה לכאן - היא תקרה רק אם תלחץ על היומן!
                         onSelect={(d) => {
+                          if (!d) return;
                           setDate(d);
-                          setIsCalendarOpen(false)
+                          setIsCalendarOpen(false);
+                          
+                          if (isEdit && initialDateStrRef.current) {
+                            const newDateStr = format(d, "yyyy-MM-dd");
+                            if (newDateStr !== initialDateStrRef.current) {
+                              setForm(p => ({ ...p, driver: "" }));
+                              setSelectedIds(p => ({ ...p, driverId: "" }));
+                              setStatus(p => ({ ...p, sent: false, approved: false }));
+                              // אופציונלי: הודעה למשתמש
+                              // toast({ description: "שינית תאריך - הנהג הוסר" });
+                            }
+                          }
                         }}
+                        
                         initialFocus
                         locale={he}
                         dir="rtl"
