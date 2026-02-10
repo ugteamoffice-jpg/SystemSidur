@@ -1,13 +1,12 @@
 // lib/teable-client.ts
 
-// הגדרת הכתובת הקבועה
 const BASE_URL = 'https://teable-production-bedd.up.railway.app';
 const TEABLE_API_URL = `${BASE_URL}/api`;
 const API_KEY = process.env.TEABLE_API_KEY;
 
 export const teableClient = {
   
-  // 1. שליפת נתונים
+  // 1. שליפה
   async getRecords(tableId: string, query?: any) {
      if (!API_KEY) throw new Error('Missing TEABLE_API_KEY');
      
@@ -23,17 +22,18 @@ export const teableClient = {
      return await res.json();
   },
 
-  // 2. יצירת רשומה
+  // 2. יצירה
   async createRecord(tableId: string, fields: any) {
     if (!API_KEY) throw new Error('Missing TEABLE_API_KEY');
     
-    // בנקודת היצירה (POST) זה בדרך כלל עובד, אבל ליתר ביטחון נשמור על ה-ID
-    const url = `${TEABLE_API_URL}/table/${tableId}/record?fieldKeyType=id`;
-    
-    const res = await fetch(url, {
+    // גם כאן נוסיף את זה לגוף הבקשה ליתר ביטחון
+    const res = await fetch(`${TEABLE_API_URL}/table/${tableId}/record`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ records: [{ fields }] }),
+      body: JSON.stringify({
+        fieldKeyType: 'id', // <--- הנה התוספת החשובה
+        records: [{ fields }] 
+      }),
     });
     
     if (!res.ok) {
@@ -44,15 +44,13 @@ export const teableClient = {
     return await res.json();
   },
 
-  // 3. עדכון רשומה - התיקון הגדול (Bulk Update לרשומה בודדת)
+  // 3. עדכון - התיקון הסופי
   async updateRecord(tableId: string, recordId: string, fields: any) {
     if (!API_KEY) throw new Error('Missing TEABLE_API_KEY');
 
-    // שים לב: הורדתי את ה-recordId מהכתובת עצמה!
-    // הכתובת היא כללית לטבלה, עם פרמטר שמחייב שימוש ב-ID
-    const url = `${TEABLE_API_URL}/table/${tableId}/record?fieldKeyType=id`;
+    const url = `${TEABLE_API_URL}/table/${tableId}/record`;
     
-    console.log(`[DEBUG] Sending Bulk PATCH to: ${url}`);
+    console.log(`[DEBUG] Sending Bulk PATCH with Body Config to: ${url}`);
     
     const res = await fetch(url, {
       method: 'PATCH',
@@ -60,11 +58,11 @@ export const teableClient = {
         'Authorization': `Bearer ${API_KEY}`,
         'Content-Type': 'application/json',
       },
-      // בשיטה הזו הגוף חייב להכיל מערך records, ובתוכו אנחנו מכניסים את ה-ID
       body: JSON.stringify({
+        fieldKeyType: 'id', // <--- זה התיקון! השרת יקרא את זה מכאן
         records: [
           {
-            id: recordId, // ה-ID נכנס לכאן במקום ל-URL
+            id: recordId,
             fields: fields
           }
         ]
@@ -80,7 +78,7 @@ export const teableClient = {
     return await res.json();
   },
 
-  // 4. מחיקת רשומה
+  // 4. מחיקה
   async deleteRecord(tableId: string, recordId: string) {
     if (!API_KEY) throw new Error('Missing TEABLE_API_KEY');
     
