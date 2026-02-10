@@ -209,52 +209,52 @@ export default function VehiclesGrid() {
       </div>
 
       <div
-  ref={tableContainerRef}
-  className="border rounded-lg flex-1 overflow-auto"
-  style={{}}
+        ref={tableContainerRef}
+        className="border rounded-lg flex-1 overflow-auto"
         onScroll={handleScroll}
       >
-        <div style={{ height: `${totalHeight}px`, position: "relative" }}>
-          <div style={{ transform: `translateY(${offsetY}px)` }}>
-            <Table>
-              <TableHeader className="sticky top-0 bg-background z-10">
-                <TableRow>
-                  <TableHead className="text-right pr-4">סוג רכב</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading && (
-                  <TableRow>
-                    <TableCell colSpan={1} className="text-center py-8">
-                      <div className="flex items-center justify-center gap-2">
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        <span className="text-muted-foreground">טוען נתונים...</span>
-                      </div>
-                    </TableCell>
+        <Table>
+          <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
+            <TableRow>
+              <TableHead className="text-right pr-4">סוג רכב</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading && (
+              <TableRow>
+                <TableCell colSpan={1} className="text-center py-8">
+                  <div className="flex items-center justify-center gap-2">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <span className="text-muted-foreground">טוען נתונים...</span>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+            {!isLoading && filteredVehicles.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={1} className="text-center py-8 text-muted-foreground">
+                  {searchQuery ? "לא נמצאו תוצאות חיפוש" : "אין סוגי רכבים להצגה"}
+                </TableCell>
+              </TableRow>
+            )}
+            {!isLoading && filteredVehicles.length > 0 && (
+              <>
+                {startIndex > 0 && <tr style={{ height: `${offsetY}px` }}><td colSpan={1} /></tr>}
+                {visibleVehicles.map((vehicle) => (
+                  <TableRow
+                    key={vehicle.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleRowClick(vehicle)}
+                    style={{ height: `${ROW_HEIGHT}px` }}
+                  >
+                    <TableCell className="text-right pr-4">{vehicle.fields[VEHICLE_TYPE_FIELD_ID] || "-"}</TableCell>
                   </TableRow>
-                )}
-                {!isLoading && filteredVehicles.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={1} className="text-center py-8 text-muted-foreground">
-                      {searchQuery ? "לא נמצאו תוצאות חיפוש" : "אין סוגי רכבים להצגה"}
-                    </TableCell>
-                  </TableRow>
-                )}
-                {!isLoading &&
-                  visibleVehicles.map((vehicle) => (
-                    <TableRow
-                      key={vehicle.id}
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => handleRowClick(vehicle)}
-                      style={{ height: `${ROW_HEIGHT}px` }}
-                    >
-                      <TableCell className="text-right pr-4">{vehicle.fields[VEHICLE_TYPE_FIELD_ID] || "-"}</TableCell>
-                    </TableRow>
-                  ))}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
+                ))}
+                {endIndex < filteredVehicles.length && <tr style={{ height: `${totalHeight - endIndex * ROW_HEIGHT}px` }}><td colSpan={1} /></tr>}
+              </>
+            )}
+          </TableBody>
+        </Table>
       </div>
 
       <Dialog
