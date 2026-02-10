@@ -1,134 +1,158 @@
-const TEABLE_API_URL = process.env.TEABLE_API_URL
-const TEABLE_APP_TOKEN = process.env.TEABLE_APP_TOKEN
+// lib/teable.ts
 
-if (!TEABLE_API_URL || !TEABLE_APP_TOKEN) {
-  throw new Error("Missing TEABLE_API_URL or TEABLE_APP_TOKEN")
+// נגדיר את המבנה של נסיעה כדי למנוע שגיאות
+export interface Ride {
+  id: string;
+  date: string;
+  time: string;
+  pickup: string;
+  dropoff: string;
+  passengers: number;
+  driverId?: string;
+  status: string;
+  notes?: string;
+  price?: number;
+  cost?: number;
 }
 
-export const teableClient = {
-  async getRecords(
-    tableId: string,
-    options?: {
-      fieldKeyType?: "id" | "name"
-      cellFormat?: "json" | "text"
-      take?: number
-      skip?: number
-      filter?: object
-      orderBy?: object
+const TEABLE_API_URL = 'https://app.teable.io/api';
+const TABLE_ID = process.env.TEABLE_TABLE_ID;
+const API_KEY = process.env.TEABLE_API_KEY;
+
+// פונקציית עזר לבדיקת הגדרות
+function getConfig() {
+  if (!TABLE_ID || !API_KEY) {
+    throw new Error('Missing TEABLE_TABLE_ID or TEABLE_API_KEY environment variables');
+  }
+  return { TABLE_ID, API_KEY };
+}
+
+// 1. שליפת כל הנסיעות (Get)
+export async function getRides(): Promise<Ride[]> {
+  const { TABLE_ID, API_KEY } = getConfig();
+
+  const response = await fetch(`${TEABLE_API_URL}/table/${TABLE_ID}/record`, {
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
     },
-  ) {
-    const params = new URLSearchParams({
-      fieldKeyType: options?.fieldKeyType || "id",
-      ...(options?.cellFormat && { cellFormat: options.cellFormat }),
-      ...(options?.take && { take: options.take.toString() }),
-      ...(options?.skip && { skip: options.skip.toString() }),
-      ...(options?.filter && { filter: JSON.stringify(options.filter) }),
-      ...(options?.orderBy && { orderBy: JSON.stringify(options.orderBy) }),
-    })
+    cache: 'no-store', // חשוב כדי לקבל מידע עדכני תמיד
+  });
 
-    const response = await fetch(`${TEABLE_API_URL}/api/table/${tableId}/record?${params}`, {
-      headers: {
-        Authorization: `Bearer ${TEABLE_APP_TOKEN}`,
-      },
-    })
+  if (!response.ok) {
+    throw new Error('Failed to fetch rides');
+  }
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch records: ${response.statusText}`)
-    }
+  const data = await response.json();
 
-    return response.json()
-  },
+  // המרה של המידע מ-Teable למבנה שלנו
+  return data.records.map((record: any) => ({
+    id: record.id,
+    date: record.fields['תאריך'] || '',
+    time: record.fields['שעה'] || '',
+    pickup: record.fields['מוצא'] || '',
+    dropoff: record.fields['יעד'] || '',
+    passengers: record.fields['נוסעים'] || 0,
+    driverId: record.fields['נהג'] || '', 
+    status: record.fields['סטטוס'] || 'ממתין',
+    notes: record.fields['הערות'] || '',
+    price: record.fields['מחיר'] || 0,
+    cost: record.fields['עלות'] || 0,
+  }));
+}
 
-  async fetchTableSchema(tableId: string) {
-    const response = await fetch(`${TEABLE_API_URL}/api/table/${tableId}/field`, {
-      headers: {
-        Authorization: `Bearer ${TEABLE_APP_TOKEN}`,
-      },
-    })
+// 2. יצירת נסיעה חדשה (Create)
+export async function createRide(data: Partial<Ride>) {
+  const { TABLE_ID, API_KEY } = getConfig();
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch schema: ${response.statusText}`)
-    }
+  const fields: Record<string, any> = {
+    'תאריך': data.date,
+    'שעה': data.time,
+    'מוצא': data.pickup,
+    'יעד': data.dropoff,
+    'נוסעים': Number(data.passengers),
+    'סטטוס': data.status || 'ממתין',
+  };
 
-    return response.json()
-  },
+  // הוספת שדות אופציונליים רק אם קיימים
+  if (data.driverId) fields['נהג'] = data.driverId;
+  if (data.notes) fields['הערות'] = data.notes;
+  if (data.price) fields['מחיר'] = Number(data.price);
+  if (data.cost) fields['עלות'] = Number(data.cost);
 
-  async updateRecord(tableId: string, recordId: string, fields: Record<string, any>) {
-    const response = await fetch(`${TEABLE_API_URL}/api/table/${tableId}/record/${recordId}`, {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${TEABLE_APP_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        fieldKeyType: "id",
-        typecast: true,
-        record: {
-          fields,
-        },
-      }),
-    })
+  const response = await fetch(`${TEABLE_API_URL}/table/${TABLE_ID}/record`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      records: [{ fields }] // שים לב: Teable דורש מערך ביצירה
+    }),
+  });
 
-    if (!response.ok) {
-      throw new Error(`Failed to update record: ${response.statusText}`)
-    }
+  if (!response.ok) {
+    const error = await response.text();
+    console.error('Teable create error:', error);
+    throw new Error('Failed to create ride');
+  }
 
-    return response.json()
-  },
+  return await response.json();
+}
 
-  async createRecord(tableId: string, fields: Record<string, any>) {
-    console.log("[v0] teableClient.createRecord: fields received:", JSON.stringify(fields, null, 2))
-    console.log("[v0] teableClient.createRecord: fldf2FIOvHqALxULqrs field:", fields.fldf2FIOvHqALxULqrs)
+// 3. עדכון נסיעה קיימת (Update) - הפונקציה שהייתה חסרה לך
+export async function updateRide(id: string, data: Partial<Ride>) {
+  const { TABLE_ID, API_KEY } = getConfig();
 
-    const payload = {
-      fieldKeyType: "id",
-      typecast: true,
-      records: [{ fields }],
-    }
+  console.log('Updating Teable record:', id, data);
 
-    console.log("[v0] teableClient.createRecord: payload to send:", JSON.stringify(payload, null, 2))
+  const fields: Record<string, any> = {};
+  
+  // מיפוי שדות (מעדכן רק מה שנשלח)
+  if (data.date) fields['תאריך'] = data.date;
+  if (data.time) fields['שעה'] = data.time;
+  if (data.pickup) fields['מוצא'] = data.pickup;
+  if (data.dropoff) fields['יעד'] = data.dropoff;
+  if (data.passengers) fields['נוסעים'] = Number(data.passengers);
+  if (data.driverId) fields['נהג'] = data.driverId;
+  if (data.status) fields['סטטוס'] = data.status;
+  if (data.notes) fields['הערות'] = data.notes;
+  if (data.price) fields['מחיר'] = Number(data.price);
+  if (data.cost) fields['עלות'] = Number(data.cost);
 
-    const response = await fetch(`${TEABLE_API_URL}/api/table/${tableId}/record`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${TEABLE_APP_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    })
+  const response = await fetch(`${TEABLE_API_URL}/table/${TABLE_ID}/record/${id}`, {
+    method: 'PATCH',
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      record: { fields } // שים לב: בעדכון זה record יחיד ולא מערך
+    }),
+  });
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error("[v0] teableClient.createRecord: error response:", errorText)
-      let errorDetails
-      try {
-        errorDetails = JSON.parse(errorText)
-      } catch {
-        errorDetails = errorText
-      }
-      const error = new Error(`Failed to create record: ${response.statusText}`)
-      ;(error as any).details = errorDetails
-      ;(error as any).status = response.status
-      throw error
-    }
+  if (!response.ok) {
+    const error = await response.text();
+    console.error('Teable update error:', error);
+    throw new Error('Failed to update ride');
+  }
 
-    const result = await response.json()
-    console.log("[v0] teableClient.createRecord: success response:", JSON.stringify(result, null, 2))
-    return result
-  },
+  return await response.json();
+}
 
-  async deleteRecord(tableId: string, recordId: string) {
-    const response = await fetch(`${TEABLE_API_URL}/api/table/${tableId}/record/${recordId}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${TEABLE_APP_TOKEN}`,
-      },
-    })
+// 4. מחיקת נסיעה (Delete)
+export async function deleteRide(id: string) {
+  const { TABLE_ID, API_KEY } = getConfig();
 
-    if (!response.ok) {
-      throw new Error(`Failed to delete record: ${response.statusText}`)
-    }
+  const response = await fetch(`${TEABLE_API_URL}/table/${TABLE_ID}/record/${id}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+    },
+  });
 
-    return response.json()
-  },
+  if (!response.ok) {
+    throw new Error('Failed to delete ride');
+  }
+
+  return true;
 }
