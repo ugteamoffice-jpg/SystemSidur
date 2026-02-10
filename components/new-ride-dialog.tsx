@@ -227,18 +227,24 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
     setLoading(true)
     try {
       const customerId = lists.customers.find(c => c.title === form.customer)?.id
-      const driverId = lists.drivers.find(d => d.title === form.driver)?.id
-      const vehicleTypeId = lists.vehicles.find(v => v.title === form.vehicleType)?.id
+const driverId = lists.drivers.find(d => d.title === form.driver)?.id
+const vehicleTypeId = lists.vehicles.find(v => v.title === form.vehicleType)?.id
 
-      const body: any = {
-        fields: {
-          [FIELDS.DATE]: format(date, "yyyy-MM-dd"),
-          [FIELDS.CUSTOMER]: customerId ? [{ id: customerId }] : undefined,
-          [FIELDS.DESCRIPTION]: form.description,
-          [FIELDS.PICKUP_TIME]: form.pickup,
-          [FIELDS.DROPOFF_TIME]: form.dropoff || undefined,
-          [FIELDS.VEHICLE_TYPE]: vehicleTypeId ? [{ id: vehicleTypeId }] : undefined,
-          [FIELDS.DRIVER]: driverId ? [{ id: driverId }] : undefined,
+const getLinkedValue = (id: string | undefined, text: string) => {
+  if (id) return [{ id }];
+  if (text && text.trim()) return [{ title: text.trim() }];
+  return undefined;
+};
+
+const body: any = {
+  fields: {
+    [FIELDS.DATE]: format(date, "yyyy-MM-dd"),
+    [FIELDS.CUSTOMER]: getLinkedValue(customerId, form.customer),
+    [FIELDS.DESCRIPTION]: form.description,
+    [FIELDS.PICKUP_TIME]: form.pickup,
+    [FIELDS.DROPOFF_TIME]: form.dropoff || undefined,
+    [FIELDS.VEHICLE_TYPE]: getLinkedValue(vehicleTypeId, form.vehicleType),
+    [FIELDS.DRIVER]: getLinkedValue(driverId, form.driver),
           [FIELDS.VEHICLE_NUM]: form.vehicleNum || undefined,
           [FIELDS.MANAGER_NOTES]: form.managerNotes || undefined,
           [FIELDS.DRIVER_NOTES]: form.notes || undefined,
