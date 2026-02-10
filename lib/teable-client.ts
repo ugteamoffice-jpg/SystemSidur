@@ -42,7 +42,7 @@ export const teableClient = {
         throw new Error(`Teable Create Error: ${err}`);
     }
     
-    // תיקון: מחזירים רק את הרשומה הראשונה מתוך המערך
+    // המרה: מחזירים רשומה בודדת במקום מערך
     const data = await res.json();
     if (data.records && Array.isArray(data.records)) {
         return data.records[0];
@@ -50,13 +50,13 @@ export const teableClient = {
     return data;
   },
 
-  // 3. עדכון
+  // 3. עדכון (כאן התיקון הקריטי לסגירת החלון)
   async updateRecord(tableId: string, recordId: string, fields: any) {
     if (!API_KEY) throw new Error('Missing TEABLE_API_KEY');
 
     const url = `${TEABLE_API_URL}/table/${tableId}/record`;
     
-    console.log(`[DEBUG] Update Record: ${recordId}`);
+    console.log(`[DEBUG] Updating ${recordId}...`);
     
     const res = await fetch(url, {
       method: 'PATCH',
@@ -84,10 +84,11 @@ export const teableClient = {
     
     const data = await res.json();
     
-    // *** התיקון הקריטי כאן ***
-    // Teable מחזיר מערך בגלל שהשתמשנו ב-Bulk Update.
-    // אנחנו שולפים את הרשומה הראשונה ומחזירים רק אותה, כדי שהאתר לא יתבלבל.
-    if (data.records && Array.isArray(data.records) && data.records.length > 0) {
+    // *** התיקון שסוגר את החלון ***
+    // אנחנו בודקים אם קיבלנו מערך (records), ואם כן - מחזירים רק את הראשון.
+    // זה גורם לאפליקציה לחשוב שזה היה עדכון רגיל.
+    if (data.records && Array.isArray(data.records)) {
+        console.log("Successfully extracted single record from response");
         return data.records[0];
     }
     
