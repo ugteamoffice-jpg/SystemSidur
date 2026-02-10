@@ -48,6 +48,7 @@ const FIELDS = {
 
 interface ListItem { id: string; title: string }
 
+// --- תיקון לקומפוננטת AutoComplete ---
 function AutoComplete({ options, value, onChange, onItemSelect, placeholder, isError }: any) {
   const [show, setShow] = React.useState(false)
   const safeValue = String(value || "").toLowerCase();
@@ -66,7 +67,21 @@ function AutoComplete({ options, value, onChange, onItemSelect, placeholder, isE
       {show && filtered.length > 0 && (
         <div className="absolute z-50 w-full bg-white border shadow-md max-h-40 overflow-auto rounded-md mt-1 text-black">
           {filtered.map((o: any) => (
-            <div key={o.id} className="p-2 hover:bg-gray-100 cursor-pointer text-right text-sm" onMouseDown={() => { onChange(o.title); if (onItemSelect) onItemSelect(o); }}>{o.title}</div>
+            <div 
+                key={o.id} 
+                className="p-2 hover:bg-gray-100 cursor-pointer text-right text-sm" 
+                onMouseDown={(e) => { 
+                    e.preventDefault(); // מונע איבוד פוקוס מוקדם
+                    if (onItemSelect) {
+                        onItemSelect(o); // שולח את האובייקט המלא לאבא
+                    } else {
+                        onChange(o.title);
+                    }
+                    setShow(false);
+                }}
+            >
+                {o.title}
+            </div>
           ))}
         </div>
       )}
@@ -254,16 +269,20 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
 
     setLoading(true)
     try {
-      // קודם בודקים ID ששמור מהבחירה, אם אין - מחפשים ברשימה
-      const customerId = selectedIds.customerId || lists.customers.find(c => c.title === form.customer)?.id
-      const driverId = selectedIds.driverId || lists.drivers.find(d => d.title === form.driver)?.id
-      const vehicleTypeId = selectedIds.vehicleTypeId || lists.vehicles.find(v => v.title === form.vehicleType)?.id
+      // --- תיקון: מציאת ID גם אם לא נבחר מהרשימה אלא הוקלד ידנית ---
+      const findId = (list: ListItem[], text: string, currentId: string) => {
+          if (currentId) return currentId; // אם כבר נבחר ID, מעולה
+          if (!text) return undefined;
+          const cleanText = text.trim();
+          // חיפוש לפי שם מדויק
+          return list.find(i => i.title.trim() === cleanText)?.id;
+      };
 
-      console.log('Link field lookup:', { 
-        customer: form.customer, customerId,
-        driver: form.driver, driverId,
-        vehicleType: form.vehicleType, vehicleTypeId
-      });
+      const customerId = findId(lists.customers, form.customer, selectedIds.customerId)
+      const driverId = findId(lists.drivers, form.driver, selectedIds.driverId)
+      const vehicleTypeId = findId(lists.vehicles, form.vehicleType, selectedIds.vehicleTypeId)
+
+      console.log('Sending IDs:', { customerId, driverId, vehicleTypeId });
 
       const body: any = {
         fields: {
@@ -291,7 +310,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
 
       Object.keys(body.fields).forEach(k => body.fields[k] === undefined && delete body.fields[k])
 
-      console.log('Sending to API:', JSON.stringify(body, null, 2));
+      console.log('Final Payload:', JSON.stringify(body, null, 2));
 
       if (isEdit) {
           const res = await fetch(`/api/work-schedule/${initialData.id}`, {
@@ -329,6 +348,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
       setOpen(false)
       if (onRideSaved) onRideSaved()
     } catch (err) { 
+      console.error(err);
       toast({ title: "שגיאה בשמירה", description: "אנא נסה שנית.", variant: "destructive" }) 
     } finally { 
       setLoading(false) 
@@ -380,10 +400,20 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                 <div className="space-y-1">
                     <Label className={cn(showErrors && !form.customer && "text-red-500")}>שם לקוח *</Label>
                     <AutoComplete 
-                        options={lists.customers} value={form.customer} 
-                        onChange={(v: string) => { setForm(p => ({...p, customer: v})); setSelectedIds(p => ({...p, customerId: ""})); }}
-                        onItemSelect={(item: ListItem) => setSelectedIds(p => ({...p, customerId: item.id}))}
-                        placeholder="" isError={showErrors && !form.customer}
+                        options={lists.customers} 
+                        value={form.customer} 
+                        // טיפול בהקלדה (מנקה ID)
+                        onChange={(v: string) => { 
+                            setForm(p => ({...p, customer: v})); 
+                            setSelectedIds(p => ({...p, customerId: ""})); 
+                        }}
+                        // טיפול בבחירה (מגדיר ID וגם שם)
+                        onItemSelect={(item: ListItem) => {
+                            setForm(p => ({...p, customer: item.title}));
+                            setSelectedIds(p => ({...p, customerId: item.id}));
+                        }}
+                        placeholder="" 
+                        isError={showErrors && !form.customer}
                     />
                 </div>
 
@@ -407,9 +437,16 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                 <div className="space-y-1">
                   <Label>נהג</Label>
                   <AutoComplete 
-                    options={lists.drivers} value={form.driver} 
-                    onChange={(v: string) => { setForm(p => ({...p, driver: v})); setSelectedIds(p => ({...p, driverId: ""})); }}
-                    onItemSelect={(item: ListItem) => setSelectedIds(p => ({...p, driverId: item.id}))}
+                    options={lists.drivers} 
+                    value={form.driver} 
+                    onChange={(v: string) => { 
+                        setForm(p => ({...p, driver: v})); 
+                        setSelectedIds(p => ({...p, driverId: ""})); 
+                    }}
+                    onItemSelect={(item: ListItem) => {
+                        setForm(p => ({...p, driver: item.title}));
+                        setSelectedIds(p => ({...p, driverId: item.id}));
+                    }}
                     placeholder="" 
                   />
                 </div>
@@ -417,9 +454,16 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                 <div className="space-y-1">
                   <Label>סוג רכב</Label>
                   <AutoComplete 
-                    options={lists.vehicles} value={form.vehicleType} 
-                    onChange={(v: string) => { setForm(p => ({...p, vehicleType: v})); setSelectedIds(p => ({...p, vehicleTypeId: ""})); }}
-                    onItemSelect={(item: ListItem) => setSelectedIds(p => ({...p, vehicleTypeId: item.id}))}
+                    options={lists.vehicles} 
+                    value={form.vehicleType} 
+                    onChange={(v: string) => { 
+                        setForm(p => ({...p, vehicleType: v})); 
+                        setSelectedIds(p => ({...p, vehicleTypeId: ""})); 
+                    }}
+                    onItemSelect={(item: ListItem) => {
+                        setForm(p => ({...p, vehicleType: item.title}));
+                        setSelectedIds(p => ({...p, vehicleTypeId: item.id}));
+                    }}
                     placeholder=""
                   />
                 </div>
