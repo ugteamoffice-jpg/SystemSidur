@@ -24,14 +24,18 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 
+// --- עדכון ה-IDs לפי מה ששלחת ---
 const FIELDS = {
+  // השדות שעדכנו:
+  CUSTOMER: 'fldVy6L2DCboXUTkjBX',      // לקוח
+  DRIVER: 'flddNPbrzOCdgS36kx5',        // נהג
+  VEHICLE_TYPE: 'fldx4hl8FwbxfkqXf0B',  // סוג רכב
+
+  // שאר השדות (הנחתי שהם תקינים אצלך כי אמרת שרק ה-3 למעלה לא עובדים)
   DATE: 'fldvNsQbfzMWTc7jakp',
-  CUSTOMER: 'fldVy6L2DCboXUTkjBX',
   DESCRIPTION: 'fldA6e7ul57abYgAZDh',
   PICKUP_TIME: 'fldLbXMREYfC8XVIghj',
   DROPOFF_TIME: 'fld56G8M1LyHRRROWiL',
-  VEHICLE_TYPE: 'fldx4hl8FwbxfkqXf0B',
-  DRIVER: 'flddNPbrzOCdgS36kx5',
   VEHICLE_NUM: 'fldqStJV3KKIutTY9hW',
   MANAGER_NOTES: 'fldelKu7PLIBmCFfFPJ',
   DRIVER_NOTES: 'fldhNoiFEkEgrkxff02',
@@ -48,7 +52,7 @@ const FIELDS = {
 
 interface ListItem { id: string; title: string }
 
-// --- תיקון לקומפוננטת AutoComplete ---
+// --- קומפוננטת AutoComplete (נשארת כפי שתיקנו קודם) ---
 function AutoComplete({ options, value, onChange, onItemSelect, placeholder, isError }: any) {
   const [show, setShow] = React.useState(false)
   const safeValue = String(value || "").toLowerCase();
@@ -71,9 +75,9 @@ function AutoComplete({ options, value, onChange, onItemSelect, placeholder, isE
                 key={o.id} 
                 className="p-2 hover:bg-gray-100 cursor-pointer text-right text-sm" 
                 onMouseDown={(e) => { 
-                    e.preventDefault(); // מונע איבוד פוקוס מוקדם
+                    e.preventDefault(); 
                     if (onItemSelect) {
-                        onItemSelect(o); // שולח את האובייקט המלא לאבא
+                        onItemSelect(o); 
                     } else {
                         onChange(o.title);
                     }
@@ -146,7 +150,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                 }
                 return { id: x.id, title };
             }) : [];
-            console.log(`Loaded ${items.length} items from ${url}`, items.slice(0, 3));
+            // console.log(`Loaded ${items.length} items from ${url}`);
             return items;
         } catch (err) { 
             console.error(`Error loading ${url}:`, err);
@@ -269,12 +273,11 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
 
     setLoading(true)
     try {
-      // --- תיקון: מציאת ID גם אם לא נבחר מהרשימה אלא הוקלד ידנית ---
+      // 1. חיפוש ID גם אם הוקלד ידנית
       const findId = (list: ListItem[], text: string, currentId: string) => {
-          if (currentId) return currentId; // אם כבר נבחר ID, מעולה
+          if (currentId) return currentId;
           if (!text) return undefined;
           const cleanText = text.trim();
-          // חיפוש לפי שם מדויק
           return list.find(i => i.title.trim() === cleanText)?.id;
       };
 
@@ -282,8 +285,11 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
       const driverId = findId(lists.drivers, form.driver, selectedIds.driverId)
       const vehicleTypeId = findId(lists.vehicles, form.vehicleType, selectedIds.vehicleTypeId)
 
-      console.log('Sending IDs:', { customerId, driverId, vehicleTypeId });
+      // בדיקה בקונסול לראות שה-ID קיימים
+      console.log('Teable Payload IDs:', { customerId, driverId, vehicleTypeId });
 
+      // 2. בניית הפיידלוד ל-Teable
+      // Teable/Airtable מצפים לקבל שדות לינק בתור מערך של אובייקטים {id: "..."}
       const body: any = {
         fields: {
           [FIELDS.DATE]: format(date, "yyyy-MM-dd"),
@@ -308,9 +314,10 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
         }
       }
 
+      // מחיקת שדות ריקים כדי לא לדרוס מידע קיים עם כלום
       Object.keys(body.fields).forEach(k => body.fields[k] === undefined && delete body.fields[k])
 
-      console.log('Final Payload:', JSON.stringify(body, null, 2));
+      console.log('Sending JSON:', JSON.stringify(body, null, 2));
 
       if (isEdit) {
           const res = await fetch(`/api/work-schedule/${initialData.id}`, {
@@ -402,12 +409,10 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                     <AutoComplete 
                         options={lists.customers} 
                         value={form.customer} 
-                        // טיפול בהקלדה (מנקה ID)
                         onChange={(v: string) => { 
                             setForm(p => ({...p, customer: v})); 
                             setSelectedIds(p => ({...p, customerId: ""})); 
                         }}
-                        // טיפול בבחירה (מגדיר ID וגם שם)
                         onItemSelect={(item: ListItem) => {
                             setForm(p => ({...p, customer: item.title}));
                             setSelectedIds(p => ({...p, customerId: item.id}));
