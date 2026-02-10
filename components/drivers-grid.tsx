@@ -214,40 +214,40 @@ export default function DriversGrid() {
       </div>
 
       <div className="border rounded-lg flex-1 overflow-auto bg-white shadow-sm relative" ref={tableContainerRef} onScroll={handleScroll}>
-        <div style={{ height: `${totalHeight}px`, position: "relative" }}>
-          <div style={{ transform: `translateY(${offsetY}px)` }}>
-            <Table>
-              <TableHeader className="sticky top-0 bg-gray-50 z-10 shadow-sm" style={{ top: 0, position: "sticky", marginTop: -offsetY }}>
-                <TableRow>
-                  <TableHead className="text-right">שם פרטי</TableHead>
-                  <TableHead className="text-right">שם משפחה</TableHead>
-                  <TableHead className="text-right">טלפון נייד</TableHead>
-                  <TableHead className="text-right">סוג נהג</TableHead>
-                  <TableHead className="text-right">מספר רכב</TableHead>
-                  <TableHead className="text-right">סטטוס</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading && filteredDrivers.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} className="text-center py-8"><div className="flex items-center justify-center gap-2"><Loader2 className="h-5 w-5 animate-spin" /><span>טוען נתונים...</span></div></TableCell></TableRow>
-                ) : filteredDrivers.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">לא נמצאו נהגים</TableCell></TableRow>
-                ) : (
-                  visibleDrivers.map((driver) => (
-                    <TableRow key={driver.id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleRowClick(driver)} style={{ height: `${ROW_HEIGHT}px` }}>
-                      <TableCell className="font-medium">{driver.fields[FIRST_NAME_ID] || "-"}</TableCell>
-                      <TableCell>{driver.fields[LAST_NAME_ID] || "-"}</TableCell>
-                      <TableCell>{driver.fields[PHONE_ID] || "-"}</TableCell>
-                      <TableCell>{driver.fields[DRIVER_TYPE_ID] || "-"}</TableCell>
-                      <TableCell>{driver.fields[CAR_NUMBER_ID] || "-"}</TableCell>
-                      <TableCell><span className={`px-2 py-1 rounded-full text-xs ${getDriverStatus(driver) === 'פעיל' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{getDriverStatus(driver)}</span></TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
+        <Table>
+          <TableHeader className="sticky top-0 bg-gray-50 z-10 shadow-sm">
+            <TableRow>
+              <TableHead className="text-right">שם פרטי</TableHead>
+              <TableHead className="text-right">שם משפחה</TableHead>
+              <TableHead className="text-right">טלפון נייד</TableHead>
+              <TableHead className="text-right">סוג נהג</TableHead>
+              <TableHead className="text-right">מספר רכב</TableHead>
+              <TableHead className="text-right">סטטוס</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading && filteredDrivers.length === 0 ? (
+              <TableRow><TableCell colSpan={6} className="text-center py-8"><div className="flex items-center justify-center gap-2"><Loader2 className="h-5 w-5 animate-spin" /><span>טוען נתונים...</span></div></TableCell></TableRow>
+            ) : filteredDrivers.length === 0 ? (
+              <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">לא נמצאו נהגים</TableCell></TableRow>
+            ) : (
+              <>
+                {startIndex > 0 && <tr style={{ height: `${offsetY}px` }}><td colSpan={6} /></tr>}
+                {visibleDrivers.map((driver) => (
+                  <TableRow key={driver.id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleRowClick(driver)} style={{ height: `${ROW_HEIGHT}px` }}>
+                    <TableCell className="font-medium">{driver.fields[FIRST_NAME_ID] || "-"}</TableCell>
+                    <TableCell>{driver.fields[LAST_NAME_ID] || "-"}</TableCell>
+                    <TableCell>{driver.fields[PHONE_ID] || "-"}</TableCell>
+                    <TableCell>{driver.fields[DRIVER_TYPE_ID] || "-"}</TableCell>
+                    <TableCell>{driver.fields[CAR_NUMBER_ID] || "-"}</TableCell>
+                    <TableCell><span className={`px-2 py-1 rounded-full text-xs ${getDriverStatus(driver) === 'פעיל' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{getDriverStatus(driver)}</span></TableCell>
+                  </TableRow>
+                ))}
+                {endIndex < filteredDrivers.length && <tr style={{ height: `${totalHeight - endIndex * ROW_HEIGHT}px` }}><td colSpan={6} /></tr>}
+              </>
+            )}
+          </TableBody>
+        </Table>
       </div>
       
       <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) { setEditingDriverId(null); resetForm(); } }}>
