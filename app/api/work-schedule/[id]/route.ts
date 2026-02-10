@@ -1,39 +1,41 @@
 import { NextResponse } from "next/server";
 import { teableClient } from "@/lib/teable-client";
 
-// ה-ID הנכון שהוצאתי מהקישור ששלחת
 const TABLE_ID = "tblUgEhLuyCwEK2yWG4";
 
-// 1. פונקציית GET (כדי שהדפדפן יראה שהנתיב קיים)
+// פונקציית GET
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // תיקון טיפוס ל-Next.js 15/16
 ) {
+  const { id } = await params; // חובה לעשות await!
   return NextResponse.json({ 
     message: "Work schedule API is active", 
     tableId: TABLE_ID,
-    recordId: params.id 
+    recordId: id 
   });
 }
 
-// 2. פונקציית PATCH (לעריכה ושמירה)
+// פונקציית PATCH
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // תיקון טיפוס ל-Next.js 15/16
 ) {
   try {
-    const { id } = params;
+    const { id } = await params; // חובה לעשות await!
     const body = await request.json();
 
     console.log(`Updating record ${id} in table ${TABLE_ID}`);
 
-    // שליחת העדכון ל-Teable
+    if (!id || id === 'undefined') {
+      return NextResponse.json({ error: "Record ID is missing" }, { status: 400 });
+    }
+
     const result = await teableClient.updateRecord(TABLE_ID, id, body.fields);
 
     return NextResponse.json(result);
   } catch (error: any) {
     console.error("Update Error:", error);
-    // החזרת שגיאה מפורטת לדפדפן כדי שנדע אם משהו משתבש
     return NextResponse.json(
       { 
         error: "Update Failed", 
@@ -44,13 +46,13 @@ export async function PATCH(
   }
 }
 
-// 3. פונקציית DELETE (למחיקה)
+// פונקציית DELETE
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // תיקון טיפוס ל-Next.js 15/16
 ) {
   try {
-    const { id } = params;
+    const { id } = await params; // חובה לעשות await!
     await teableClient.deleteRecord(TABLE_ID, id);
     return NextResponse.json({ success: true });
   } catch (error) {
