@@ -1,10 +1,18 @@
 import { NextResponse } from "next/server";
 import { teableClient } from "@/lib/teable-client";
 
-// זה ה-ID של טבלת סידור העבודה שלקחתי מהקוד שלך
+// זה ה-ID של הטבלה שלך (וודא שהוא תואם לטבלה ב-Teable)
 const TABLE_ID = "tblVAQgfYOLfvCZdqqj"; 
 
-// 1. פונקציה לעדכון (PATCH) - זה מה שהיה חסר לך!
+// הוספתי את זה כדי שאם תיכנס לכתובת בדפדפן, תראה שהיא קיימת
+export async function GET(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  return NextResponse.json({ message: "Work schedule API is working", id: params.id });
+}
+
+// פונקציית העדכון (כאן הוספתי הדפסה של השגיאה המדויקת)
 export async function PATCH(
   request: Request,
   { params }: { params: { id: string } }
@@ -13,40 +21,36 @@ export async function PATCH(
     const { id } = params;
     const body = await request.json();
 
-    console.log(`Updating work schedule record ${id}...`);
+    console.log(`Trying to update record: ${id}`);
+    console.log(`Data sent:`, JSON.stringify(body.fields));
 
-    // שימוש בלקוח המתוקן שלנו לעדכון
-    // אנחנו שולחים את body.fields כי הלוג הראה שהנתונים מגיעים עטופים ב-fields
     const result = await teableClient.updateRecord(TABLE_ID, id, body.fields);
 
     return NextResponse.json(result);
-  } catch (error) {
-    console.error("Update error:", error);
+  } catch (error: any) {
+    // *** זה החלק החשוב לדיבוג ***
+    // זה יחזיר לך לדפדפן את השגיאה האמיתית של Teable
+    console.error("Critical Update Error:", error);
     return NextResponse.json(
-      { error: "Failed to update record" },
+      { 
+        error: "Update Failed", 
+        details: error.message || error.toString() 
+      },
       { status: 500 }
     );
   }
 }
 
-// 2. פונקציה למחיקה (DELETE) - שמרתי אותה אבל שדרגתי לשימוש בלקוח
+// פונקציית המחיקה
 export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
     const { id } = params;
-    
-    console.log(`Deleting work schedule record ${id}...`);
-
     await teableClient.deleteRecord(TABLE_ID, id);
-
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Delete error:", error);
-    return NextResponse.json(
-      { error: "Failed to delete record" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Delete Failed" }, { status: 500 });
   }
 }
