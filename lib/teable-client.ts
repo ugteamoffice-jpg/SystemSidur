@@ -31,7 +31,7 @@ export const teableClient = {
       headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         fieldKeyType: 'id',
-        typecast: true, // <--- התיקון: מאפשר שליחת IDs כמחרוזות
+        typecast: true,
         records: [{ fields }] 
       }),
     });
@@ -41,7 +41,13 @@ export const teableClient = {
         console.error("Teable Create Error:", err);
         throw new Error(`Teable Create Error: ${err}`);
     }
-    return await res.json();
+    
+    // תיקון: מחזירים רק את הרשומה הראשונה מתוך המערך
+    const data = await res.json();
+    if (data.records && Array.isArray(data.records)) {
+        return data.records[0];
+    }
+    return data;
   },
 
   // 3. עדכון
@@ -50,7 +56,7 @@ export const teableClient = {
 
     const url = `${TEABLE_API_URL}/table/${tableId}/record`;
     
-    console.log(`[DEBUG] Update Record: ${recordId}, Typecast: true`);
+    console.log(`[DEBUG] Update Record: ${recordId}`);
     
     const res = await fetch(url, {
       method: 'PATCH',
@@ -60,7 +66,7 @@ export const teableClient = {
       },
       body: JSON.stringify({
         fieldKeyType: 'id',
-        typecast: true, // <--- התיקון: זה מה שיפתור את שגיאת ה-Validation
+        typecast: true,
         records: [
           {
             id: recordId,
@@ -76,7 +82,16 @@ export const teableClient = {
         throw new Error(`Teable Error: ${errorText}`);
     }
     
-    return await res.json();
+    const data = await res.json();
+    
+    // *** התיקון הקריטי כאן ***
+    // Teable מחזיר מערך בגלל שהשתמשנו ב-Bulk Update.
+    // אנחנו שולפים את הרשומה הראשונה ומחזירים רק אותה, כדי שהאתר לא יתבלבל.
+    if (data.records && Array.isArray(data.records) && data.records.length > 0) {
+        return data.records[0];
+    }
+    
+    return data;
   },
 
   // 4. מחיקה
