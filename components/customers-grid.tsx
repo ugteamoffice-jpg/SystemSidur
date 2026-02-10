@@ -270,48 +270,48 @@ export default function CustomersGrid() {
       </div>
 
       <div className="border rounded-lg flex-1 overflow-auto bg-white shadow-sm relative" ref={tableContainerRef} onScroll={handleScroll}>
-        <div style={{ height: `${totalHeight}px`, position: "relative" }}>
-          <div style={{ transform: `translateY(${offsetY}px)` }}>
-            <Table>
-              <TableHeader className="sticky top-0 bg-gray-50 z-10 shadow-sm" style={{ top: 0, position: "sticky", marginTop: -offsetY }}>
-                <TableRow>
-                  <TableHead className="text-right">שם לקוח</TableHead>
-                  <TableHead className="text-right">ח.פ</TableHead>
-                  <TableHead className="text-right">שם א.קשר</TableHead>
-                  <TableHead className="text-right">טלפון נייד</TableHead>
-                  <TableHead className="text-right">אימייל</TableHead>
-                  <TableHead className="text-right">אופן תשלום</TableHead>
-                  <TableHead className="text-right">תשלום שוטף+</TableHead>
-                  <TableHead className="text-right">מס' מפתח הנה"ח</TableHead>
-                  <TableHead className="text-right">נוצר בהנה"ח</TableHead>
-                  <TableHead className="text-right">סטטוס</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading && filteredCustomers.length === 0 ? (
-                  <TableRow><TableCell colSpan={10} className="text-center py-8"><div className="flex items-center justify-center gap-2"><Loader2 className="h-5 w-5 animate-spin" /><span>טוען נתונים...</span></div></TableCell></TableRow>
-                ) : filteredCustomers.length === 0 ? (
-                  <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">לא נמצאו לקוחות</TableCell></TableRow>
-                ) : (
-                  visibleCustomers.map((customer) => (
-                    <TableRow key={customer.id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleRowClick(customer)} style={{ height: `${ROW_HEIGHT}px` }}>
-                      <TableCell className="font-medium">{customer.fields.fldqRepgE2c9hH2qJid || "-"}</TableCell>
-                      <TableCell>{customer.fields.fldfUMDbaUFIcPtL34M || "-"}</TableCell>
-                      <TableCell>{customer.fields.fld0Mr0FTuoKkyEv4wz || "-"}</TableCell>
-                      <TableCell>{customer.fields.fld5L64ErAG7w225FbQ || "-"}</TableCell>
-                      <TableCell>{customer.fields.fldc5pvFk8rjOvdvBEL || "-"}</TableCell>
-                      <TableCell>{customer.fields.fldjxcuvfOuhi9tyfay || "-"}</TableCell>
-                      <TableCell>{customer.fields[ONGOING_PAYMENT_ID] || "-"}</TableCell>
-                      <TableCell>{customer.fields[ACCOUNTING_KEY_NUMBER_ID] || "-"}</TableCell>
-                      <TableCell>{customer.fields[CREATED_IN_ACCOUNTING_ID] ? "כן" : "לא"}</TableCell>
-                      <TableCell><span className={`px-2 py-1 rounded-full text-xs ${getCustomerStatus(customer) === 'פעיל' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{getCustomerStatus(customer)}</span></TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
+        <Table>
+          <TableHeader className="sticky top-0 bg-gray-50 z-10 shadow-sm">
+            <TableRow>
+              <TableHead className="text-right">שם לקוח</TableHead>
+              <TableHead className="text-right">ח.פ</TableHead>
+              <TableHead className="text-right">שם א.קשר</TableHead>
+              <TableHead className="text-right">טלפון נייד</TableHead>
+              <TableHead className="text-right">אימייל</TableHead>
+              <TableHead className="text-right">אופן תשלום</TableHead>
+              <TableHead className="text-right">תשלום שוטף+</TableHead>
+              <TableHead className="text-right">מס' מפתח הנה"ח</TableHead>
+              <TableHead className="text-right">נוצר בהנה"ח</TableHead>
+              <TableHead className="text-right">סטטוס</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading && filteredCustomers.length === 0 ? (
+              <TableRow><TableCell colSpan={10} className="text-center py-8"><div className="flex items-center justify-center gap-2"><Loader2 className="h-5 w-5 animate-spin" /><span>טוען נתונים...</span></div></TableCell></TableRow>
+            ) : filteredCustomers.length === 0 ? (
+              <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">לא נמצאו לקוחות</TableCell></TableRow>
+            ) : (
+              <>
+                {startIndex > 0 && <tr style={{ height: `${offsetY}px` }}><td colSpan={10} /></tr>}
+                {visibleCustomers.map((customer) => (
+                  <TableRow key={customer.id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleRowClick(customer)} style={{ height: `${ROW_HEIGHT}px` }}>
+                    <TableCell className="font-medium">{customer.fields.fldqRepgE2c9hH2qJid || "-"}</TableCell>
+                    <TableCell>{customer.fields.fldfUMDbaUFIcPtL34M || "-"}</TableCell>
+                    <TableCell>{customer.fields.fld0Mr0FTuoKkyEv4wz || "-"}</TableCell>
+                    <TableCell>{customer.fields.fld5L64ErAG7w225FbQ || "-"}</TableCell>
+                    <TableCell>{customer.fields.fldc5pvFk8rjOvdvBEL || "-"}</TableCell>
+                    <TableCell>{customer.fields.fldjxcuvfOuhi9tyfay || "-"}</TableCell>
+                    <TableCell>{customer.fields[ONGOING_PAYMENT_ID] || "-"}</TableCell>
+                    <TableCell>{customer.fields[ACCOUNTING_KEY_NUMBER_ID] || "-"}</TableCell>
+                    <TableCell>{customer.fields[CREATED_IN_ACCOUNTING_ID] ? "כן" : "לא"}</TableCell>
+                    <TableCell><span className={`px-2 py-1 rounded-full text-xs ${getCustomerStatus(customer) === 'פעיל' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{getCustomerStatus(customer)}</span></TableCell>
+                  </TableRow>
+                ))}
+                {endIndex < filteredCustomers.length && <tr style={{ height: `${totalHeight - endIndex * ROW_HEIGHT}px` }}><td colSpan={10} /></tr>}
+              </>
+            )}
+          </TableBody>
+        </Table>
       </div>
       
       <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) { setEditingCustomerId(null); resetForm(); } }}>
