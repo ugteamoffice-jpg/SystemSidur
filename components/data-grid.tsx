@@ -585,7 +585,7 @@ function DataGrid({ schema }: { schema: any }) {
     <div className="w-full h-[calc(100vh-2rem)] flex flex-col space-y-4 p-4" dir="rtl">
       <div className="flex flex-col gap-4 flex-none">
         {/* שורה אחת - הכל */}
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
           <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
             <PopoverTrigger asChild>
               <Button variant={"outline"} className="w-[200px] justify-start text-right font-normal shrink-0">
