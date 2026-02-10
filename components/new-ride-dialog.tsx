@@ -24,14 +24,12 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 
-// --- עדכון ה-IDs לפי מה ששלחת ---
+// --- ה-IDs שלך (מעודכנים) ---
 const FIELDS = {
-  // השדות שעדכנו:
   CUSTOMER: 'fldVy6L2DCboXUTkjBX',      // לקוח
   DRIVER: 'flddNPbrzOCdgS36kx5',        // נהג
   VEHICLE_TYPE: 'fldx4hl8FwbxfkqXf0B',  // סוג רכב
 
-  // שאר השדות (הנחתי שהם תקינים אצלך כי אמרת שרק ה-3 למעלה לא עובדים)
   DATE: 'fldvNsQbfzMWTc7jakp',
   DESCRIPTION: 'fldA6e7ul57abYgAZDh',
   PICKUP_TIME: 'fldLbXMREYfC8XVIghj',
@@ -52,7 +50,6 @@ const FIELDS = {
 
 interface ListItem { id: string; title: string }
 
-// --- קומפוננטת AutoComplete (נשארת כפי שתיקנו קודם) ---
 function AutoComplete({ options, value, onChange, onItemSelect, placeholder, isError }: any) {
   const [show, setShow] = React.useState(false)
   const safeValue = String(value || "").toLowerCase();
@@ -150,7 +147,6 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                 }
                 return { id: x.id, title };
             }) : [];
-            // console.log(`Loaded ${items.length} items from ${url}`);
             return items;
         } catch (err) { 
             console.error(`Error loading ${url}:`, err);
@@ -273,7 +269,6 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
 
     setLoading(true)
     try {
-      // 1. חיפוש ID גם אם הוקלד ידנית
       const findId = (list: ListItem[], text: string, currentId: string) => {
           if (currentId) return currentId;
           if (!text) return undefined;
@@ -285,39 +280,42 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
       const driverId = findId(lists.drivers, form.driver, selectedIds.driverId)
       const vehicleTypeId = findId(lists.vehicles, form.vehicleType, selectedIds.vehicleTypeId)
 
-      // בדיקה בקונסול לראות שה-ID קיימים
-      console.log('Teable Payload IDs:', { customerId, driverId, vehicleTypeId });
+      // בדיקה בקונסול
+      console.log('Teable IDs found:', { customerId, driverId, vehicleTypeId });
 
-      // 2. בניית הפיידלוד ל-Teable
-      // Teable/Airtable מצפים לקבל שדות לינק בתור מערך של אובייקטים {id: "..."}
+      // --- התיקון הקריטי כאן ---
+      // Teable דורש מערך של מחרוזות ["rec..."] ולא אובייקטים [{id:"rec..."}]
       const body: any = {
         fields: {
           [FIELDS.DATE]: format(date, "yyyy-MM-dd"),
-          [FIELDS.CUSTOMER]: customerId ? [{ id: customerId }] : undefined,
+          
+          // שים לב: שיניתי את זה למערך של מחרוזות!
+          [FIELDS.CUSTOMER]: customerId ? [customerId] : null,
+          [FIELDS.VEHICLE_TYPE]: vehicleTypeId ? [vehicleTypeId] : null,
+          [FIELDS.DRIVER]: driverId ? [driverId] : null,
+          
           [FIELDS.DESCRIPTION]: form.description,
           [FIELDS.PICKUP_TIME]: form.pickup,
-          [FIELDS.DROPOFF_TIME]: form.dropoff || undefined,
-          [FIELDS.VEHICLE_TYPE]: vehicleTypeId ? [{ id: vehicleTypeId }] : undefined,
-          [FIELDS.DRIVER]: driverId ? [{ id: driverId }] : undefined,
-          [FIELDS.VEHICLE_NUM]: form.vehicleNum || undefined,
-          [FIELDS.MANAGER_NOTES]: form.managerNotes || undefined,
-          [FIELDS.DRIVER_NOTES]: form.notes || undefined,
-          [FIELDS.PRICE_CLIENT_EXCL]: prices.ce ? parseFloat(prices.ce) : undefined,
-          [FIELDS.PRICE_CLIENT_INCL]: prices.ci ? parseFloat(prices.ci) : undefined,
-          [FIELDS.PRICE_DRIVER_EXCL]: prices.de ? parseFloat(prices.de) : undefined,
-          [FIELDS.PRICE_DRIVER_INCL]: prices.di ? parseFloat(prices.di) : undefined,
-          [FIELDS.ORDER_NAME]: form.orderName || undefined,
-          [FIELDS.MOBILE]: form.mobile ? Number(form.mobile) : undefined,
-          [FIELDS.ID_NUM]: form.idNum ? Number(form.idNum) : undefined,
+          [FIELDS.DROPOFF_TIME]: form.dropoff || null,
+          [FIELDS.VEHICLE_NUM]: form.vehicleNum || null,
+          [FIELDS.MANAGER_NOTES]: form.managerNotes || null,
+          [FIELDS.DRIVER_NOTES]: form.notes || null,
+          [FIELDS.PRICE_CLIENT_EXCL]: prices.ce ? parseFloat(prices.ce) : null,
+          [FIELDS.PRICE_CLIENT_INCL]: prices.ci ? parseFloat(prices.ci) : null,
+          [FIELDS.PRICE_DRIVER_EXCL]: prices.de ? parseFloat(prices.de) : null,
+          [FIELDS.PRICE_DRIVER_INCL]: prices.di ? parseFloat(prices.di) : null,
+          [FIELDS.ORDER_NAME]: form.orderName || null,
+          [FIELDS.MOBILE]: form.mobile ? Number(form.mobile) : null,
+          [FIELDS.ID_NUM]: form.idNum ? Number(form.idNum) : null,
           [FIELDS.SENT]: status.sent,
           [FIELDS.APPROVED]: status.approved,
         }
       }
 
-      // מחיקת שדות ריקים כדי לא לדרוס מידע קיים עם כלום
+      // מחיקת מפתחות ריקים
       Object.keys(body.fields).forEach(k => body.fields[k] === undefined && delete body.fields[k])
 
-      console.log('Sending JSON:', JSON.stringify(body, null, 2));
+      console.log('Final Payload (Teable Format):', JSON.stringify(body, null, 2));
 
       if (isEdit) {
           const res = await fetch(`/api/work-schedule/${initialData.id}`, {
@@ -339,7 +337,6 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
               if (onRideSaved) onRideSaved();
               return;
           }
-
           throw new Error("Server rejected the data");
       }
 
@@ -349,14 +346,18 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
         body: JSON.stringify(body)
       })
 
-      if (!res.ok) throw new Error()
+      if (!res.ok) {
+        const err = await res.text();
+        console.error("POST Error:", err);
+        throw new Error(err);
+      }
 
       toast({ title: isEdit ? "עודכן בהצלחה!" : "נשמר בהצלחה!" })
       setOpen(false)
       if (onRideSaved) onRideSaved()
     } catch (err) { 
       console.error(err);
-      toast({ title: "שגיאה בשמירה", description: "אנא נסה שנית.", variant: "destructive" }) 
+      toast({ title: "שגיאה בשמירה", description: "בדוק את הקונסול לפרטים נוספים", variant: "destructive" }) 
     } finally { 
       setLoading(false) 
     }
