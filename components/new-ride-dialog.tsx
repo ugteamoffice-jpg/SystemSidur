@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
+// הורדתי את ה-Checkbox מה-UI אבל השארתי את הלוגיקה
 import {
   Dialog,
   DialogContent,
@@ -245,7 +245,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
         })
         setStatus({ sent: !!f[FIELDS.SENT], approved: !!f[FIELDS.APPROVED] })
 
-        // שמירת "תמונת המצב" המקורית של השדות הקריטיים
+        // שמירת "תמונת המצב" המקורית
         initialSnapshotRef.current = {
             dateStr: initialDate ? format(initialDate, "yyyy-MM-dd") : "",
             driver: loadedForm.driver,
@@ -269,21 +269,18 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
         const d = defaultDate ? new Date(defaultDate) : new Date();
         setDate(d);
         
-        initialSnapshotRef.current = null; // אין למה להשוות בנסיעה חדשה
+        initialSnapshotRef.current = null;
         setIsReady(true)
       }
     }
   }, [open, initialData, defaultDate])
 
-  // --- התיקון הגדול: המנגנון שמאפס צ'קבוקסים ---
-  // אנחנו בודקים כל הזמן האם אחד מהשדות הקריטיים שונה מהמקור
+  // --- המנגנון שמאפס צ'קבוקסים (רץ ברקע) ---
   React.useEffect(() => {
-    // רק במצב עריכה וכשהטופס טעון
     if (isEdit && isReady && initialSnapshotRef.current) {
         
         const currentDateStr = date ? format(date, "yyyy-MM-dd") : "";
 
-        // בדיקה: האם משהו השתנה?
         const isChanged = 
             currentDateStr !== initialSnapshotRef.current.dateStr ||
             form.driver !== initialSnapshotRef.current.driver ||
@@ -293,18 +290,16 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
             form.vehicleType !== initialSnapshotRef.current.vehicleType ||
             form.notes !== initialSnapshotRef.current.notes;
 
-        // אם משהו השתנה - נאפס את הסטטוסים (אם הם מסומנים)
         if (isChanged && (status.sent || status.approved)) {
-            console.log("Critical field changed - resetting status");
+            // הנה! כאן זה מתאפס ברקע, בלי שצריך לראות את הצ'קבוקסים
             setStatus({ sent: false, approved: false });
         }
     }
   }, [
     isEdit, isReady, date, 
     form.driver, form.description, form.pickup, form.dropoff, form.vehicleType, form.notes, 
-    status.sent, status.approved // תלות גם בסטטוס כדי שלא ניכנס ללולאה אינסופית
+    status.sent, status.approved
   ]);
-
 
   const calculateVat = (val: string, type: 'excl' | 'incl', side: 'client' | 'driver') => {
     const num = parseFloat(val) || 0
@@ -452,8 +447,10 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                         mode="single"
                         selected={date}
                         onSelect={(d) => {
+                          if (!d) return;
                           setDate(d);
-                          setIsCalendarOpen(false)
+                          setIsCalendarOpen(false);
+                          // הלוגיקה של Snapshot תטפל באיפוס הסטטוסים
                         }}
                         initialFocus
                         locale={he}
@@ -516,24 +513,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                   />
                 </div>
 
-                <div className="flex gap-6 pt-2">
-                  <div className="flex items-center gap-2">
-                     <Checkbox 
-                        id="sent" 
-                        checked={status.sent} 
-                        onCheckedChange={(c) => setStatus(p => ({...p, sent: !!c}))} 
-                     />
-                     <Label htmlFor="sent" className="cursor-pointer">נשלח לנהג</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                     <Checkbox 
-                        id="approved" 
-                        checked={status.approved} 
-                        onCheckedChange={(c) => setStatus(p => ({...p, approved: !!c}))} 
-                     />
-                     <Label htmlFor="approved" className="cursor-pointer">מאושר ע"י נהג</Label>
-                  </div>
-                </div>
+                {/* --- כאן היו הצ'קבוקסים - מחקתי אותם! --- */}
 
                 <div className="space-y-1">
                   <Label>סוג רכב</Label>
