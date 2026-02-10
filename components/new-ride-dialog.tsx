@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -23,7 +24,6 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 
-// --- ה-IDs שלך ---
 const FIELDS = {
   CUSTOMER: 'fldVy6L2DCboXUTkjBX',
   DRIVER: 'flddNPbrzOCdgS36kx5',
@@ -115,8 +115,8 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
     return new Date();
   })
 
-  // רפרנס לשמירת התאריך המקורי
-  const initialDateStrRef = React.useRef<string | null>(null);
+  // משתנה לשמירת המצב המקורי של השדות הקריטיים
+  const initialSnapshotRef = React.useRef<any>(null);
 
   const [vatClient, setVatClient] = React.useState("18")
   const [vatDriver, setVatDriver] = React.useState("18")
@@ -199,34 +199,39 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
     return typeof v === 'object' ? v.id || "" : "";
   }
 
+  // --- טעינת הנתונים ושמירת "תמונת המצב" (Snapshot) ---
   React.useEffect(() => {
     if (open) {
       setShowErrors(false);
       setIsReady(false);
+      
       if (initialData) {
         const f = initialData.fields
+        
+        let initialDate: Date | undefined = undefined;
         if (f[FIELDS.DATE]) {
           const d = new Date(f[FIELDS.DATE]);
-          setDate(!isNaN(d.getTime()) ? d : undefined);
-          initialDateStrRef.current = f[FIELDS.DATE];
-        } else {
-          initialDateStrRef.current = null;
+          initialDate = !isNaN(d.getTime()) ? d : undefined;
         }
 
-        setForm({
+        const loadedForm = {
           customer: getValFromRecord(f[FIELDS.CUSTOMER]),
           description: f[FIELDS.DESCRIPTION] || "",
           pickup: f[FIELDS.PICKUP_TIME] || "",
           dropoff: f[FIELDS.DROPOFF_TIME] || "",
           vehicleType: getValFromRecord(f[FIELDS.VEHICLE_TYPE]),
-          driver: getValFromRecord(f[FIELDS.DRIVER]), // טעינת הנהג
+          driver: getValFromRecord(f[FIELDS.DRIVER]),
           vehicleNum: f[FIELDS.VEHICLE_NUM] || "",
           managerNotes: f[FIELDS.MANAGER_NOTES] || "",
-          notes: f[FIELDS.DRIVER_NOTES] || "",
+          notes: f[FIELDS.DRIVER_NOTES] || "", // הערות נהג
           orderName: f[FIELDS.ORDER_NAME] || "",
           mobile: f[FIELDS.MOBILE] != null ? String(f[FIELDS.MOBILE]) : "",
           idNum: f[FIELDS.ID_NUM] != null ? String(f[FIELDS.ID_NUM]) : ""
-        })
+        };
+
+        setDate(initialDate);
+        setForm(loadedForm);
+        
         setSelectedIds({
           customerId: getIdFromRecord(f[FIELDS.CUSTOMER]),
           driverId: getIdFromRecord(f[FIELDS.DRIVER]),
@@ -239,33 +244,68 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
           di: f[FIELDS.PRICE_DRIVER_INCL] || ""
         })
         setStatus({ sent: !!f[FIELDS.SENT], approved: !!f[FIELDS.APPROVED] })
+
+        // שמירת "תמונת המצב" המקורית של השדות הקריטיים
+        initialSnapshotRef.current = {
+            dateStr: initialDate ? format(initialDate, "yyyy-MM-dd") : "",
+            driver: loadedForm.driver,
+            description: loadedForm.description,
+            pickup: loadedForm.pickup,
+            dropoff: loadedForm.dropoff,
+            vehicleType: loadedForm.vehicleType,
+            notes: loadedForm.notes // הערות נהג
+        };
+
         setTimeout(() => setIsReady(true), 300)
       } else {
+        // מצב "נסיעה חדשה" (Reset)
         setForm({
           customer: "", description: "", pickup: "", dropoff: "", vehicleType: "", driver: "", vehicleNum: "", managerNotes: "", notes: "", orderName: "", mobile: "", idNum: ""
         })
         setSelectedIds({ customerId: "", driverId: "", vehicleTypeId: "" })
         setPrices({ ce: "", ci: "", de: "", di: "" })
         setStatus({ sent: false, approved: false })
-        if (defaultDate) {
-          const parsed = new Date(defaultDate);
-          if (!isNaN(parsed.getTime())) {
-            setDate(parsed);
-          } else {
-            setDate(new Date());
-          }
-        } else {
-          setDate(new Date());
-        }
-        initialDateStrRef.current = null;
+        
+        const d = defaultDate ? new Date(defaultDate) : new Date();
+        setDate(d);
+        
+        initialSnapshotRef.current = null; // אין למה להשוות בנסיעה חדשה
         setIsReady(true)
       }
     }
   }, [open, initialData, defaultDate])
 
-  // *** כאן היה ה-useEffect הבעייתי - מחקתי אותו לגמרי! ***
-  // עכשיו אין שום קוד שרץ אוטומטית ומוחק את הנהג.
-  
+  // --- התיקון הגדול: המנגנון שמאפס צ'קבוקסים ---
+  // אנחנו בודקים כל הזמן האם אחד מהשדות הקריטיים שונה מהמקור
+  React.useEffect(() => {
+    // רק במצב עריכה וכשהטופס טעון
+    if (isEdit && isReady && initialSnapshotRef.current) {
+        
+        const currentDateStr = date ? format(date, "yyyy-MM-dd") : "";
+
+        // בדיקה: האם משהו השתנה?
+        const isChanged = 
+            currentDateStr !== initialSnapshotRef.current.dateStr ||
+            form.driver !== initialSnapshotRef.current.driver ||
+            form.description !== initialSnapshotRef.current.description ||
+            form.pickup !== initialSnapshotRef.current.pickup ||
+            form.dropoff !== initialSnapshotRef.current.dropoff ||
+            form.vehicleType !== initialSnapshotRef.current.vehicleType ||
+            form.notes !== initialSnapshotRef.current.notes;
+
+        // אם משהו השתנה - נאפס את הסטטוסים (אם הם מסומנים)
+        if (isChanged && (status.sent || status.approved)) {
+            console.log("Critical field changed - resetting status");
+            setStatus({ sent: false, approved: false });
+        }
+    }
+  }, [
+    isEdit, isReady, date, 
+    form.driver, form.description, form.pickup, form.dropoff, form.vehicleType, form.notes, 
+    status.sent, status.approved // תלות גם בסטטוס כדי שלא ניכנס ללולאה אינסופית
+  ]);
+
+
   const calculateVat = (val: string, type: 'excl' | 'incl', side: 'client' | 'driver') => {
     const num = parseFloat(val) || 0
     const vat = parseFloat(side === 'client' ? vatClient : vatDriver) || 0
@@ -411,26 +451,10 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                       <Calendar
                         mode="single"
                         selected={date}
-                        
-                        // *** התיקון הגדול כאן ***
-                        // הלוגיקה של המחיקה עברה לכאן - היא תקרה רק אם תלחץ על היומן!
                         onSelect={(d) => {
-                          if (!d) return;
                           setDate(d);
-                          setIsCalendarOpen(false);
-                          
-                          if (isEdit && initialDateStrRef.current) {
-                            const newDateStr = format(d, "yyyy-MM-dd");
-                            if (newDateStr !== initialDateStrRef.current) {
-                              setForm(p => ({ ...p, driver: "" }));
-                              setSelectedIds(p => ({ ...p, driverId: "" }));
-                              setStatus(p => ({ ...p, sent: false, approved: false }));
-                              // אופציונלי: הודעה למשתמש
-                              // toast({ description: "שינית תאריך - הנהג הוסר" });
-                            }
-                          }
+                          setIsCalendarOpen(false)
                         }}
-                        
                         initialFocus
                         locale={he}
                         dir="rtl"
@@ -490,6 +514,25 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                     }}
                     placeholder=""
                   />
+                </div>
+
+                <div className="flex gap-6 pt-2">
+                  <div className="flex items-center gap-2">
+                     <Checkbox 
+                        id="sent" 
+                        checked={status.sent} 
+                        onCheckedChange={(c) => setStatus(p => ({...p, sent: !!c}))} 
+                     />
+                     <Label htmlFor="sent" className="cursor-pointer">נשלח לנהג</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                     <Checkbox 
+                        id="approved" 
+                        checked={status.approved} 
+                        onCheckedChange={(c) => setStatus(p => ({...p, approved: !!c}))} 
+                     />
+                     <Label htmlFor="approved" className="cursor-pointer">מאושר ע"י נהג</Label>
+                  </div>
                 </div>
 
                 <div className="space-y-1">
