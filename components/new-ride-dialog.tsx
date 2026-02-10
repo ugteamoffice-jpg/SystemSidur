@@ -89,14 +89,12 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
   const isEdit = !!initialData
 
   const [date, setDate] = React.useState<Date | undefined>(() => {
-    // אם יש defaultDate, השתמש בו
     if (defaultDate) {
       const parsed = new Date(defaultDate);
       if (!isNaN(parsed.getTime())) {
         return parsed;
       }
     }
-    // אחרת, השתמש בתאריך הנוכחי
     return new Date();
   })
   const [vatClient, setVatClient] = React.useState("18")
@@ -115,12 +113,29 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
       const load = async (url: string) => {
         try { 
             const r = await fetch(url); 
+            if (!r.ok) {
+              console.error(`Failed to load ${url}: ${r.status}`);
+              return [];
+            }
             const d = await r.json(); 
-            return d.records ? d.records.map((x: any) => ({ 
-                id: x.id, 
-                title: x.fields && Object.values(x.fields)[0] ? String(Object.values(x.fields)[0]) : "" 
-            })) : [] 
-        } catch { return [] }
+            const items = d.records ? d.records.map((x: any) => {
+                const firstVal = x.fields && Object.values(x.fields)[0];
+                let title = "";
+                if (Array.isArray(firstVal)) {
+                    title = firstVal[0]?.title || firstVal[0]?.text || String(firstVal[0] || "");
+                } else if (typeof firstVal === 'object' && firstVal !== null) {
+                    title = firstVal.title || firstVal.text || String(firstVal);
+                } else {
+                    title = String(firstVal || "");
+                }
+                return { id: x.id, title };
+            }) : [];
+            console.log(`Loaded ${items.length} items from ${url}`, items.slice(0, 3));
+            return items;
+        } catch (err) { 
+            console.error(`Error loading ${url}:`, err);
+            return []; 
+        }
       }
       Promise.all([load('/api/customers'), load('/api/drivers'), load('/api/vehicles')])
         .then(([c, d, v]) => setLists({ customers: c, drivers: d, vehicles: v }))
@@ -174,7 +189,6 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
           setPrices({ ce: "", ci: "", de: "", di: "" })
           setStatus({ sent: false, approved: false })
           
-          // אם יש defaultDate, השתמש בו, אחרת השתמש בתאריך הנוכחי
           if (defaultDate) {
             const parsed = new Date(defaultDate);
             if (!isNaN(parsed.getTime())) {
@@ -227,24 +241,30 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
     setLoading(true)
     try {
       const customerId = lists.customers.find(c => c.title === form.customer)?.id
-const driverId = lists.drivers.find(d => d.title === form.driver)?.id
-const vehicleTypeId = lists.vehicles.find(v => v.title === form.vehicleType)?.id
+      const driverId = lists.drivers.find(d => d.title === form.driver)?.id
+      const vehicleTypeId = lists.vehicles.find(v => v.title === form.vehicleType)?.id
 
-const getLinkedValue = (id: string | undefined, text: string) => {
-  if (id) return [{ id }];
-  if (text && text.trim()) return [{ title: text.trim() }];
-  return undefined;
-};
+      console.log('Link field lookup:', { 
+        customer: form.customer, customerId, customerListLen: lists.customers.length,
+        driver: form.driver, driverId, driverListLen: lists.drivers.length,
+        vehicleType: form.vehicleType, vehicleTypeId, vehicleListLen: lists.vehicles.length 
+      });
 
-const body: any = {
-  fields: {
-    [FIELDS.DATE]: format(date, "yyyy-MM-dd"),
-    [FIELDS.CUSTOMER]: getLinkedValue(customerId, form.customer),
-    [FIELDS.DESCRIPTION]: form.description,
-    [FIELDS.PICKUP_TIME]: form.pickup,
-    [FIELDS.DROPOFF_TIME]: form.dropoff || undefined,
-    [FIELDS.VEHICLE_TYPE]: getLinkedValue(vehicleTypeId, form.vehicleType),
-    [FIELDS.DRIVER]: getLinkedValue(driverId, form.driver),
+      const getLinkedValue = (id: string | undefined, text: string) => {
+        if (id) return [{ id }];
+        if (text && text.trim()) return [{ title: text.trim() }];
+        return undefined;
+      };
+
+      const body: any = {
+        fields: {
+          [FIELDS.DATE]: format(date, "yyyy-MM-dd"),
+          [FIELDS.CUSTOMER]: getLinkedValue(customerId, form.customer),
+          [FIELDS.DESCRIPTION]: form.description,
+          [FIELDS.PICKUP_TIME]: form.pickup,
+          [FIELDS.DROPOFF_TIME]: form.dropoff || undefined,
+          [FIELDS.VEHICLE_TYPE]: getLinkedValue(vehicleTypeId, form.vehicleType),
+          [FIELDS.DRIVER]: getLinkedValue(driverId, form.driver),
           [FIELDS.VEHICLE_NUM]: form.vehicleNum || undefined,
           [FIELDS.MANAGER_NOTES]: form.managerNotes || undefined,
           [FIELDS.DRIVER_NOTES]: form.notes || undefined,
@@ -261,6 +281,8 @@ const body: any = {
       }
 
       Object.keys(body.fields).forEach(k => body.fields[k] === undefined && delete body.fields[k])
+
+      console.log('Sending to API:', JSON.stringify(body, null, 2));
 
       if (isEdit) {
           const res = await fetch(`/api/work-schedule/${initialData.id}`, {
