@@ -48,7 +48,7 @@ const FIELDS = {
 
 interface ListItem { id: string; title: string }
 
-function AutoComplete({ options, value, onChange, placeholder, isError }: any) {
+function AutoComplete({ options, value, onChange, onItemSelect, placeholder, isError }: any) {
   const [show, setShow] = React.useState(false)
   const safeValue = String(value || "").toLowerCase();
   const filtered = options.filter((o: any) => String(o.title || "").toLowerCase().includes(safeValue))
@@ -66,7 +66,7 @@ function AutoComplete({ options, value, onChange, placeholder, isError }: any) {
       {show && filtered.length > 0 && (
         <div className="absolute z-50 w-full bg-white border shadow-md max-h-40 overflow-auto rounded-md mt-1 text-black">
           {filtered.map((o: any) => (
-            <div key={o.id} className="p-2 hover:bg-gray-100 cursor-pointer text-right text-sm" onMouseDown={() => onChange(o.title)}>{o.title}</div>
+            <div key={o.id} className="p-2 hover:bg-gray-100 cursor-pointer text-right text-sm" onMouseDown={() => { onChange(o.title); if (onItemSelect) onItemSelect(o); }}>{o.title}</div>
           ))}
         </div>
       )}
@@ -105,6 +105,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
     customer: "", description: "", pickup: "", dropoff: "", vehicleType: "",
     driver: "", vehicleNum: "", managerNotes: "", notes: "", orderName: "", mobile: "", idNum: ""
   })
+  const [selectedIds, setSelectedIds] = React.useState({ customerId: "", driverId: "", vehicleTypeId: "" })
   const [prices, setPrices] = React.useState({ ce: "", ci: "", de: "", di: "" })
   const [status, setStatus] = React.useState({ sent: false, approved: false })
 
@@ -148,6 +149,12 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
       return typeof v === 'object' ? v.title : String(v);
   }
 
+  const getIdFromRecord = (v: any) => {
+      if (!v) return "";
+      if (Array.isArray(v)) return v[0]?.id || "";
+      return typeof v === 'object' ? v.id || "" : "";
+  }
+
   React.useEffect(() => {
     if (open) {
       setShowErrors(false);
@@ -171,8 +178,13 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
           managerNotes: f[FIELDS.MANAGER_NOTES] || "",
           notes: f[FIELDS.DRIVER_NOTES] || "",
           orderName: f[FIELDS.ORDER_NAME] || "",
-          mobile: f[FIELDS.MOBILE] || "",
-          idNum: f[FIELDS.ID_NUM] || ""
+          mobile: f[FIELDS.MOBILE] != null ? String(f[FIELDS.MOBILE]) : "",
+          idNum: f[FIELDS.ID_NUM] != null ? String(f[FIELDS.ID_NUM]) : ""
+        })
+        setSelectedIds({
+          customerId: getIdFromRecord(f[FIELDS.CUSTOMER]),
+          driverId: getIdFromRecord(f[FIELDS.DRIVER]),
+          vehicleTypeId: getIdFromRecord(f[FIELDS.VEHICLE_TYPE]),
         })
         setPrices({
           ce: f[FIELDS.PRICE_CLIENT_EXCL] || "", ci: f[FIELDS.PRICE_CLIENT_INCL] || "",
@@ -186,6 +198,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
               customer: "", description: "", pickup: "", dropoff: "", vehicleType: "",
               driver: "", vehicleNum: "", managerNotes: "", notes: "", orderName: "", mobile: "", idNum: ""
           })
+          setSelectedIds({ customerId: "", driverId: "", vehicleTypeId: "" })
           setPrices({ ce: "", ci: "", de: "", di: "" })
           setStatus({ sent: false, approved: false })
           
@@ -208,6 +221,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
   React.useEffect(() => {
     if (isEdit && isReady && date) {
         setForm(prev => ({ ...prev, driver: "" }));
+        setSelectedIds(prev => ({ ...prev, driverId: "" }));
     }
   }, [date, isEdit, isReady]); 
 
@@ -240,31 +254,26 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
 
     setLoading(true)
     try {
-      const customerId = lists.customers.find(c => c.title === form.customer)?.id
-      const driverId = lists.drivers.find(d => d.title === form.driver)?.id
-      const vehicleTypeId = lists.vehicles.find(v => v.title === form.vehicleType)?.id
+      // קודם בודקים ID ששמור מהבחירה, אם אין - מחפשים ברשימה
+      const customerId = selectedIds.customerId || lists.customers.find(c => c.title === form.customer)?.id
+      const driverId = selectedIds.driverId || lists.drivers.find(d => d.title === form.driver)?.id
+      const vehicleTypeId = selectedIds.vehicleTypeId || lists.vehicles.find(v => v.title === form.vehicleType)?.id
 
       console.log('Link field lookup:', { 
-        customer: form.customer, customerId, customerListLen: lists.customers.length,
-        driver: form.driver, driverId, driverListLen: lists.drivers.length,
-        vehicleType: form.vehicleType, vehicleTypeId, vehicleListLen: lists.vehicles.length 
+        customer: form.customer, customerId,
+        driver: form.driver, driverId,
+        vehicleType: form.vehicleType, vehicleTypeId
       });
-
-      const getLinkedValue = (id: string | undefined, text: string) => {
-        if (id) return [{ id }];
-        if (text && text.trim()) return [{ title: text.trim() }];
-        return undefined;
-      };
 
       const body: any = {
         fields: {
           [FIELDS.DATE]: format(date, "yyyy-MM-dd"),
-          [FIELDS.CUSTOMER]: getLinkedValue(customerId, form.customer),
+          [FIELDS.CUSTOMER]: customerId ? [{ id: customerId }] : undefined,
           [FIELDS.DESCRIPTION]: form.description,
           [FIELDS.PICKUP_TIME]: form.pickup,
           [FIELDS.DROPOFF_TIME]: form.dropoff || undefined,
-          [FIELDS.VEHICLE_TYPE]: getLinkedValue(vehicleTypeId, form.vehicleType),
-          [FIELDS.DRIVER]: getLinkedValue(driverId, form.driver),
+          [FIELDS.VEHICLE_TYPE]: vehicleTypeId ? [{ id: vehicleTypeId }] : undefined,
+          [FIELDS.DRIVER]: driverId ? [{ id: driverId }] : undefined,
           [FIELDS.VEHICLE_NUM]: form.vehicleNum || undefined,
           [FIELDS.MANAGER_NOTES]: form.managerNotes || undefined,
           [FIELDS.DRIVER_NOTES]: form.notes || undefined,
@@ -273,8 +282,8 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
           [FIELDS.PRICE_DRIVER_EXCL]: prices.de ? parseFloat(prices.de) : undefined,
           [FIELDS.PRICE_DRIVER_INCL]: prices.di ? parseFloat(prices.di) : undefined,
           [FIELDS.ORDER_NAME]: form.orderName || undefined,
-          [FIELDS.MOBILE]: form.mobile || undefined,
-          [FIELDS.ID_NUM]: form.idNum || undefined,
+          [FIELDS.MOBILE]: form.mobile ? Number(form.mobile) : undefined,
+          [FIELDS.ID_NUM]: form.idNum ? Number(form.idNum) : undefined,
           [FIELDS.SENT]: status.sent,
           [FIELDS.APPROVED]: status.approved,
         }
@@ -372,7 +381,8 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                     <Label className={cn(showErrors && !form.customer && "text-red-500")}>שם לקוח *</Label>
                     <AutoComplete 
                         options={lists.customers} value={form.customer} 
-                        onChange={(v: string) => setForm(p => ({...p, customer: v}))} 
+                        onChange={(v: string) => { setForm(p => ({...p, customer: v})); setSelectedIds(p => ({...p, customerId: ""})); }}
+                        onItemSelect={(item: ListItem) => setSelectedIds(p => ({...p, customerId: item.id}))}
                         placeholder="" isError={showErrors && !form.customer}
                     />
                 </div>
@@ -398,12 +408,21 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                   <Label>נהג</Label>
                   <AutoComplete 
                     options={lists.drivers} value={form.driver} 
-                    onChange={(v: string) => setForm(p => ({...p, driver: v}))} 
+                    onChange={(v: string) => { setForm(p => ({...p, driver: v})); setSelectedIds(p => ({...p, driverId: ""})); }}
+                    onItemSelect={(item: ListItem) => setSelectedIds(p => ({...p, driverId: item.id}))}
                     placeholder="" 
                   />
                 </div>
 
-                <div className="space-y-1"><Label>סוג רכב</Label><AutoComplete options={lists.vehicles} value={form.vehicleType} onChange={(v: string) => setForm(p => ({...p, vehicleType: v}))} placeholder=""/></div>
+                <div className="space-y-1">
+                  <Label>סוג רכב</Label>
+                  <AutoComplete 
+                    options={lists.vehicles} value={form.vehicleType} 
+                    onChange={(v: string) => { setForm(p => ({...p, vehicleType: v})); setSelectedIds(p => ({...p, vehicleTypeId: ""})); }}
+                    onItemSelect={(item: ListItem) => setSelectedIds(p => ({...p, vehicleTypeId: item.id}))}
+                    placeholder=""
+                  />
+                </div>
                 <div className="space-y-1"><Label>מס' רכב</Label><Input value={form.vehicleNum} onChange={e => setForm(p => ({...p, vehicleNum: e.target.value}))} className="text-right"/></div>
                 <div className="space-y-1"><Label>הערות מנהל</Label><Textarea value={form.managerNotes} onChange={e => setForm(p => ({...p, managerNotes: e.target.value}))} className="text-right border-blue-200 bg-blue-50/30" /></div>
                 <div className="space-y-1"><Label>הערות נהג</Label><Textarea value={form.notes} onChange={e => setForm(p => ({...p, notes: e.target.value}))} className="text-right" /></div>
