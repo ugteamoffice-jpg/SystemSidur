@@ -1,7 +1,6 @@
 // lib/teable-client.ts
 
-// שים לב: אני מכריח כאן את הכתובת המלאה כולל /api
-// כדי למנוע מצב שמשתנה סביבה שגוי דורס אותה
+// כתובת השרת הקבועה
 const BASE_URL = 'https://teable-production-bedd.up.railway.app';
 const TEABLE_API_URL = `${BASE_URL}/api`;
 
@@ -27,7 +26,8 @@ export const teableClient = {
   async createRecord(tableId: string, fields: any) {
     if (!API_KEY) throw new Error('Missing TEABLE_API_KEY');
     
-    const res = await fetch(`${TEABLE_API_URL}/table/${tableId}/record`, {
+    // הוספנו ?fieldKeyType=id כדי ש-Teable יבין שאנחנו שולחים IDs
+    const res = await fetch(`${TEABLE_API_URL}/table/${tableId}/record?fieldKeyType=id`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ records: [{ fields }] }),
@@ -44,8 +44,8 @@ export const teableClient = {
   async updateRecord(tableId: string, recordId: string, fields: any) {
     if (!API_KEY) throw new Error('Missing TEABLE_API_KEY');
 
-    // הדפסה ללוג כדי שתהיה בטוח שהכתובת נכונה הפעם
-    const fullUrl = `${TEABLE_API_URL}/table/${tableId}/record/${recordId}`;
+    // הוספנו ?fieldKeyType=id גם כאן - זה התיקון לשגיאה שקיבלת!
+    const fullUrl = `${TEABLE_API_URL}/table/${tableId}/record/${recordId}?fieldKeyType=id`;
     console.log(`Sending PATCH request to: ${fullUrl}`);
     
     const res = await fetch(fullUrl, {
@@ -61,7 +61,6 @@ export const teableClient = {
     
     if (!res.ok) {
         const errorText = await res.text(); 
-        // הדפסת השגיאה המלאה ללוג
         console.error(`Teable Update Failed. URL: ${fullUrl}, Error:`, errorText);
         throw new Error(`Teable Error: ${errorText}`);
     }
