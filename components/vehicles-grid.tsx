@@ -36,6 +36,41 @@ export default function VehiclesGrid() {
   const ROW_HEIGHT = 53
   const BUFFER_SIZE = 5
 
+  const VEHICLES_COL_SIZING_KEY = 'vehiclesColumnSizing'
+  const vehicleColumns = [
+    { key: 'type', header: 'סוג רכב', defaultWidth: 300, minWidth: 100 },
+  ]
+
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem(VEHICLES_COL_SIZING_KEY)
+        if (saved) return JSON.parse(saved)
+      } catch (e) {}
+    }
+    return {}
+  })
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && Object.keys(columnWidths).length > 0) {
+      try { localStorage.setItem(VEHICLES_COL_SIZING_KEY, JSON.stringify(columnWidths)) } catch (e) {}
+    }
+  }, [columnWidths])
+
+  const getColWidth = (col: typeof vehicleColumns[0]) => columnWidths[col.key] || col.defaultWidth
+
+  const handleResizeStart = (colKey: string, minWidth: number, e: React.MouseEvent) => {
+    e.stopPropagation(); e.preventDefault()
+    const startX = e.clientX
+    const startWidth = columnWidths[colKey] || vehicleColumns.find(c => c.key === colKey)!.defaultWidth
+    const onMouseMove = (me: MouseEvent) => {
+      const newWidth = Math.max(minWidth, startWidth + (startX - me.clientX))
+      setColumnWidths(old => ({ ...old, [colKey]: newWidth }))
+    }
+    const onMouseUp = () => { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp) }
+    document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp)
+  }
+
   useEffect(() => {
     fetchVehicles()
   }, [])
@@ -186,20 +221,20 @@ export default function VehiclesGrid() {
   const offsetY = startIndex * ROW_HEIGHT
 
   return (
-    <div className="w-full h-[calc(100vh-120px)] flex flex-col p-6 space-y-4 overflow-hidden">
-      <div className="flex items-center gap-4">
+    <div className="w-full h-[calc(100vh-120px)] flex flex-col p-6 space-y-4 overflow-hidden" dir="rtl">
+      <div className="flex items-center gap-4 flex-none">
         <Button onClick={() => setIsDialogOpen(true)}>
           <Plus className="h-4 w-4 ml-2" />
           סוג רכב חדש
         </Button>
 
         <div className="relative w-[300px]">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="חיפוש..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="pr-10"
           />
         </div>
 
@@ -210,13 +245,21 @@ export default function VehiclesGrid() {
 
       <div
         ref={tableContainerRef}
-        className="border rounded-lg flex-1 overflow-auto"
+        className="border rounded-lg flex-1 overflow-auto bg-white shadow-sm relative"
         onScroll={handleScroll}
       >
-        <Table>
+        <Table style={{ tableLayout: 'fixed' }}>
           <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
             <TableRow>
-              <TableHead className="text-right pr-4">סוג רכב</TableHead>
+              {vehicleColumns.map(col => (
+                <TableHead key={col.key} className="text-right relative border-l select-none group hover:bg-muted/30 pr-4" style={{ width: getColWidth(col) }}>
+                  {col.header}
+                  <div
+                    onMouseDown={(e) => handleResizeStart(col.key, col.minWidth, e)}
+                    className="absolute left-0 top-0 h-full w-1 cursor-col-resize touch-none select-none z-20 hover:bg-primary transition-colors duration-200"
+                  />
+                </TableHead>
+              ))}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -247,7 +290,7 @@ export default function VehiclesGrid() {
                     onClick={() => handleRowClick(vehicle)}
                     style={{ height: `${ROW_HEIGHT}px` }}
                   >
-                    <TableCell className="text-right pr-4">{vehicle.fields[VEHICLE_TYPE_FIELD_ID] || "-"}</TableCell>
+                    <TableCell className="text-right pr-4 truncate">{vehicle.fields[VEHICLE_TYPE_FIELD_ID] || "-"}</TableCell>
                   </TableRow>
                 ))}
                 {endIndex < filteredVehicles.length && <tr style={{ height: `${totalHeight - endIndex * ROW_HEIGHT}px` }}><td colSpan={1} /></tr>}
