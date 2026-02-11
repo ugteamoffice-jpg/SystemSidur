@@ -313,9 +313,9 @@ export default function CustomersGrid() {
         </div>
       </div>
 
-      <div className="border rounded-lg flex-1 overflow-auto bg-white shadow-sm relative" ref={tableContainerRef} onScroll={handleScroll}>
+      <div className="border rounded-lg flex-1 overflow-auto bg-background shadow-sm relative" ref={tableContainerRef} onScroll={handleScroll}>
         <Table style={{ tableLayout: 'fixed' }}>
-          <TableHeader className="sticky top-0 bg-gray-50 z-10 shadow-sm">
+          <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
             <TableRow>
               {customerColumns.map(col => (
                 <TableHead key={col.key} className="text-right relative border-l select-none group hover:bg-muted/30" style={{ width: getColWidth(col) }}>
