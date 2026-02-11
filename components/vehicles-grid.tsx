@@ -245,7 +245,7 @@ export default function VehiclesGrid() {
 
       <div
         ref={tableContainerRef}
-        className="border rounded-lg flex-1 overflow-auto bg-white shadow-sm relative"
+        className="border rounded-lg flex-1 overflow-auto bg-background shadow-sm relative"
         onScroll={handleScroll}
       >
         <Table style={{ tableLayout: 'fixed' }}>
