@@ -49,6 +49,46 @@ export default function DriversGrid() {
   const ROW_HEIGHT = 53
   const BUFFER_SIZE = 10 
 
+  const DRIVERS_COL_SIZING_KEY = 'driversColumnSizing'
+  const driverColumns = [
+    { key: 'firstName', header: 'שם פרטי', defaultWidth: 150, minWidth: 80 },
+    { key: 'lastName', header: 'שם משפחה', defaultWidth: 150, minWidth: 80 },
+    { key: 'phone', header: 'טלפון נייד', defaultWidth: 140, minWidth: 80 },
+    { key: 'type', header: 'סוג נהג', defaultWidth: 120, minWidth: 80 },
+    { key: 'carNumber', header: 'מספר רכב', defaultWidth: 140, minWidth: 80 },
+    { key: 'status', header: 'סטטוס', defaultWidth: 100, minWidth: 70 },
+  ]
+
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem(DRIVERS_COL_SIZING_KEY)
+        if (saved) return JSON.parse(saved)
+      } catch (e) {}
+    }
+    return {}
+  })
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && Object.keys(columnWidths).length > 0) {
+      try { localStorage.setItem(DRIVERS_COL_SIZING_KEY, JSON.stringify(columnWidths)) } catch (e) {}
+    }
+  }, [columnWidths])
+
+  const getColWidth = (col: typeof driverColumns[0]) => columnWidths[col.key] || col.defaultWidth
+
+  const handleResizeStart = (colKey: string, minWidth: number, e: React.MouseEvent) => {
+    e.stopPropagation(); e.preventDefault()
+    const startX = e.clientX
+    const startWidth = columnWidths[colKey] || driverColumns.find(c => c.key === colKey)!.defaultWidth
+    const onMouseMove = (me: MouseEvent) => {
+      const newWidth = Math.max(minWidth, startWidth + (startX - me.clientX))
+      setColumnWidths(old => ({ ...old, [colKey]: newWidth }))
+    }
+    const onMouseUp = () => { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp) }
+    document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp)
+  }
+
   useEffect(() => {
     fetchDrivers()
   }, [])
@@ -214,15 +254,18 @@ export default function DriversGrid() {
       </div>
 
       <div className="border rounded-lg flex-1 overflow-auto bg-white shadow-sm relative" ref={tableContainerRef} onScroll={handleScroll}>
-        <Table>
+        <Table style={{ tableLayout: 'fixed' }}>
           <TableHeader className="sticky top-0 bg-gray-50 z-10 shadow-sm">
             <TableRow>
-              <TableHead className="text-right">שם פרטי</TableHead>
-              <TableHead className="text-right">שם משפחה</TableHead>
-              <TableHead className="text-right">טלפון נייד</TableHead>
-              <TableHead className="text-right">סוג נהג</TableHead>
-              <TableHead className="text-right">מספר רכב</TableHead>
-              <TableHead className="text-right">סטטוס</TableHead>
+              {driverColumns.map(col => (
+                <TableHead key={col.key} className="text-right relative border-l select-none group hover:bg-muted/30" style={{ width: getColWidth(col) }}>
+                  {col.header}
+                  <div
+                    onMouseDown={(e) => handleResizeStart(col.key, col.minWidth, e)}
+                    className="absolute left-0 top-0 h-full w-1 cursor-col-resize touch-none select-none z-20 hover:bg-primary transition-colors duration-200"
+                  />
+                </TableHead>
+              ))}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -235,11 +278,11 @@ export default function DriversGrid() {
                 {startIndex > 0 && <tr style={{ height: `${offsetY}px` }}><td colSpan={6} /></tr>}
                 {visibleDrivers.map((driver) => (
                   <TableRow key={driver.id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleRowClick(driver)} style={{ height: `${ROW_HEIGHT}px` }}>
-                    <TableCell className="font-medium">{driver.fields[FIRST_NAME_ID] || "-"}</TableCell>
-                    <TableCell>{driver.fields[LAST_NAME_ID] || "-"}</TableCell>
-                    <TableCell>{driver.fields[PHONE_ID] || "-"}</TableCell>
-                    <TableCell>{driver.fields[DRIVER_TYPE_ID] || "-"}</TableCell>
-                    <TableCell>{driver.fields[CAR_NUMBER_ID] || "-"}</TableCell>
+                    <TableCell className="font-medium truncate">{driver.fields[FIRST_NAME_ID] || "-"}</TableCell>
+                    <TableCell className="truncate">{driver.fields[LAST_NAME_ID] || "-"}</TableCell>
+                    <TableCell className="truncate">{driver.fields[PHONE_ID] || "-"}</TableCell>
+                    <TableCell className="truncate">{driver.fields[DRIVER_TYPE_ID] || "-"}</TableCell>
+                    <TableCell className="truncate">{driver.fields[CAR_NUMBER_ID] || "-"}</TableCell>
                     <TableCell><span className={`px-2 py-1 rounded-full text-xs ${getDriverStatus(driver) === 'פעיל' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{getDriverStatus(driver)}</span></TableCell>
                   </TableRow>
                 ))}
