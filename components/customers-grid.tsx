@@ -55,6 +55,50 @@ export default function CustomersGrid() {
   const ROW_HEIGHT = 53
   const BUFFER_SIZE = 10 
 
+  const CUSTOMERS_COL_SIZING_KEY = 'customersColumnSizing'
+  const customerColumns = [
+    { key: 'name', header: 'שם לקוח', defaultWidth: 200, minWidth: 100 },
+    { key: 'hp', header: 'ח.פ', defaultWidth: 120, minWidth: 80 },
+    { key: 'contact', header: 'שם א.קשר', defaultWidth: 120, minWidth: 80 },
+    { key: 'phone', header: 'טלפון נייד', defaultWidth: 120, minWidth: 80 },
+    { key: 'email', header: 'אימייל', defaultWidth: 200, minWidth: 100 },
+    { key: 'payment', header: 'אופן תשלום', defaultWidth: 130, minWidth: 80 },
+    { key: 'ongoing', header: 'תשלום שוטף+', defaultWidth: 120, minWidth: 80 },
+    { key: 'accKey', header: 'מס\' מפתח הנה"ח', defaultWidth: 130, minWidth: 80 },
+    { key: 'accCreated', header: 'נוצר בהנה"ח', defaultWidth: 110, minWidth: 70 },
+    { key: 'status', header: 'סטטוס', defaultWidth: 90, minWidth: 70 },
+  ]
+
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem(CUSTOMERS_COL_SIZING_KEY)
+        if (saved) return JSON.parse(saved)
+      } catch (e) {}
+    }
+    return {}
+  })
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && Object.keys(columnWidths).length > 0) {
+      try { localStorage.setItem(CUSTOMERS_COL_SIZING_KEY, JSON.stringify(columnWidths)) } catch (e) {}
+    }
+  }, [columnWidths])
+
+  const getColWidth = (col: typeof customerColumns[0]) => columnWidths[col.key] || col.defaultWidth
+
+  const handleResizeStart = (colKey: string, minWidth: number, e: React.MouseEvent) => {
+    e.stopPropagation(); e.preventDefault()
+    const startX = e.clientX
+    const startWidth = columnWidths[colKey] || customerColumns.find(c => c.key === colKey)!.defaultWidth
+    const onMouseMove = (me: MouseEvent) => {
+      const newWidth = Math.max(minWidth, startWidth + (startX - me.clientX))
+      setColumnWidths(old => ({ ...old, [colKey]: newWidth }))
+    }
+    const onMouseUp = () => { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp) }
+    document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp)
+  }
+
   useEffect(() => {
     fetchCustomers()
   }, [])
@@ -270,19 +314,18 @@ export default function CustomersGrid() {
       </div>
 
       <div className="border rounded-lg flex-1 overflow-auto bg-white shadow-sm relative" ref={tableContainerRef} onScroll={handleScroll}>
-        <Table>
+        <Table style={{ tableLayout: 'fixed' }}>
           <TableHeader className="sticky top-0 bg-gray-50 z-10 shadow-sm">
             <TableRow>
-              <TableHead className="text-right">שם לקוח</TableHead>
-              <TableHead className="text-right">ח.פ</TableHead>
-              <TableHead className="text-right">שם א.קשר</TableHead>
-              <TableHead className="text-right">טלפון נייד</TableHead>
-              <TableHead className="text-right">אימייל</TableHead>
-              <TableHead className="text-right">אופן תשלום</TableHead>
-              <TableHead className="text-right">תשלום שוטף+</TableHead>
-              <TableHead className="text-right">מס' מפתח הנה"ח</TableHead>
-              <TableHead className="text-right">נוצר בהנה"ח</TableHead>
-              <TableHead className="text-right">סטטוס</TableHead>
+              {customerColumns.map(col => (
+                <TableHead key={col.key} className="text-right relative border-l select-none group hover:bg-muted/30" style={{ width: getColWidth(col) }}>
+                  {col.header}
+                  <div
+                    onMouseDown={(e) => handleResizeStart(col.key, col.minWidth, e)}
+                    className="absolute left-0 top-0 h-full w-1 cursor-col-resize touch-none select-none z-20 hover:bg-primary transition-colors duration-200"
+                  />
+                </TableHead>
+              ))}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -295,15 +338,15 @@ export default function CustomersGrid() {
                 {startIndex > 0 && <tr style={{ height: `${offsetY}px` }}><td colSpan={10} /></tr>}
                 {visibleCustomers.map((customer) => (
                   <TableRow key={customer.id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleRowClick(customer)} style={{ height: `${ROW_HEIGHT}px` }}>
-                    <TableCell className="font-medium">{customer.fields.fldqRepgE2c9hH2qJid || "-"}</TableCell>
-                    <TableCell>{customer.fields.fldfUMDbaUFIcPtL34M || "-"}</TableCell>
-                    <TableCell>{customer.fields.fld0Mr0FTuoKkyEv4wz || "-"}</TableCell>
-                    <TableCell>{customer.fields.fld5L64ErAG7w225FbQ || "-"}</TableCell>
-                    <TableCell>{customer.fields.fldc5pvFk8rjOvdvBEL || "-"}</TableCell>
-                    <TableCell>{customer.fields.fldjxcuvfOuhi9tyfay || "-"}</TableCell>
-                    <TableCell>{customer.fields[ONGOING_PAYMENT_ID] || "-"}</TableCell>
-                    <TableCell>{customer.fields[ACCOUNTING_KEY_NUMBER_ID] || "-"}</TableCell>
-                    <TableCell>{customer.fields[CREATED_IN_ACCOUNTING_ID] ? "כן" : "לא"}</TableCell>
+                    <TableCell className="font-medium truncate">{customer.fields.fldqRepgE2c9hH2qJid || "-"}</TableCell>
+                    <TableCell className="truncate">{customer.fields.fldfUMDbaUFIcPtL34M || "-"}</TableCell>
+                    <TableCell className="truncate">{customer.fields.fld0Mr0FTuoKkyEv4wz || "-"}</TableCell>
+                    <TableCell className="truncate">{customer.fields.fld5L64ErAG7w225FbQ || "-"}</TableCell>
+                    <TableCell className="truncate">{customer.fields.fldc5pvFk8rjOvdvBEL || "-"}</TableCell>
+                    <TableCell className="truncate">{customer.fields.fldjxcuvfOuhi9tyfay || "-"}</TableCell>
+                    <TableCell className="truncate">{customer.fields[ONGOING_PAYMENT_ID] || "-"}</TableCell>
+                    <TableCell className="truncate">{customer.fields[ACCOUNTING_KEY_NUMBER_ID] || "-"}</TableCell>
+                    <TableCell className="truncate">{customer.fields[CREATED_IN_ACCOUNTING_ID] ? "כן" : "לא"}</TableCell>
                     <TableCell><span className={`px-2 py-1 rounded-full text-xs ${getCustomerStatus(customer) === 'פעיל' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{getCustomerStatus(customer)}</span></TableCell>
                   </TableRow>
                 ))}
