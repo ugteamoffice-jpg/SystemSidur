@@ -314,6 +314,7 @@ function DataGrid({ schema }: { schema: any }) {
   const [duplicateCount, setDuplicateCount] = React.useState("1")
   const [copyDriver, setCopyDriver] = React.useState(false)
   const [isDuplicating, setIsDuplicating] = React.useState(false)
+  const [duplicateProgress, setDuplicateProgress] = React.useState({ current: 0, total: 0 })
   const [showSplitDialog, setShowSplitDialog] = React.useState(false)
 
   // State variables לטווח תאריכים
@@ -455,6 +456,8 @@ function DataGrid({ schema }: { schema: any }) {
 
       let firstNewRecord = null
       let totalCreated = 0
+      const totalOperations = datesToDuplicate.length * count
+      setDuplicateProgress({ current: 0, total: totalOperations })
       
       for (const date of datesToDuplicate) {
         for (let i = 0; i < count; i++) {
@@ -483,6 +486,7 @@ function DataGrid({ schema }: { schema: any }) {
           }
           
           totalCreated++
+          setDuplicateProgress({ current: totalCreated, total: totalOperations })
         }
       }
       
@@ -995,6 +999,21 @@ function DataGrid({ schema }: { schema: any }) {
             )}
           </div>
 
+          {isDuplicating && duplicateProgress.total > 0 && (
+            <div className="space-y-2 px-1">
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <span>{duplicateProgress.current} / {duplicateProgress.total}</span>
+                <span>{Math.round((duplicateProgress.current / duplicateProgress.total) * 100)}%</span>
+              </div>
+              <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
+                <div 
+                  className="bg-primary h-3 rounded-full transition-all duration-300 ease-out"
+                  style={{ width: `${(duplicateProgress.current / duplicateProgress.total) * 100}%` }}
+                />
+              </div>
+            </div>
+          )}
+
           <DialogFooter className="flex-row-reverse gap-2 flex-shrink-0">
             <Button onClick={() => setShowDuplicateDialog(false)} variant="outline" disabled={isDuplicating}>
               ביטול
@@ -1003,7 +1022,7 @@ function DataGrid({ schema }: { schema: any }) {
               {isDuplicating ? (
                 <>
                   <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                  משכפל...
+                  משכפל... {duplicateProgress.current}/{duplicateProgress.total}
                 </>
               ) : (
                 "שכפל"
