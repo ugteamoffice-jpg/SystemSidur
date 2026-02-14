@@ -1039,7 +1039,7 @@ function DataGrid({ schema }: { schema: any }) {
 
       {/* Calendar Modal */}
       <Dialog open={calendarModal.open} onOpenChange={(open) => { if (!open) setCalendarModal(prev => ({ ...prev, open: false })) }}>
-        <DialogContent dir="rtl" className="max-w-fit p-6">
+        <DialogContent dir="rtl" className="w-auto max-w-[320px] p-4 flex items-center justify-center [&>button]:hidden">
           <Calendar 
             mode="single" 
             selected={calendarModal.selected} 
