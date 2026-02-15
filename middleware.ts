@@ -1,12 +1,13 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 
-// דפים פתוחים - רק דף ההתחברות
+// דפים פתוחים
 const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)',
+  '/sign-up(.*)',
+  '/api(.*)',
 ])
 
 export default clerkMiddleware(async (auth, req) => {
-  // אם זה לא דף פתוח - דרוש התחברות
   if (!isPublicRoute(req)) {
     await auth.protect()
   }
