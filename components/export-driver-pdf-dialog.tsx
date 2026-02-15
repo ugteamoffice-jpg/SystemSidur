@@ -23,6 +23,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { useToast } from "@/hooks/use-toast"
+import { loadReportSettings, type ReportSettings } from "@/components/report-settings-dialog"
 
 interface ExportDriverPdfDialogProps {
   open: boolean
@@ -44,6 +45,10 @@ function getVehicleType(record: any): string {
   if (Array.isArray(vt) && vt.length > 0) return vt[0]?.title || "-"
   if (typeof vt === "object" && vt?.title) return vt.title
   return String(vt || "-")
+}
+
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
 }
 
 export function ExportDriverPdfDialog({
@@ -78,6 +83,9 @@ export function ExportDriverPdfDialog({
       toast({ title: "שגיאה", description: "תאריך ההתחלה חייב להיות לפני תאריך הסיום", variant: "destructive" })
       return
     }
+
+    // טעינת הגדרות חברה
+    const settings = loadReportSettings()
 
     const startOfDay = new Date(startDate)
     startOfDay.setHours(0, 0, 0, 0)
@@ -114,7 +122,6 @@ export function ExportDriverPdfDialog({
       totalBeforeVat += Number(r.fields.fldSNuxbM8oJfrQ3a9x) || 0
       totalWithVat += Number(r.fields.fldyQIhjdUeQwtHMldD) || 0
     })
-    const vat = totalWithVat - totalBeforeVat
 
     const tableRows = filteredRecords
       .map((record, index) => {
@@ -122,161 +129,217 @@ export function ExportDriverPdfDialog({
         const recordDate = fields.fldvNsQbfzMWTc7jakp ? new Date(fields.fldvNsQbfzMWTc7jakp) : null
         const dateStr = recordDate ? format(recordDate, "d.M.yyyy") : ""
         const goTime = fields.fldLbXMREYfC8XVIghj || "-"
-        const route = fields.fldA6e7ul57abYgAZDh || "-"
+        const route = escapeHtml(fields.fldA6e7ul57abYgAZDh || "-")
         const returnTime = fields.fld56G8M1LyHRRROWiL || "-"
-        const vehicleType = getVehicleType(record)
+        const vehicleType = escapeHtml(getVehicleType(record))
         const priceBeforeVat = Number(fields.fldSNuxbM8oJfrQ3a9x) || 0
         const priceWithVat = Number(fields.fldyQIhjdUeQwtHMldD) || 0
-        const notes = fields.fldhNoiFEkEgrkxff02 || ""
+        const notes = escapeHtml(fields.fldhNoiFEkEgrkxff02 || "")
 
         return `<tr>
-          <td class="center">${index + 1}</td>
-          <td class="center">${dateStr}</td>
-          <td class="center">${goTime}</td>
+          <td class="c">${index + 1}</td>
+          <td class="c">${dateStr}</td>
+          <td class="c">${goTime}</td>
           <td>${route}</td>
-          <td class="center">${returnTime}</td>
-          <td class="center">${vehicleType}</td>
-          <td class="center">${priceBeforeVat.toLocaleString("he-IL")} ₪</td>
-          <td class="center">${priceWithVat.toLocaleString("he-IL")} ₪</td>
+          <td class="c">${returnTime}</td>
+          <td class="c">${vehicleType}</td>
+          <td class="c">${priceBeforeVat.toLocaleString("he-IL")} ₪</td>
+          <td class="c">${priceWithVat.toLocaleString("he-IL")} ₪</td>
           <td class="notes">${notes}</td>
         </tr>`
       })
       .join("")
 
+    // --- בניית חלקי ה-HTML ---
+
+    // Header: לוגו + שם חברה (אם קיימים)
+    const hasCompanyInfo = settings.companyName || settings.logoBase64
+    const logoHtml = settings.logoBase64
+      ? `<img src="${settings.logoBase64}" class="logo" alt="לוגו"/>`
+      : ""
+    const companyNameHtml = settings.companyName
+      ? `<div class="company-name">${escapeHtml(settings.companyName)}</div>`
+      : ""
+
+    const headerSection = hasCompanyInfo
+      ? `<div class="company-header">
+          ${logoHtml}
+          ${companyNameHtml}
+        </div>`
+      : ""
+
+    // Footer: פרטי חברה + טקסט חופשי
+    const footerParts: string[] = []
+    if (settings.address) footerParts.push(escapeHtml(settings.address))
+    if (settings.phone) footerParts.push(`טלפון: ${escapeHtml(settings.phone)}`)
+    if (settings.email) footerParts.push(escapeHtml(settings.email))
+    
+    const footerLine1 = footerParts.length > 0
+      ? `<div class="footer-info">${footerParts.join("  |  ")}</div>`
+      : ""
+    const footerLine2 = settings.footerText
+      ? `<div class="footer-custom">${escapeHtml(settings.footerText)}</div>`
+      : ""
+    const footerDate = `<div class="footer-date">תאריך הפקה: ${format(new Date(), "d.M.yyyy")}</div>`
+
     const html = `<!DOCTYPE html>
 <html dir="rtl" lang="he">
 <head>
   <meta charset="UTF-8"/>
-  <title>דוח עבודה - ${initialDriverName}</title>
+  <title>דוח עבודה - ${escapeHtml(initialDriverName)}</title>
   <style>
     @page {
       size: A4 landscape;
-      margin: 14mm;
+      margin: 12mm;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
       direction: rtl;
-      color: #000;
-      padding: 24px;
-      font-size: 14px;
+      color: #1a1a1a;
+      padding: 20px;
+      font-size: 13px;
       line-height: 1.5;
     }
 
-    /* --- כותרת --- */
-    h1 {
-      text-align: center;
-      font-size: 26px;
-      font-weight: 700;
-      margin-bottom: 6px;
-      letter-spacing: 0.5px;
+    /* --- חברה --- */
+    .company-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .logo {
+      height: 50px;
+      width: auto;
+      max-width: 160px;
+      object-fit: contain;
+    }
+    .company-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
     }
 
-    /* --- שורת מידע --- */
-    .info {
+    /* --- כותרת דוח --- */
+    h1 {
       text-align: center;
-      font-size: 13px;
-      color: #555;
-      margin-bottom: 20px;
-      padding-bottom: 14px;
-      border-bottom: 2px solid #000;
+      font-size: 24px;
+      font-weight: 700;
+      margin: 10px 0 4px 0;
     }
-    .info span { margin: 0 12px; }
+    .info-line {
+      text-align: center;
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 14px;
+      padding-bottom: 12px;
+      border-bottom: 1.5px solid #333;
+    }
+    .info-line span + span::before {
+      content: " | ";
+      margin: 0 8px;
+    }
 
     /* --- טבלה --- */
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 13px;
+      font-size: 12.5px;
     }
     thead th {
-      background: #f5f5f5;
-      padding: 10px 8px;
+      background: #f0f0f0;
+      padding: 9px 7px;
       text-align: right;
       font-weight: 700;
-      font-size: 13px;
-      border-top: 2px solid #000;
-      border-bottom: 2px solid #000;
+      font-size: 12px;
+      border-top: 2px solid #333;
+      border-bottom: 2px solid #333;
       white-space: nowrap;
     }
+    thead th.c { text-align: center; }
     tbody td {
-      padding: 8px;
-      border-bottom: 1px solid #ddd;
-      text-align: right;
+      padding: 7px;
+      border-bottom: 1px solid #e0e0e0;
       vertical-align: top;
     }
-    tbody tr:last-child td {
-      border-bottom: none;
-    }
-    td.center, th.center { text-align: center; }
+    td.c { text-align: center; }
     td.notes {
       font-size: 11px;
-      color: #555;
-      max-width: 150px;
+      color: #666;
+      max-width: 140px;
       word-break: break-word;
     }
+    tbody tr:nth-child(even) { background: #fafafa; }
 
     /* --- שורת סיכום --- */
-    .summary-row td {
-      padding: 10px 8px;
-      border-top: 2px solid #000;
-      border-bottom: 2px solid #000;
+    tr.total td {
+      padding: 9px 7px;
+      border-top: 2px solid #333;
+      border-bottom: 2px solid #333;
       font-weight: 700;
-      font-size: 14px;
-      background: #f9f9f9;
+      font-size: 13px;
+      background: #f5f5f5;
     }
 
     /* --- פוטר --- */
     .footer {
-      margin-top: 20px;
+      margin-top: 24px;
+      padding-top: 10px;
+      border-top: 1px solid #ccc;
       text-align: center;
-      font-size: 10px;
-      color: #999;
+      font-size: 10.5px;
+      color: #888;
     }
+    .footer-info { margin-bottom: 2px; }
+    .footer-custom { margin-bottom: 2px; }
+    .footer-date { margin-top: 4px; font-size: 10px; color: #aaa; }
 
     @media print {
       body { padding: 0; }
-      .no-print { display: none !important; }
     }
   </style>
 </head>
 <body>
 
-  <h1>דוח עבודה לנהג ${initialDriverName}</h1>
+  ${headerSection}
 
-  <div class="info">
+  <h1>דוח עבודה לנהג ${escapeHtml(initialDriverName)}</h1>
+
+  <div class="info-line">
     <span>תקופה: ${format(startDate, "d.M.yyyy")} — ${format(endDate, "d.M.yyyy")}</span>
-    <span>|</span>
     <span>סה"כ נסיעות: ${filteredRecords.length}</span>
   </div>
 
   <table>
     <thead>
       <tr>
-        <th class="center" style="width:40px">#</th>
-        <th class="center">תאריך</th>
-        <th class="center">הלוך</th>
+        <th class="c" style="width:36px">#</th>
+        <th class="c">תאריך</th>
+        <th class="c">הלוך</th>
         <th>מסלול</th>
-        <th class="center">חזור</th>
-        <th class="center">סוג רכב</th>
-        <th class="center">לפני מע"מ</th>
-        <th class="center">כולל מע"מ</th>
+        <th class="c">חזור</th>
+        <th class="c">סוג רכב</th>
+        <th class="c">לפני מע"מ</th>
+        <th class="c">כולל מע"מ</th>
         <th>הערות</th>
       </tr>
     </thead>
     <tbody>
       ${tableRows}
-      <tr class="summary-row">
-        <td colspan="6" style="text-align:left;">סה"כ</td>
-        <td class="center">${totalBeforeVat.toLocaleString("he-IL")} ₪</td>
-        <td class="center">${totalWithVat.toLocaleString("he-IL")} ₪</td>
+      <tr class="total">
+        <td colspan="6" style="text-align:left; font-size:13px;">סה"כ</td>
+        <td class="c">${totalBeforeVat.toLocaleString("he-IL")} ₪</td>
+        <td class="c">${totalWithVat.toLocaleString("he-IL")} ₪</td>
         <td></td>
       </tr>
     </tbody>
   </table>
 
   <div class="footer">
-    תאריך הפקה: ${format(new Date(), "d.M.yyyy")}
+    ${footerLine1}
+    ${footerLine2}
+    ${footerDate}
   </div>
 
   <script>
@@ -311,13 +374,11 @@ export function ExportDriverPdfDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {/* נהג נעול */}
           <div className="space-y-2">
             <Label className="text-right">נהג</Label>
             <Input value={initialDriverName || ""} disabled className="text-right bg-muted" />
           </div>
 
-          {/* תאריכים */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>מתאריך:</Label>
