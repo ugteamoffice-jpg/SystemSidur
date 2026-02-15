@@ -76,3 +76,4 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
     </div>
   )
 }
+
