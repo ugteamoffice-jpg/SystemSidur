@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Calendar as CalendarIcon, Send, Loader2 } from "lucide-react"
+import { Calendar as CalendarIcon, Send, Loader2, Copy, Check } from "lucide-react"
 import { format } from "date-fns"
 import { he } from "date-fns/locale"
 
@@ -66,6 +66,7 @@ export function SendWhatsappDialog({
   const [endDate, setEndDate] = React.useState<Date | undefined>(currentDate)
   const [endDateMonth, setEndDateMonth] = React.useState<Date>(currentDate)
   const [isLoading, setIsLoading] = React.useState(false)
+  const [copied, setCopied] = React.useState(false)
   const [driverInfo, setDriverInfo] = React.useState<{
     phone: string
     type: string
@@ -78,6 +79,7 @@ export function SendWhatsappDialog({
       setStartDateMonth(currentDate)
       setEndDateMonth(currentDate)
       setDriverInfo(null)
+      setCopied(false)
       if (initialDriverName) {
         fetchDriverInfo(initialDriverName)
       }
@@ -91,7 +93,6 @@ export function SendWhatsappDialog({
       const json = await res.json()
       if (!json.records) throw new Error("No records")
 
-      // חיפוש נהג לפי שם מלא (שם פרטי + שם משפחה)
       const match = json.records.find((d: any) => {
         const firstName = d.fields[FIRST_NAME_ID] || ""
         const lastName = d.fields[LAST_NAME_ID] || ""
@@ -130,20 +131,10 @@ export function SendWhatsappDialog({
     return clean
   }
 
-  const handleSend = () => {
-    if (!initialDriverName || !driverInfo) return
-    if (!startDate || !endDate) {
-      toast({ title: "שגיאה", description: "יש לבחור תאריכים", variant: "destructive" })
-      return
-    }
-    if (startDate > endDate) {
-      toast({ title: "שגיאה", description: "תאריך ההתחלה חייב להיות לפני תאריך הסיום", variant: "destructive" })
-      return
-    }
-    if (!driverInfo.phone) {
-      toast({ title: "שגיאה", description: "אין מספר טלפון לנהג", variant: "destructive" })
-      return
-    }
+  // בניית ההודעה — משותף לשליחה ולהעתקה
+  const buildMessage = (): string | null => {
+    if (!initialDriverName || !driverInfo) return null
+    if (!startDate || !endDate) return null
 
     const settings = loadReportSettings()
 
@@ -161,14 +152,7 @@ export function SendWhatsappDialog({
       return name === initialDriverName && recordDate >= startOfDay && recordDate <= endOfDay
     })
 
-    if (filteredRecords.length === 0) {
-      toast({
-        title: "אין נתונים",
-        description: "לא נמצאו נסיעות עבור הנהג בטווח התאריכים שנבחר",
-        variant: "destructive",
-      })
-      return
-    }
+    if (filteredRecords.length === 0) return null
 
     filteredRecords.sort((a, b) => {
       const dateA = new Date(a.fields.fldvNsQbfzMWTc7jakp || 0)
@@ -178,7 +162,6 @@ export function SendWhatsappDialog({
 
     const isContractor = driverInfo.type === "קבלן"
 
-    // בניית ההודעה
     const companyPart = settings.companyName ? ` מחברת ${settings.companyName}` : ""
     let message = `מצ"ב סידור עבודה${companyPart}\n`
 
@@ -191,7 +174,7 @@ export function SendWhatsappDialog({
       const dateStr = recordDate ? format(recordDate, "d.M.yyyy") : ""
       const goTime = fields.fldLbXMREYfC8XVIghj || "-"
       const route = fields.fldA6e7ul57abYgAZDh || "-"
-      const returnTime = fields.fld56G8M1LyHRRROWiL || "-"
+      const returnTime = fields.fld56G8M1LyHRRROWiL || ""
       const vehicleType = getVehicleType(record)
       const priceBeforeVat = Number(fields.fldSNuxbM8oJfrQ3a9x) || 0
       const priceWithVat = Number(fields.fldyQIhjdUeQwtHMldD) || 0
@@ -201,7 +184,13 @@ export function SendWhatsappDialog({
 
       message += `\n*תאריך* - ${dateStr}\n`
       message += `*סוג רכב* - ${vehicleType}\n`
-      message += `${goTime} ${route} ${returnTime}\n`
+
+      // שעת חזור רק אם קיימת
+      if (returnTime) {
+        message += `${goTime} ${route} ${returnTime}\n`
+      } else {
+        message += `${goTime} ${route}\n`
+      }
 
       if (isContractor) {
         message += `מחיר לפני מע"מ - ${priceBeforeVat.toLocaleString("he-IL")} ₪\n`
@@ -215,7 +204,7 @@ export function SendWhatsappDialog({
     })
 
     // סיכום
-    message += `\n📊 *סיכום*\n`
+    message += `\n*סיכום*\n`
     message += `סה"כ נסיעות: ${filteredRecords.length}\n`
 
     if (isContractor) {
@@ -223,14 +212,69 @@ export function SendWhatsappDialog({
       message += `סה"כ כולל מע"מ: ${totalWithVat.toLocaleString("he-IL")} ₪\n`
     }
 
-    message += `\nנא לאשר קבלת סידור עבודה ✅`
+    message += `\nנא לאשר קבלת סידור עבודה`
+
+    return message
+  }
+
+  const handleSend = () => {
+    if (!startDate || !endDate) {
+      toast({ title: "שגיאה", description: "יש לבחור תאריכים", variant: "destructive" })
+      return
+    }
+    if (startDate > endDate) {
+      toast({ title: "שגיאה", description: "תאריך ההתחלה חייב להיות לפני תאריך הסיום", variant: "destructive" })
+      return
+    }
+    if (!driverInfo?.phone) {
+      toast({ title: "שגיאה", description: "אין מספר טלפון לנהג", variant: "destructive" })
+      return
+    }
+
+    const message = buildMessage()
+    if (!message) {
+      toast({
+        title: "אין נתונים",
+        description: "לא נמצאו נסיעות עבור הנהג בטווח התאריכים שנבחר",
+        variant: "destructive",
+      })
+      return
+    }
 
     const phone = formatPhone(driverInfo.phone)
-    const encodedMessage = encodeURIComponent(message)
-    const url = `https://wa.me/${phone}?text=${encodedMessage}`
-
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
     window.open(url, "_blank")
     onOpenChange(false)
+  }
+
+  const handleCopy = async () => {
+    if (!startDate || !endDate) {
+      toast({ title: "שגיאה", description: "יש לבחור תאריכים", variant: "destructive" })
+      return
+    }
+    if (startDate > endDate) {
+      toast({ title: "שגיאה", description: "תאריך ההתחלה חייב להיות לפני תאריך הסיום", variant: "destructive" })
+      return
+    }
+
+    const message = buildMessage()
+    if (!message) {
+      toast({
+        title: "אין נתונים",
+        description: "לא נמצאו נסיעות עבור הנהג בטווח התאריכים שנבחר",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(message)
+      setCopied(true)
+      toast({ title: "הועתק", description: "ההודעה הועתקה. עבור לוואטסאפ ווב והדבק." })
+      setTimeout(() => setCopied(false), 2000)
+    } catch (err) {
+      toast({ title: "שגיאה", description: "לא ניתן להעתיק", variant: "destructive" })
+    }
   }
 
   return (
@@ -340,6 +384,10 @@ export function SendWhatsappDialog({
         <DialogFooter className="flex-row-reverse gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             ביטול
+          </Button>
+          <Button variant="outline" onClick={handleCopy} disabled={isLoading}>
+            {copied ? <Check className="ml-2 h-4 w-4" /> : <Copy className="ml-2 h-4 w-4" />}
+            {copied ? "הועתק!" : "העתק הודעה"}
           </Button>
           <Button onClick={handleSend} disabled={isLoading || !driverInfo?.phone}>
             <Send className="ml-2 h-4 w-4" />
