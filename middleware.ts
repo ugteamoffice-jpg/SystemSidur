@@ -8,6 +8,21 @@ const isPublicRoute = createRouteMatcher([
 ])
 
 export default clerkMiddleware(async (auth, req) => {
+  const url = req.nextUrl
+
+  // הפניה מ-/ ל-/default
+  if (url.pathname === '/') {
+    return NextResponse.redirect(new URL('/default', req.url))
+  }
+
+  // שליפת tenant מהנתיב: /tenant-name/...
+  const pathParts = url.pathname.split('/').filter(Boolean)
+  const tenantId = pathParts[0] || 'default'
+
+  // הוספת x-tenant-id header לכל הבקשות
+  const response = NextResponse.next()
+  response.headers.set('x-tenant-id', tenantId)
+
   if (!isPublicRoute(req)) {
     const { userId } = await auth()
     if (!userId) {
@@ -16,6 +31,8 @@ export default clerkMiddleware(async (auth, req) => {
       return NextResponse.redirect(signInUrl)
     }
   }
+
+  return response
 })
 
 export const config = {

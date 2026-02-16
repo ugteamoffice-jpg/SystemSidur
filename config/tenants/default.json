@@ -1,0 +1,66 @@
+{
+  "id": "default",
+  "name": "Default Company",
+  "apiUrl": "https://teable-production-bedd.up.railway.app",
+  "baseId": "bse1pHIESYWysl2D4VR",
+  "tables": {
+    "WORK_SCHEDULE": "tblUgEhLuyCwEK2yWG4",
+    "WORK_SCHEDULE_VIEW": "tblVAQgIYOLfvCZdqgj",
+    "DRIVERS": "tbl39DxszH3whkjzovd",
+    "CUSTOMERS": "tblmUkwbvrUmxI3q1gd",
+    "VEHICLES": "tblbRTqAuL4OMkNnUu7",
+    "VEHICLE_TYPES": "tblRSYoKFHCaDyivO9k"
+  },
+  "fields": {
+    "workSchedule": {
+      "DATE": "fldvNsQbfzMWTc7jakp",
+      "CUSTOMER": "fldVy6L2DCboXUTkjBX",
+      "PICKUP_TIME": "fldLbXMREYfC8XVIghj",
+      "DESCRIPTION": "fldA6e7ul57abYgAZDh",
+      "DROPOFF_TIME": "fld56G8M1LyHRRROWiL",
+      "VEHICLE_TYPE": "fldx4hl8FwbxfkqXf0B",
+      "DRIVER": "flddNPbrzOCdgS36kx5",
+      "VEHICLE_NUM": "fldqStJV3KKIutTY9hW",
+      "SENT": "fldMv14lt0W7ZBkq1PH",
+      "APPROVED": "fldDOBGATSaTi5TxyHB",
+      "PRICE_CLIENT_EXCL": "fldxXnfHHQWwXY8dlEV",
+      "PRICE_CLIENT_INCL": "fldT7QLSKmSrjIHarDb",
+      "PRICE_DRIVER_EXCL": "fldSNuxbM8oJfrQ3a9x",
+      "PRICE_DRIVER_INCL": "fldyQIhjdUeQwtHMldD",
+      "PROFIT": "fldT9IZTYlT4gCEnOK3",
+      "DRIVER_NOTES": "fldhNoiFEkEgrkxff02",
+      "MANAGER_NOTES": "fldelKu7PLIBmCFfFPJ",
+      "ORDER_NAME": "fldkvTaql1bPbifVKLt",
+      "MOBILE": "fld6NJPsiW8CtRIfnaY",
+      "ID_NUM": "fldAJPcCFUcDPlSCK1a",
+      "ORDER_FORM": "fldKkq5oyBm8CwcAIvH",
+      "ORDER_FORM_DATE": "fldxZmnQzflBG9M0RYq",
+      "DRIVER_LINK_SYMMETRIC": "fldGTTvqQ8lii1wfiS5",
+      "SENT_RESET": "fldjMfOvWEu7HtjSQmv",
+      "ORDER_FORM_ATTACHMENT": "fldf2FIOvHqALxULqrs"
+    },
+    "drivers": {
+      "FIRST_NAME": "fld1yMIkREcEcRkCHQ0",
+      "LAST_NAME": "fldAI4Vc5glNW9aZVov",
+      "PHONE": "fldnGgcmCUrVXHKBSWU",
+      "DRIVER_TYPE": "fldkfxdV3js9C4FqzRz",
+      "CAR_NUMBER": "fldGDDFoTTLlZIU88jx",
+      "STATUS": "fldWtWElfp9ZeIF3MP9"
+    },
+    "customers": {
+      "NAME": "fldqRepgE2c9hH2qJid",
+      "HP": "fldfUMDbaUFIcPtL34M",
+      "CONTACT_NAME": "fld0Mr0FTuoKkyEv4wz",
+      "PHONE": "fld5L64ErAG7w225FbQ",
+      "EMAIL": "fldc5pvFk8rjOvdvBEL",
+      "PAYMENT_METHOD": "fldjxcuvfOuhi9tyfay",
+      "ONGOING_PAYMENT": "fld9ELH8uSUK3J7Rmrv",
+      "ACCOUNTING_KEY": "fld3hPps9Q6EiVXQNQE",
+      "CREATED_IN_ACCOUNTING": "fldakcCCvGKxL7ZeoMK",
+      "STATUS": "fldNASZiU0lJlxc9lx0"
+    },
+    "vehicles": {
+      "VEHICLE_TYPE": "fldUBeIPRhJ9JuUHXBL"
+    }
+  }
+}
