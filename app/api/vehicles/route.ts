@@ -6,7 +6,7 @@ export async function GET(request: Request) {
     const ctx = await getTenantFromRequest(request);
     if (isTenantError(ctx)) return ctx;
     const { config, apiKey } = ctx;
-    const TABLE_ID = config.tables.VEHICLES;
+    const TABLE_ID = config.tables.VEHICLE_TYPES;
     const API_URL = config.apiUrl;
 
     const response = await fetch(`${API_URL}/api/table/${TABLE_ID}/record?take=1000&fieldKeyType=id`, {
