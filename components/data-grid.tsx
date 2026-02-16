@@ -263,6 +263,7 @@ function createColumns(WS: any): ColumnDef<WorkScheduleRecord>[] {
     minSize: 150,
   },
 ]
+}
 
 const COLUMN_SIZING_KEY = 'workScheduleColumnSizing'
 
