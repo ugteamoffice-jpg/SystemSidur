@@ -1,77 +1,54 @@
 import { NextResponse } from 'next/server';
+import { getTenantFromRequest, isTenantError } from '@/lib/api-tenant-helper';
 
 export const dynamic = 'force-dynamic';
 
-const API_URL = 'https://teable-production-bedd.up.railway.app';
-const TABLE_ID = 'tblmUkwbvrUmxI3q1gd'; 
-const API_KEY = process.env.TEABLE_API_KEY;
-
-// פונקציה שטוענת הכל בצד השרת בלולאה אחת
-async function fetchAllRecords() {
-  let allRecords: any[] = [];
-  let skip = 0;
-  const take = 1000;
-  let hasMore = true;
-
-  while (hasMore) {
-    const endpoint = `${API_URL}/api/table/${TABLE_ID}/record?take=${take}&skip=${skip}&fieldKeyType=id`;
-    
-    console.log(`📡 Fetching from Teable: skip=${skip}, take=${take}`);
-
-    const response = await fetch(endpoint, {
-      headers: { 'Authorization': `Bearer ${API_KEY}` },
-      cache: 'no-store'
-    });
-
-    if (!response.ok) {
-      throw new Error(`Teable API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const records = data.records || [];
-    
-    console.log(`✅ Got ${records.length} records`);
-
-    if (records.length === 0) {
-      hasMore = false;
-    } else {
-      allRecords = [...allRecords, ...records];
-      skip += records.length;
-      
-      // אם קיבלנו פחות מ-take, זה אומר שאין עוד
-      if (records.length < take) {
-        hasMore = false;
-      }
-    }
-  }
-
-  console.log(`🎉 Total loaded: ${allRecords.length} records`);
-  return allRecords;
-}
-
 export async function GET(request: Request) {
   try {
-    // טוען הכל פעם אחת בצד השרת
-    const allRecords = await fetchAllRecords();
-    
-    return NextResponse.json({ 
-      records: allRecords,
-      nextCursor: null  // אין cursor כי כבר טענו הכל
-    });
+    const ctx = await getTenantFromRequest(request);
+    if (isTenantError(ctx)) return ctx;
+    const { config, apiKey } = ctx;
+    const TABLE_ID = config.tables.CUSTOMERS;
+    const API_URL = config.apiUrl;
 
+    let allRecords: any[] = [];
+    let skip = 0;
+    const take = 1000;
+    let hasMore = true;
+
+    while (hasMore) {
+      const endpoint = `${API_URL}/api/table/${TABLE_ID}/record?take=${take}&skip=${skip}&fieldKeyType=id`;
+      const response = await fetch(endpoint, { headers: { 'Authorization': `Bearer ${apiKey}` }, cache: 'no-store' });
+      if (!response.ok) throw new Error(`Teable API error: ${response.status}`);
+      const data = await response.json();
+      const records = data.records || [];
+      if (records.length === 0) { hasMore = false; }
+      else {
+        allRecords = [...allRecords, ...records];
+        skip += records.length;
+        if (records.length < take) hasMore = false;
+      }
+    }
+    return NextResponse.json({ records: allRecords, nextCursor: null });
   } catch (error) {
-    console.error("❌ Server Error:", error);
+    console.error("Server Error:", error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
   try {
+    const ctx = await getTenantFromRequest(request);
+    if (isTenantError(ctx)) return ctx;
+    const { config, apiKey } = ctx;
+    const TABLE_ID = config.tables.CUSTOMERS;
+    const API_URL = config.apiUrl;
+
     const body = await request.json();
     const endpoint = `${API_URL}/api/table/${TABLE_ID}/record?fieldKeyType=id`;
     const response = await fetch(endpoint, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ fieldKeyType: "id", typecast: true, records: [{ fields: body.fields }] }),
       cache: 'no-store'
     });
@@ -82,13 +59,19 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
+    const ctx = await getTenantFromRequest(request);
+    if (isTenantError(ctx)) return ctx;
+    const { config, apiKey } = ctx;
+    const TABLE_ID = config.tables.CUSTOMERS;
+    const API_URL = config.apiUrl;
+
     const body = await request.json();
     const { recordId, fields } = body;
     const endpoint = `${API_URL}/api/table/${TABLE_ID}/record?fieldKeyType=id`;
     const response = await fetch(endpoint, {
       method: 'PATCH',
-      headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fieldKeyType: "id", typecast: true, records: [{ id: recordId, fields: fields }] }),
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fieldKeyType: "id", typecast: true, records: [{ id: recordId, fields }] }),
       cache: 'no-store'
     });
     if (!response.ok) return NextResponse.json({ error: "Error" }, { status: response.status });

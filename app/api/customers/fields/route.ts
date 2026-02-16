@@ -1,24 +1,18 @@
 import { NextResponse } from "next/server"
+import { getTenantFromRequest, isTenantError } from "@/lib/api-tenant-helper"
 
-const TEABLE_API_URL = process.env.TEABLE_API_URL
-const TEABLE_APP_TOKEN = process.env.TEABLE_APP_TOKEN
-const TABLE_ID = "tbl4dSxUqAf6vsuGCsM"
-
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const response = await fetch(`${TEABLE_API_URL}/api/table/${TABLE_ID}/field`, {
-      headers: {
-        Authorization: `Bearer ${TEABLE_APP_TOKEN}`,
-      },
-    })
+    const ctx = await getTenantFromRequest(request);
+    if (isTenantError(ctx)) return ctx;
+    const { client, config } = ctx;
 
-    if (!response.ok) {
-      throw new Error("Failed to fetch fields")
-    }
+    const TABLE_ID = config.tables.CUSTOMERS;
+    const res = await client.fetchWithAuth(`/table/${TABLE_ID}/field`)
 
-    const fields = await response.json()
+    if (!res.ok) throw new Error("Failed to fetch fields")
+    const fields = await res.json()
 
-    // מצא את השדה "סטטוס לקוח"
     const statusField = fields.find((field: any) => field.name === "סטטוס לקוח")
 
     return NextResponse.json({

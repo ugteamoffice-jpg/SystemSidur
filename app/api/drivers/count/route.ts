@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server"
-import { teableClient } from "@/lib/teable-client"
+import { getTenantFromRequest, isTenantError } from "@/lib/api-tenant-helper"
 
-const DRIVERS_TABLE_ID = "tblsMGUyHILuKGGASix"
-
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const data = await teableClient.getRecords(DRIVERS_TABLE_ID, {
-      take: 1,
-    })
+    const ctx = await getTenantFromRequest(request);
+    if (isTenantError(ctx)) return ctx;
+    const { client, config } = ctx;
 
+    const data = await client.getRecords(config.tables.DRIVERS, { take: 1 })
     return NextResponse.json({ total: data.total || 0 })
   } catch (error) {
     console.error("Failed to get drivers count:", error)

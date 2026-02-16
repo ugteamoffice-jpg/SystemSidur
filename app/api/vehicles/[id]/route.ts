@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server"
-import { teableClient } from "@/lib/teable-client"
-
-const TABLE_ID = "tblbRTqAuL4OMkNnUu7" // אותו ID
+import { getTenantFromRequest, isTenantError } from "@/lib/api-tenant-helper"
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   try {
+    const ctx = await getTenantFromRequest(request);
+    if (isTenantError(ctx)) return ctx;
+    const { client, config } = ctx;
+
     const body = await request.json()
-    const data = await teableClient.updateRecord(TABLE_ID, params.id, body.fields)
+    const data = await client.updateRecord(config.tables.VEHICLES, params.id, body.fields)
     return NextResponse.json(data)
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
@@ -14,10 +16,14 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 }
 
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
-    try {
-        await teableClient.deleteRecord(TABLE_ID, params.id)
-        return NextResponse.json({ success: true })
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 })
-    }
+  try {
+    const ctx = await getTenantFromRequest(request);
+    if (isTenantError(ctx)) return ctx;
+    const { client, config } = ctx;
+
+    await client.deleteRecord(config.tables.VEHICLES, params.id)
+    return NextResponse.json({ success: true })
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
 }

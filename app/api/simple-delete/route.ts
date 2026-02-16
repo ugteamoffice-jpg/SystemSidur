@@ -1,40 +1,32 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { teableClient } from "@/lib/teable-client"
+import { NextResponse } from "next/server"
+import { getTenantFromRequest, isTenantError } from "@/lib/api-tenant-helper"
 
-const TABLE_ID = "tblVAQgIYOLfvCZdqgj"
-const FIELD_ID = "fldf2FIOvHqALxULqrs"
-
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
+    const ctx = await getTenantFromRequest(request);
+    if (isTenantError(ctx)) return ctx;
+    const { config, apiKey } = ctx;
+
     const { recordId } = await request.json()
+    if (!recordId) return NextResponse.json({ error: "Missing recordId" }, { status: 400 })
 
-    if (!recordId) {
-      return NextResponse.json({ error: "Missing recordId" }, { status: 400 })
-    }
+    const TABLE_ID = config.tables.WORK_SCHEDULE_VIEW
+    const FIELD_ID = config.fields.workSchedule.ORDER_FORM_ATTACHMENT
+    const API_URL = config.apiUrl
 
-    const cleanRecordId = String(recordId).match(/rec[a-zA-Z0-9]{10,25}/)?.[0]
-
-    if (!cleanRecordId) {
-      console.error("[v0] Invalid recordId format:", recordId)
-      return NextResponse.json({ error: "Invalid recordId format" }, { status: 400 })
-    }
-
-    console.log("[v0] Attempting to delete file for record:", cleanRecordId)
-
-    await teableClient.updateRecord(TABLE_ID, cleanRecordId, {
-      [FIELD_ID]: null,
+    const response = await fetch(`${API_URL}/api/table/${TABLE_ID}/record?fieldKeyType=id`, {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ fieldKeyType: "id", typecast: true, records: [{ id: recordId, fields: { [FIELD_ID]: null } }] }),
     })
 
-    console.log("[v0] File deleted successfully")
+    if (!response.ok) {
+      const errorText = await response.text()
+      return NextResponse.json({ error: "Failed", details: errorText }, { status: response.status })
+    }
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("[v0] Delete error:", error)
-    return NextResponse.json(
-      {
-        error: "Failed to delete file",
-        details: error instanceof Error ? error.message : String(error),
-      },
-      { status: 500 },
-    )
+    console.error("Simple delete error:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

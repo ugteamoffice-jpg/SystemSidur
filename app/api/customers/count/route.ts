@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server"
-import { teableClient } from "@/lib/teable-client"
+import { getTenantFromRequest, isTenantError } from "@/lib/api-tenant-helper"
 
-const CUSTOMERS_TABLE_ID = "tbl4dSxUqAf6vsuGCsM"
-
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const data = await teableClient.getRecords(CUSTOMERS_TABLE_ID, {
-      take: 1,
-    })
+    const ctx = await getTenantFromRequest(request);
+    if (isTenantError(ctx)) return ctx;
+    const { client, config } = ctx;
 
+    const data = await client.getRecords(config.tables.CUSTOMERS, { take: 1 })
     return NextResponse.json({ total: data.total || 0 })
   } catch (error) {
     console.error("Failed to get customers count:", error)

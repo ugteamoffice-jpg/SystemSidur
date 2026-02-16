@@ -99,8 +99,8 @@ export async function loadTenantConfigServer(tenantId: string): Promise<TenantCo
 export function getTenantApiKey(tenantId: string): string {
   const specificKey = process.env[`TEABLE_API_KEY_${tenantId.toUpperCase()}`]
   if (specificKey) return specificKey
-  // fallback ל-default key
-  return process.env.TEABLE_API_KEY || ""
+  // fallback ל-default keys (שני שמות אפשריים)
+  return process.env.TEABLE_API_KEY || process.env.TEABLE_APP_TOKEN || ""
 }
 
 /**
