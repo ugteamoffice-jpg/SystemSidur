@@ -15,11 +15,31 @@ export default clerkMiddleware(async (auth, req) => {
     return NextResponse.redirect(new URL('/default', req.url))
   }
 
-  // שליפת tenant מהנתיב: /tenant-name/...
+  // שליפת tenant
+  let tenantId = 'default'
   const pathParts = url.pathname.split('/').filter(Boolean)
-  const tenantId = pathParts[0] || 'default'
 
-  // הוספת x-tenant-id header לכל הבקשות
+  if (pathParts[0] === 'api') {
+    // עבור API routes: שולפים tenant מ-query param או מ-Referer header
+    tenantId = url.searchParams.get('tenant') || ''
+    if (!tenantId) {
+      const referer = req.headers.get('referer')
+      if (referer) {
+        try {
+          const refUrl = new URL(referer)
+          const refParts = refUrl.pathname.split('/').filter(Boolean)
+          if (refParts[0] && refParts[0] !== 'api' && refParts[0] !== 'sign-in') {
+            tenantId = refParts[0]
+          }
+        } catch {}
+      }
+    }
+    if (!tenantId) tenantId = 'default'
+  } else {
+    // עבור דפים רגילים: tenant מהנתיב
+    tenantId = pathParts[0] || 'default'
+  }
+
   const response = NextResponse.next()
   response.headers.set('x-tenant-id', tenantId)
 
