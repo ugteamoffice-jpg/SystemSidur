@@ -11,7 +11,7 @@ export default clerkMiddleware(async (auth, req) => {
   const url = req.nextUrl
 
   // שליפת tenant
-  let tenantId = 'default'
+  let tenantId = 'UrbanTours'
   const pathParts = url.pathname.split('/').filter(Boolean)
 
   if (pathParts[0] === 'api') {
@@ -29,10 +29,10 @@ export default clerkMiddleware(async (auth, req) => {
         } catch {}
       }
     }
-    if (!tenantId) tenantId = 'default'
+    if (!tenantId) tenantId = 'UrbanTours'
   } else {
     // עבור דפים רגילים: tenant מהנתיב
-    tenantId = pathParts[0] || 'default'
+    tenantId = pathParts[0] || 'UrbanTours'
   }
 
   const response = NextResponse.next()

@@ -32,7 +32,7 @@ export async function getTenantFromRequest(
 
   // 3. fallback ל-default
   if (!tenantId) {
-    tenantId = "default"
+    tenantId = "UrbanTours"
   }
 
   const config = await loadTenantConfigServer(tenantId)
