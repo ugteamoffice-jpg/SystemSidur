@@ -270,7 +270,8 @@ const COLUMN_SIZING_KEY = 'workScheduleColumnSizing'
 
 function DataGrid({ schema }: { schema?: any }) {
   const fields = useTenantFields()
-  const columns = React.useMemo(() => createColumns(fields?.workSchedule || {}), [fields])
+  const WS = fields?.workSchedule || {} as any
+  const columns = React.useMemo(() => createColumns(WS), [WS])
   const [data, setData] = React.useState<WorkScheduleRecord[]>([])
   const [rowSelection, setRowSelection] = React.useState({})
   const [globalFilter, setGlobalFilter] = React.useState("")
