@@ -6,6 +6,7 @@ export interface TenantConfig {
   name: string
   apiUrl: string
   baseId: string
+  clerkOrgId?: string  // Clerk Organization ID לבקרת גישה
   tables: {
     WORK_SCHEDULE: string
     WORK_SCHEDULE_VIEW: string

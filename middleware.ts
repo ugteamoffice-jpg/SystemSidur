@@ -10,11 +10,6 @@ const isPublicRoute = createRouteMatcher([
 export default clerkMiddleware(async (auth, req) => {
   const url = req.nextUrl
 
-  // הפניה מ-/ ל-/default
-  if (url.pathname === '/') {
-    return NextResponse.redirect(new URL('/default', req.url))
-  }
-
   // שליפת tenant
   let tenantId = 'default'
   const pathParts = url.pathname.split('/').filter(Boolean)

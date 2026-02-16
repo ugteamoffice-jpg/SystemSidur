@@ -1,0 +1,67 @@
+{
+  "id": "VikoLahyani",
+  "name": "Viko Lahyani",
+  "clerkOrgId": "org_39lR4XBEVZ4dLgPs8CulhYhXBlK",
+  "apiUrl": "https://teable-production-bedd.up.railway.app",
+  "baseId": "bserWEBhcEttdBJ6JhU",
+  "tables": {
+    "WORK_SCHEDULE": "tblE2NNjqz0Ooinz5Jw",
+    "WORK_SCHEDULE_VIEW": "tblE2NNjqz0Ooinz5Jw",
+    "DRIVERS": "tblGjeRbcY1V2wlVNmx",
+    "CUSTOMERS": "tblxV5qkqbqSkJdLgIx",
+    "VEHICLES": "tbllTfcJiyONTqUNC0e",
+    "VEHICLE_TYPES": "tbllTfcJiyONTqUNC0e"
+  },
+  "fields": {
+    "workSchedule": {
+      "DATE": "fldrCAWSNdt2c8qcTMu",
+      "CUSTOMER": "fldBV1pNDr88Ixrqxn7",
+      "PICKUP_TIME": "fldbLmwxlda2znf8HVO",
+      "DESCRIPTION": "fld1lL1TUoKjKXQgZYl",
+      "DROPOFF_TIME": "fldmctvEUrVoEZSSHY0",
+      "VEHICLE_TYPE": "fld7JgLOaTdgvRUsp5I",
+      "DRIVER": "fld3TskhpzaTjLQapbo",
+      "VEHICLE_NUM": "fld8O5A4xXH3gul2sli",
+      "SENT": "fldVqAgzx1F7iNX9gWs",
+      "APPROVED": "fld09m5EbjcjrUtJoWn",
+      "PRICE_CLIENT_EXCL": "fldMdxAVoe5aVEAlS9w",
+      "PRICE_CLIENT_INCL": "fldiTwKoE7pKLMvg8SF",
+      "PRICE_DRIVER_EXCL": "fldJzGwH1hU6nC9zOMM",
+      "PRICE_DRIVER_INCL": "fldoc1rgtksguqJG44g",
+      "PROFIT": "fld4l39qto5prjqn99H",
+      "DRIVER_NOTES": "fldPxJQZMBJs7zyPW0z",
+      "MANAGER_NOTES": "fldmwdJtWnQm2CduJI4",
+      "ORDER_NAME": "fldRNFyoRF0VMjjJUDC",
+      "MOBILE": "fldOpozR3gVkz97z3G8",
+      "ID_NUM": "fldCWXo3BlQTpofVyrp",
+      "ORDER_FORM": "fldy1ExFQ8mjgB9yEey",
+      "ORDER_FORM_DATE": "fldq35K8kIK2aVFgqrZ",
+      "DRIVER_LINK_SYMMETRIC": "",
+      "SENT_RESET": "",
+      "ORDER_FORM_ATTACHMENT": ""
+    },
+    "drivers": {
+      "FIRST_NAME": "fldImLwMRtsUwSS4wNn",
+      "LAST_NAME": "fldphBAXhqm7NuO0jFT",
+      "PHONE": "fldtwfDxTp8gLM1j2dz",
+      "DRIVER_TYPE": "fld7Tr4gFkmnK93POm7",
+      "CAR_NUMBER": "fldcpX00zDXc0oTVsAS",
+      "STATUS": "fldFbyvzQdlBmm9XzlM"
+    },
+    "customers": {
+      "NAME": "fldEUfqDGZRdE4pfXfJ",
+      "HP": "fldgIzGQdjQMOiotaK2",
+      "CONTACT_NAME": "fldhr9u7C3QVhPOOC6d",
+      "PHONE": "fldxat0sXzTrW5zE778",
+      "EMAIL": "fldq76bDDRyAsOML95w",
+      "PAYMENT_METHOD": "fldz5Y1xHzzpcqrHI2x",
+      "ONGOING_PAYMENT": "fldo1VSMNptpG1kQM0C",
+      "ACCOUNTING_KEY": "fldEbU7hqZrSPUUngyX",
+      "CREATED_IN_ACCOUNTING": "fldNgxlGTBYU5RfDToV",
+      "STATUS": "fldpHfg9I7my3jujMnJ"
+    },
+    "vehicles": {
+      "VEHICLE_TYPE": "fldiX4aKjQnFE0DDgLL"
+    }
+  }
+}
