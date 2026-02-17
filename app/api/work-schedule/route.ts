@@ -21,24 +21,10 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const take = Math.min(Number(searchParams.get('take') || '1000'), 2000);
     const dateParam = searchParams.get('date');
-    const startDateParam = searchParams.get('startDate');
-    const endDateParam = searchParams.get('endDate');
 
     let endpoint = `${API_URL}/api/table/${TABLE_ID}/record?take=${take}&fieldKeyType=id`;
-    
-    // Build filter
-    const filterSet: any[] = [];
     if (dateParam) {
-      filterSet.push({ fieldId: DATE_FIELD_ID, operator: "is", value: dateParam });
-    }
-    if (startDateParam) {
-      filterSet.push({ fieldId: DATE_FIELD_ID, operator: "isOnOrAfter", value: startDateParam });
-    }
-    if (endDateParam) {
-      filterSet.push({ fieldId: DATE_FIELD_ID, operator: "isOnOrBefore", value: endDateParam });
-    }
-    if (filterSet.length > 0) {
-      const filterObj = { operator: "and", filterSet };
+      const filterObj = { operator: "and", filterSet: [{ fieldId: DATE_FIELD_ID, operator: "is", value: dateParam }] };
       endpoint += `&filter=${encodeURIComponent(JSON.stringify(filterObj))}`;
     }
 

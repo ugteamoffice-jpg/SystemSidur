@@ -124,14 +124,20 @@ export function ReportDialog({ open, onOpenChange, reportType }: ReportDialogPro
   const fetchData = async () => {
     try {
       setIsLoading(true)
-      const params = new URLSearchParams({ take: "2000" })
-      if (startDate) params.set("startDate", format(startDate, "yyyy-MM-dd"))
-      if (endDate) params.set("endDate", format(endDate, "yyyy-MM-dd"))
-
-      const response = await fetch(`/api/work-schedule?${params.toString()}&_t=${Date.now()}`)
+      const response = await fetch(`/api/work-schedule?take=2000&_t=${Date.now()}`)
       if (!response.ok) throw new Error("Failed to fetch")
       const json = await response.json()
       let records: WorkScheduleRecord[] = json.records || []
+
+      // Client-side date range filter
+      if (startDate) {
+        const startStr = format(startDate, "yyyy-MM-dd")
+        records = records.filter((r) => (r.fields[WS.DATE] || "").substring(0, 10) >= startStr)
+      }
+      if (endDate) {
+        const endStr = format(endDate, "yyyy-MM-dd")
+        records = records.filter((r) => (r.fields[WS.DATE] || "").substring(0, 10) <= endStr)
+      }
 
       // Client-side name filter
       if (filterName.trim()) {
