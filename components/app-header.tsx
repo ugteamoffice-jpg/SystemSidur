@@ -1,19 +1,27 @@
 "use client"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Database, Moon, Sun, Settings } from "lucide-react"
+import { Database, Moon, Sun, Settings, ChevronDown } from "lucide-react"
 import { useTheme } from "next-themes"
 import dynamic from "next/dynamic"
 import { ReportSettingsDialog } from "@/components/report-settings-dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 const UserButton = dynamic(() => import("@clerk/nextjs").then(mod => mod.UserButton), { ssr: false })
 
-type PageType = "work-schedule" | "customers" | "drivers" | "vehicles"
+type PageType = "work-schedule" | "customers" | "drivers" | "vehicles" | "report-customer" | "report-driver" | "report-invoices" | "report-profit"
 
 interface AppHeaderProps {
   activePage: PageType
   onPageChange: (page: PageType) => void
 }
+
+const reportPages: PageType[] = ["report-customer", "report-driver", "report-invoices", "report-profit"]
 
 export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
   const { theme, setTheme } = useTheme()
@@ -25,6 +33,8 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
     { id: "drivers" as PageType, label: "נהגים" },
     { id: "vehicles" as PageType, label: "רכבים" },
   ]
+
+  const isReportActive = reportPages.includes(activePage)
 
   return (
     <>
@@ -83,6 +93,35 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
                 {item.label}
               </Button>
             ))}
+
+            {/* Reports dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className={`hover:bg-accent hover:text-accent-foreground ${
+                    isReportActive ? "bg-accent text-accent-foreground" : ""
+                  }`}
+                >
+                  דוחות
+                  <ChevronDown className="h-4 w-4 mr-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" dir="rtl">
+                <DropdownMenuItem onClick={() => onPageChange("report-customer")}>
+                  דוח לקוח
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onPageChange("report-driver")}>
+                  דוח נהג
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onPageChange("report-invoices")}>
+                  דוח חשבוניות
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onPageChange("report-profit")}>
+                  דוח רווח והפסד
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </nav>
         </div>
       </div>
