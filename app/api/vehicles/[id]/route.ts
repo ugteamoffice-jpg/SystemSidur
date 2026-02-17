@@ -9,13 +9,17 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const { config, apiKey } = ctx;
 
     const body = await request.json()
-    const response = await fetch(`${config.apiUrl}/api/table/${config.tables.VEHICLES}/record/${id}`, {
+    const response = await fetch(`${config.apiUrl}/api/table/${config.tables.VEHICLES}/record`, {
       method: 'PATCH',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ fields: body.fields })
+      body: JSON.stringify({
+        fieldKeyType: "id",
+        typecast: true,
+        records: [{ id, fields: body.fields }]
+      })
     });
     if (!response.ok) {
       const err = await response.text();
