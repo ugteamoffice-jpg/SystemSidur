@@ -66,7 +66,7 @@ import {
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
-import { useTenantFields } from "@/lib/tenant-context"
+import { useTenantFields, useTenant } from "@/lib/tenant-context"
 
 // --- ממשקים ---
 export interface WorkScheduleRecord {
@@ -266,10 +266,10 @@ function createColumns(WS: any): ColumnDef<WorkScheduleRecord>[] {
 ]
 }
 
-const COLUMN_SIZING_KEY = 'workScheduleColumnSizing'
-
 function DataGrid({ schema }: { schema?: any }) {
   const fields = useTenantFields()
+  const { tenantId } = useTenant()
+  const COLUMN_SIZING_KEY = `workScheduleColumnSizing_${tenantId}`
   const WS = fields?.workSchedule || {} as any
   const columns = React.useMemo(() => createColumns(WS), [WS])
   const [data, setData] = React.useState<WorkScheduleRecord[]>([])

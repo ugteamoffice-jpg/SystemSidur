@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, Search, Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { useTenantFields } from "@/lib/tenant-context"
+import { useTenantFields, useTenant } from "@/lib/tenant-context"
 
 interface Driver {
   id: string
@@ -21,6 +21,7 @@ interface Driver {
 
 export default function DriversGrid() {
   const tenantFields = useTenantFields()
+  const { tenantId } = useTenant()
   const STATUS_FIELD_ID = tenantFields?.drivers.STATUS || ""
   const FIRST_NAME_ID = tenantFields?.drivers.FIRST_NAME || ""
   const LAST_NAME_ID = tenantFields?.drivers.LAST_NAME || ""
@@ -45,7 +46,7 @@ export default function DriversGrid() {
   const ROW_HEIGHT = 53
   const BUFFER_SIZE = 10 
 
-  const DRIVERS_COL_SIZING_KEY = 'driversColumnSizing'
+  const DRIVERS_COL_SIZING_KEY = `driversColumnSizing_${tenantId}`
   const driverColumns = [
     { key: 'firstName', header: 'שם פרטי', defaultWidth: 150, minWidth: 80 },
     { key: 'lastName', header: 'שם משפחה', defaultWidth: 150, minWidth: 80 },

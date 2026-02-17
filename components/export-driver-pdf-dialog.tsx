@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/popover"
 import { useToast } from "@/hooks/use-toast"
 import { loadReportSettings, type ReportSettings } from "@/components/report-settings-dialog"
-import { useTenantFields } from "@/lib/tenant-context"
+import { useTenantFields, useTenant } from "@/lib/tenant-context"
 
 interface ExportDriverPdfDialogProps {
   open: boolean
@@ -61,6 +61,7 @@ export function ExportDriverPdfDialog({
 }: ExportDriverPdfDialogProps) {
   const { toast } = useToast()
   const tenantFields = useTenantFields()
+  const { tenantId } = useTenant()
   const WS = tenantFields?.workSchedule
   
   const [startDate, setStartDate] = React.useState<Date | undefined>(currentDate)
@@ -89,7 +90,7 @@ export function ExportDriverPdfDialog({
     }
 
     // טעינת הגדרות חברה
-    const settings = loadReportSettings()
+    const settings = loadReportSettings(tenantId)
 
     const startOfDay = new Date(startDate)
     startOfDay.setHours(0, 0, 0, 0)

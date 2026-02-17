@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Plus, XCircle, CheckCircle, Search, Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { useTenantFields } from "@/lib/tenant-context"
+import { useTenantFields, useTenant } from "@/lib/tenant-context"
 
 interface Customer {
   id: string
@@ -22,6 +22,7 @@ interface Customer {
 
 export default function CustomersGrid() {
   const tenantFields = useTenantFields()
+  const { tenantId } = useTenant()
   const C = tenantFields?.customers
   const STATUS_FIELD_ID = C?.STATUS || ""
   const CREATED_IN_ACCOUNTING_ID = C?.CREATED_IN_ACCOUNTING || ""
@@ -54,7 +55,7 @@ export default function CustomersGrid() {
   const ROW_HEIGHT = 53
   const BUFFER_SIZE = 10 
 
-  const CUSTOMERS_COL_SIZING_KEY = 'customersColumnSizing'
+  const CUSTOMERS_COL_SIZING_KEY = `customersColumnSizing_${tenantId}`
   const customerColumns = [
     { key: 'name', header: 'שם לקוח', defaultWidth: 200, minWidth: 100 },
     { key: 'hp', header: 'ח.פ', defaultWidth: 120, minWidth: 80 },

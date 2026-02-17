@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/popover"
 import { useToast } from "@/hooks/use-toast"
 import { loadReportSettings } from "@/components/report-settings-dialog"
-import { useTenantFields } from "@/lib/tenant-context"
+import { useTenantFields, useTenant } from "@/lib/tenant-context"
 
 interface SendWhatsappDialogProps {
   open: boolean
@@ -57,6 +57,7 @@ export function SendWhatsappDialog({
 }: SendWhatsappDialogProps) {
   const { toast } = useToast()
   const tenantFields = useTenantFields()
+  const { tenantId } = useTenant()
   const WS = tenantFields?.workSchedule
   const DRV = tenantFields?.drivers
   const FIRST_NAME_ID = DRV?.FIRST_NAME || ""
@@ -139,7 +140,7 @@ export function SendWhatsappDialog({
     if (!initialDriverName || !driverInfo) return null
     if (!startDate || !endDate) return null
 
-    const settings = loadReportSettings()
+    const settings = loadReportSettings(tenantId)
 
     const startOfDay = new Date(startDate)
     startOfDay.setHours(0, 0, 0, 0)

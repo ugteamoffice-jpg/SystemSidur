@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Plus, Search, Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { useTenantFields } from "@/lib/tenant-context"
+import { useTenantFields, useTenant } from "@/lib/tenant-context"
 
 interface Vehicle {
   id: string
@@ -20,6 +20,7 @@ interface Vehicle {
 
 export default function VehiclesGrid() {
   const tenantFields = useTenantFields()
+  const { tenantId } = useTenant()
   const VEHICLE_TYPE_FIELD_ID = tenantFields?.vehicles.VEHICLE_TYPE || ""
 
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
@@ -36,7 +37,7 @@ export default function VehiclesGrid() {
   const ROW_HEIGHT = 53
   const BUFFER_SIZE = 5
 
-  const VEHICLES_COL_SIZING_KEY = 'vehiclesColumnSizing'
+  const VEHICLES_COL_SIZING_KEY = `vehiclesColumnSizing_${tenantId}`
   const vehicleColumns = [
     { key: 'type', header: 'סוג רכב', defaultWidth: 300, minWidth: 100 },
   ]

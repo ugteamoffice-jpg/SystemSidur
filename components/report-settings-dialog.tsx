@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
+import { useTenant } from "@/lib/tenant-context"
 
 export interface ReportSettings {
   companyName: string
@@ -26,8 +27,6 @@ export interface ReportSettings {
   footerText: string
 }
 
-const STORAGE_KEY = "reportSettings"
-
 const defaultSettings: ReportSettings = {
   companyName: "",
   logoBase64: "",
@@ -37,10 +36,11 @@ const defaultSettings: ReportSettings = {
   footerText: "",
 }
 
-export function loadReportSettings(): ReportSettings {
+export function loadReportSettings(tenantId?: string): ReportSettings {
   if (typeof window === "undefined") return defaultSettings
   try {
-    const saved = localStorage.getItem(STORAGE_KEY)
+    const key = tenantId ? `reportSettings_${tenantId}` : "reportSettings"
+    const saved = localStorage.getItem(key)
     if (saved) return { ...defaultSettings, ...JSON.parse(saved) }
   } catch (e) {
     console.error("Failed to load report settings:", e)
@@ -48,9 +48,10 @@ export function loadReportSettings(): ReportSettings {
   return defaultSettings
 }
 
-function saveReportSettings(settings: ReportSettings) {
+function saveReportSettings(settings: ReportSettings, tenantId?: string) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
+    const key = tenantId ? `reportSettings_${tenantId}` : "reportSettings"
+    localStorage.setItem(key, JSON.stringify(settings))
   } catch (e) {
     console.error("Failed to save report settings:", e)
   }
@@ -63,14 +64,15 @@ interface ReportSettingsDialogProps {
 
 export function ReportSettingsDialog({ open, onOpenChange }: ReportSettingsDialogProps) {
   const { toast } = useToast()
+  const { tenantId } = useTenant()
   const [settings, setSettings] = React.useState<ReportSettings>(defaultSettings)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   React.useEffect(() => {
     if (open) {
-      setSettings(loadReportSettings())
+      setSettings(loadReportSettings(tenantId))
     }
-  }, [open])
+  }, [open, tenantId])
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -100,7 +102,7 @@ export function ReportSettingsDialog({ open, onOpenChange }: ReportSettingsDialo
   }
 
   const handleSave = () => {
-    saveReportSettings(settings)
+    saveReportSettings(settings, tenantId)
     toast({ title: "נשמר", description: "הגדרות הדוח נשמרו בהצלחה" })
     onOpenChange(false)
   }
