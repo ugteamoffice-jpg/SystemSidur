@@ -137,17 +137,16 @@ export default function VehiclesGrid() {
     if (!editingVehicleId) return
 
     try {
-      const filteredFields = Object.entries(newVehicle).reduce((acc, [key, value]) => {
-        if (value !== "" && value !== undefined && value !== null) {
-          acc[key] = value
-        }
-        return acc
-      }, {} as any)
+      // שליחת רק שדה סוג רכב - שדות מקושרים הם read-only
+      const fields: any = {}
+      if (newVehicle[VEHICLE_TYPE_FIELD_ID]) {
+        fields[VEHICLE_TYPE_FIELD_ID] = newVehicle[VEHICLE_TYPE_FIELD_ID]
+      }
 
       const response = await fetch(`/api/vehicles/${editingVehicleId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fields: filteredFields }),
+        body: JSON.stringify({ fields }),
       })
 
       if (!response.ok) throw new Error("Failed to update")
@@ -173,7 +172,7 @@ export default function VehiclesGrid() {
 
   const handleRowClick = (vehicle: Vehicle) => {
     setEditingVehicleId(vehicle.id)
-    setNewVehicle({ ...vehicle.fields } as any)
+    setNewVehicle({ [VEHICLE_TYPE_FIELD_ID]: vehicle.fields[VEHICLE_TYPE_FIELD_ID] || "" } as any)
     setIsDialogOpen(true)
   }
 
