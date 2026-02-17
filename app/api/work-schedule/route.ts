@@ -19,7 +19,7 @@ export async function GET(request: Request) {
     const DATE_FIELD_ID = config.fields.workSchedule.DATE;
 
     const { searchParams } = new URL(request.url);
-    const take = Math.min(Number(searchParams.get('take') || '1000'), 2000);
+    const take = searchParams.get('take') || '1000';
     const dateParam = searchParams.get('date');
 
     let endpoint = `${API_URL}/api/table/${TABLE_ID}/record?take=${take}&fieldKeyType=id`;
@@ -29,7 +29,11 @@ export async function GET(request: Request) {
     }
 
     const response = await fetch(endpoint, { headers: { 'Authorization': `Bearer ${apiKey}` }, cache: 'no-store' });
-    if (!response.ok) return NextResponse.json({ error: 'Failed' }, { status: response.status });
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error('work-schedule GET failed:', response.status, errText);
+      return NextResponse.json({ error: 'Failed', details: errText }, { status: response.status });
+    }
     const data = await safeJsonParse(response);
     return NextResponse.json(data || { records: [] });
   } catch (error) {

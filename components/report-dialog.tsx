@@ -124,7 +124,7 @@ export function ReportDialog({ open, onOpenChange, reportType }: ReportDialogPro
   const fetchData = async () => {
     try {
       setIsLoading(true)
-      const response = await fetch(`/api/work-schedule?take=2000&_t=${Date.now()}`)
+      const response = await fetch(`/api/work-schedule?take=1000&_t=${Date.now()}`)
       if (!response.ok) throw new Error("Failed to fetch")
       const json = await response.json()
       let records: WorkScheduleRecord[] = json.records || []
