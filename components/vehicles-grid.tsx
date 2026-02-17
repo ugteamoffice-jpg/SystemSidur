@@ -221,7 +221,7 @@ export default function VehiclesGrid() {
   const offsetY = startIndex * ROW_HEIGHT
 
   return (
-    <div className="w-full h-[calc(100vh-120px)] flex flex-col p-6 space-y-4 overflow-hidden" dir="rtl">
+    <div className="w-full h-full flex flex-col p-6 pt-4 space-y-4 overflow-hidden" dir="rtl">
       <div className="flex items-center gap-4 flex-none">
         <Button onClick={() => setIsDialogOpen(true)}>
           <Plus className="h-4 w-4 ml-2" />
