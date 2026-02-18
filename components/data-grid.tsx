@@ -12,7 +12,7 @@ import {
   useReactTable,
   ColumnSizingState,
 } from "@tanstack/react-table"
-import { Calendar as CalendarIcon, LayoutDashboard, AlertCircle, CheckCircle2, UserMinus, Trash2, Loader2 } from "lucide-react"
+import { Calendar as CalendarIcon, LayoutDashboard, AlertCircle, CheckCircle2, UserMinus, Trash2, Loader2, Send } from "lucide-react"
 import { format } from "date-fns"
 import { he } from "date-fns/locale"
 
@@ -172,7 +172,7 @@ function createColumns(WS: any): ColumnDef<WorkScheduleRecord>[] {
     minSize: 80,
   },
   {
-    accessorKey: `fields.${WS.CUSTOMER}`,
+    accessorFn: (row: any) => renderLinkField(row.fields[WS.CUSTOMER]),
     id: "customer",
     header: "שם לקוח",
     cell: ({ row }) => <div className="text-right truncate px-2">{renderLinkField(row.original.fields[WS.CUSTOMER])}</div>,
@@ -208,7 +208,7 @@ function createColumns(WS: any): ColumnDef<WorkScheduleRecord>[] {
     minSize: 100,
   },
   {
-    accessorKey: `fields.${WS.VEHICLE_TYPE}`,
+    accessorFn: (row: any) => renderLinkField(row.fields[WS.VEHICLE_TYPE]),
     id: "vehicleType",
     header: "סוג רכב",
     cell: ({ row }) => <div className="text-right truncate px-2">{renderLinkField(row.original.fields[WS.VEHICLE_TYPE])}</div>,
@@ -216,7 +216,7 @@ function createColumns(WS: any): ColumnDef<WorkScheduleRecord>[] {
     minSize: 100,
   },
   {
-    accessorKey: `fields.${WS.DRIVER}`,
+    accessorFn: (row: any) => renderLinkField(row.fields[WS.DRIVER]),
     id: "driver",
     header: "שם נהג",
     cell: ({ row }) => <div className="text-right truncate px-2">{renderLinkField(row.original.fields[WS.DRIVER])}</div>,
@@ -276,6 +276,7 @@ function DataGrid({ schema }: { schema?: any }) {
   const [rowSelection, setRowSelection] = React.useState({})
   const [globalFilter, setGlobalFilter] = React.useState("")
   const [refreshKey, setRefreshKey] = React.useState(0)
+  const tableScrollRef = React.useRef<HTMLDivElement>(null)
   const [dateFilter, setDateFilter] = React.useState<Date>(new Date())
   const [currentMonth, setCurrentMonth] = React.useState<Date>(new Date())
   
@@ -475,8 +476,9 @@ function DataGrid({ schema }: { schema?: any }) {
             
             const result = await response.json()
             
-            if (totalCreated === 0 && result.record) {
-              firstNewRecord = result.record
+            if (totalCreated === 0) {
+              const rec = result.records?.[0] || result.record
+              if (rec) firstNewRecord = rec
             }
             
             totalCreated++
@@ -553,10 +555,12 @@ function DataGrid({ schema }: { schema?: any }) {
     return filtered
   }, [data, dateFilter, globalFilter])
 
+  const [sorting, setSorting] = React.useState<SortingState>([])
+
   const table = useReactTable({
     data: filteredData, columns, columnResizeMode: "onChange", getCoreRowModel: getCoreRowModel(), getSortedRowModel: getSortedRowModel(), getFilteredRowModel: getFilteredRowModel(),
-    onRowSelectionChange: setRowSelection, onColumnSizingChange: setColumnSizing,
-    meta: { updateRecordField }, state: { rowSelection, columnSizing },
+    onRowSelectionChange: setRowSelection, onColumnSizingChange: setColumnSizing, onSortingChange: setSorting,
+    meta: { updateRecordField }, state: { rowSelection, columnSizing, sorting },
   })
 
   const totals = React.useMemo(() => {
@@ -586,7 +590,7 @@ function DataGrid({ schema }: { schema?: any }) {
     <div className="w-full h-[calc(100vh-2rem)] flex flex-col space-y-4 p-4 overflow-hidden" dir="rtl">
       <div className="flex flex-col gap-4 flex-none">
         {/* שורה אחת - הכל */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
             <PopoverTrigger asChild>
               <Button variant={"outline"} className="w-[200px] justify-start text-right font-normal shrink-0">
@@ -631,6 +635,44 @@ function DataGrid({ schema }: { schema?: any }) {
           >
             <Trash2 className="h-4 w-4" />
           </Button>
+
+          {/* Bulk mark sent/approved */}
+          {selectedCount > 0 && (
+            <>
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="shrink-0 text-xs"
+                onClick={async () => {
+                  const rows = table.getFilteredSelectedRowModel().rows;
+                  for (const row of rows) {
+                    await updateRecordField(row.original.id, WS.SENT, true);
+                  }
+                  setRowSelection({});
+                }}
+                title="סמן שלח לכל המסומנות"
+              >
+                <Send className="h-3.5 w-3.5 ml-1" />
+                סמן שלח ({selectedCount})
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="shrink-0 text-xs"
+                onClick={async () => {
+                  const rows = table.getFilteredSelectedRowModel().rows;
+                  for (const row of rows) {
+                    await updateRecordField(row.original.id, WS.APPROVED, true);
+                  }
+                  setRowSelection({});
+                }}
+                title="סמן מאושר לכל המסומנות"
+              >
+                <CheckCircle2 className="h-3.5 w-3.5 ml-1" />
+                סמן מאושר ({selectedCount})
+              </Button>
+            </>
+          )}
           
           <div className="flex-1 min-w-[120px]">
             <Input 
@@ -669,33 +711,37 @@ function DataGrid({ schema }: { schema?: any }) {
           </div>
 
           {/* חלון סיכום מחירים */}
-          <div className="flex gap-6 text-xs bg-muted/20 p-2 px-4 rounded-md border shadow-sm items-center whitespace-nowrap">
-             <div className="flex flex-col gap-1 items-start justify-center">
-               <span>סה"כ לקוח+ מע"מ: <span className="font-bold text-sm">{totals.p1.toLocaleString()} ₪</span></span>
-               <span>סה"כ לקוח כולל מע"מ: <span className="font-bold text-sm">{totals.p2.toLocaleString()} ₪</span></span>
+          <div className="flex flex-wrap gap-3 text-xs bg-muted/20 p-2 px-4 rounded-md border shadow-sm items-center">
+             <div className="flex flex-col gap-1 items-start justify-center whitespace-nowrap">
+               <span>לקוח+ מע"מ: <span className="font-bold text-sm">{totals.p1.toLocaleString()} ₪</span></span>
+               <span>לקוח כולל: <span className="font-bold text-sm">{totals.p2.toLocaleString()} ₪</span></span>
              </div>
              <div className="w-px bg-border self-stretch my-1"></div>
-             <div className="flex flex-col gap-1 items-start justify-center">
-               <span>סה"כ נהג+ מע"מ: <span className="font-bold text-sm">{totals.p3.toLocaleString()} ₪</span></span>
-               <span>סה"כ נהג כולל מע"מ: <span className="font-bold text-sm">{totals.p4.toLocaleString()} ₪</span></span>
+             <div className="flex flex-col gap-1 items-start justify-center whitespace-nowrap">
+               <span>נהג+ מע"מ: <span className="font-bold text-sm">{totals.p3.toLocaleString()} ₪</span></span>
+               <span>נהג כולל: <span className="font-bold text-sm">{totals.p4.toLocaleString()} ₪</span></span>
              </div>
              <div className="w-px bg-border self-stretch my-1"></div>
-             <div className="flex flex-col gap-1 items-start justify-center text-green-600 dark:text-green-400 font-medium">
+             <div className="flex flex-col gap-1 items-start justify-center text-green-600 dark:text-green-400 font-medium whitespace-nowrap">
                <span>רווח+ מע"מ: <span className="font-bold text-sm">{totals.p5.toLocaleString()} ₪</span></span>
-               <span>רווח כולל מע"מ: <span className="font-bold text-sm">{totals.p6.toLocaleString()} ₪</span></span>
+               <span>רווח כולל: <span className="font-bold text-sm">{totals.p6.toLocaleString()} ₪</span></span>
              </div>
           </div>
         </div>
       </div>
       
-      <div className="rounded-md border flex-1 overflow-auto min-h-0" key={refreshKey}>
+      <div className="rounded-md border flex-1 overflow-auto min-h-0" key={refreshKey} ref={tableScrollRef}>
         <Table className="relative w-full" style={{ tableLayout: 'fixed' }}>
           <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <TableHead key={header.id} colSpan={header.colSpan} className="text-right relative border-l select-none group hover:bg-muted/30" style={{ width: header.getSize() }}>
-                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                    <div className={`flex items-center gap-1 ${header.column.getCanSort() ? 'cursor-pointer' : ''}`} onClick={header.column.getToggleSortingHandler()}>
+                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                      {header.column.getIsSorted() === "asc" && <span className="text-xs">▲</span>}
+                      {header.column.getIsSorted() === "desc" && <span className="text-xs">▼</span>}
+                    </div>
                     {header.column.getCanResize() && (
                       <div onMouseDown={(e) => {
                           e.stopPropagation(); e.preventDefault(); setIsResizing(true);
@@ -1051,7 +1097,13 @@ function DataGrid({ schema }: { schema?: any }) {
         open={!!editingRecord} 
         onOpenChange={(isOpen: boolean) => !isOpen && setEditingRecord(null)} 
         initialData={editingRecord} 
-        onRideSaved={() => { setEditingRecord(null); fetchData(); }} 
+        onRideSaved={() => { 
+          const scrollTop = tableScrollRef.current?.scrollTop || 0;
+          setEditingRecord(null); 
+          fetchData().then(() => { 
+            requestAnimationFrame(() => { if (tableScrollRef.current) tableScrollRef.current.scrollTop = scrollTop; });
+          }); 
+        }} 
         triggerChild={<span />}
         defaultDate={format(dateFilter, "yyyy-MM-dd")}
       />

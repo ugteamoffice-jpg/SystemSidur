@@ -147,7 +147,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
 
   React.useEffect(() => {
     if (open && lists.customers.length === 0) {
-      const load = async (url: string) => {
+      const load = async (url: string, isDrivers = false) => {
         try {
           const r = await fetch(url);
           if (!r.ok) {
@@ -156,14 +156,20 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
           }
           const d = await r.json();
           const items = d.records ? d.records.map((x: any) => {
-            const firstVal = x.fields && Object.values(x.fields)[0];
             let title = "";
-            if (Array.isArray(firstVal)) {
-              title = firstVal[0]?.title || firstVal[0]?.text || String(firstVal[0] || "");
-            } else if (typeof firstVal === 'object' && firstVal !== null) {
-              title = firstVal.title || firstVal.text || String(firstVal);
+            if (isDrivers && tenantFields?.drivers) {
+              const first = x.fields?.[tenantFields.drivers.FIRST_NAME] || ""
+              const last = x.fields?.[tenantFields.drivers.LAST_NAME] || ""
+              title = `${first} ${last}`.trim()
             } else {
-              title = String(firstVal || "");
+              const firstVal = x.fields && Object.values(x.fields)[0];
+              if (Array.isArray(firstVal)) {
+                title = firstVal[0]?.title || firstVal[0]?.text || String(firstVal[0] || "");
+              } else if (typeof firstVal === 'object' && firstVal !== null) {
+                title = firstVal.title || firstVal.text || String(firstVal);
+              } else {
+                title = String(firstVal || "");
+              }
             }
             return { id: x.id, title };
           }) : [];
@@ -173,7 +179,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
           return [];
         }
       }
-      Promise.all([load('/api/customers'), load('/api/drivers'), load('/api/vehicles')])
+      Promise.all([load('/api/customers'), load('/api/drivers', true), load('/api/vehicles')])
         .then(([c, d, v]) => setLists({ customers: c, drivers: d, vehicles: v }))
     }
   }, [open])
@@ -392,7 +398,8 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
         const result = await res.json();
         if (result.success || result.id || (result.fields && result.id)) {
           await uploadFileToRecord(initialData.id)
-          toast({ title: "עודכן בהצלחה!" });
+          // saved successfully - no toast needed
+          
           setOpen(false);
           if (onRideSaved) onRideSaved();
           return;
@@ -417,7 +424,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
         await uploadFileToRecord(newRecordId)
       }
 
-      toast({ title: "נשמר בהצלחה!" })
+      // saved successfully - no toast needed
       setOpen(false)
       if (onRideSaved) onRideSaved()
 
@@ -442,7 +449,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
           )}
         </DialogTrigger>
       )}
-      <DialogContent className="sm:max-w-[700px] h-[80vh] flex flex-col" dir="rtl">
+      <DialogContent className="sm:max-w-[900px] h-[92vh] flex flex-col" dir="rtl">
         <DialogHeader>
           <DialogTitle>{isEdit ? "עריכת נסיעה" : "נסיעה חדשה"}</DialogTitle>
           <DialogDescription>מלא את פרטי הנסיעה כאן. שדות המסומנים ב-* הם חובה.</DialogDescription>
@@ -611,7 +618,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ fields: { [FIELDS.ORDER_FORM]: remaining.length > 0 ? remaining : null } })
                               })
-                              toast({ title: "הקובץ הוסר בהצלחה" })
+                              // file removed
                             } catch { toast({ title: "שגיאה בהסרת הקובץ", variant: "destructive" }) }
                           }}>
                           <X className="w-3 h-3" />

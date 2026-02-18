@@ -161,7 +161,11 @@ export function SendWhatsappDialog({
     filteredRecords.sort((a, b) => {
       const dateA = new Date(a.fields[WS?.DATE || ""] || 0)
       const dateB = new Date(b.fields[WS?.DATE || ""] || 0)
-      return dateA.getTime() - dateB.getTime()
+      if (dateA.getTime() !== dateB.getTime()) return dateA.getTime() - dateB.getTime()
+      // Same date - sort by pickup time
+      const timeA = a.fields[WS?.PICKUP_TIME || ""] || "99:99"
+      const timeB = b.fields[WS?.PICKUP_TIME || ""] || "99:99"
+      return timeA.localeCompare(timeB)
     })
 
     const isContractor = driverInfo.type === "קבלן"
@@ -179,7 +183,6 @@ export function SendWhatsappDialog({
       const goTime = fields[WS?.PICKUP_TIME || ""] || "-"
       const route = fields[WS?.DESCRIPTION || ""] || "-"
       const returnTime = fields[WS?.DROPOFF_TIME || ""] || ""
-      const vehicleType = getVehicleType(record, WS?.VEHICLE_TYPE || "")
       const priceBeforeVat = Number(fields[WS?.PRICE_DRIVER_EXCL || ""]) || 0
       const priceWithVat = Number(fields[WS?.PRICE_DRIVER_INCL || ""]) || 0
 
@@ -187,7 +190,6 @@ export function SendWhatsappDialog({
       totalWithVat += priceWithVat
 
       message += `\n*תאריך* - ${dateStr}\n`
-      message += `*סוג רכב* - ${vehicleType}\n`
 
       // שעת חזור רק אם קיימת
       if (returnTime) {

@@ -6,7 +6,6 @@ import { he } from "date-fns/locale"
 import { Calendar as CalendarIcon, Loader2, Search, X, LayoutDashboard, SlidersHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Calendar } from "@/components/ui/calendar"
 import { Label } from "@/components/ui/label"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -63,6 +62,22 @@ export function ReportPage({ reportType }: ReportPageProps) {
   const [hasSearched, setHasSearched] = React.useState(false)
   const [editingRecord, setEditingRecord] = React.useState<WorkScheduleRecord | null>(null)
   const [globalFilter, setGlobalFilter] = React.useState("")
+
+  // Column resizing
+  const defaultWidths: Record<string, number> = {
+    date: 95, customer: 130, pickup: 80, route: 200, dropoff: 80, 
+    vehicleType: 100, driver: 110, vehicleNum: 85, 
+    p1: 100, p2: 110, p3: 100, p4: 100, profit: 80
+  }
+  const [colWidths, setColWidths] = React.useState<Record<string, number>>(defaultWidths)
+  const resizeCol = (colId: string, startX: number, startWidth: number) => {
+    const onMouseMove = (e: MouseEvent) => {
+      const newWidth = Math.max(50, startWidth + (startX - e.clientX))
+      setColWidths(prev => ({ ...prev, [colId]: newWidth }))
+    }
+    const onMouseUp = () => { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); }
+    document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp)
+  }
 
   const today = new Date()
   const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
@@ -439,29 +454,27 @@ export function ReportPage({ reportType }: ReportPageProps) {
             <Table className="relative w-full" style={{ tableLayout: "fixed" }}>
               <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                 <TableRow>
-                  <TableHead className="text-right pr-4 w-[95px]">תאריך</TableHead>
-                  <TableHead className="text-center w-[55px]">שלח</TableHead>
-                  <TableHead className="text-center w-[55px]">מאושר</TableHead>
-                  <TableHead className="text-right w-[130px]">שם לקוח</TableHead>
-                  <TableHead className="text-right w-[80px]">התייצבות</TableHead>
-                  <TableHead className="text-right w-[200px]">מסלול</TableHead>
-                  <TableHead className="text-right w-[80px]">חזור</TableHead>
-                  <TableHead className="text-right w-[100px]">סוג רכב</TableHead>
-                  <TableHead className="text-right w-[110px]">שם נהג</TableHead>
-                  <TableHead className="text-right w-[85px]">מספר רכב</TableHead>
-                  <TableHead className="text-right w-[100px]">לקוח+ מע״מ</TableHead>
-                  <TableHead className="text-right w-[110px]">לקוח כולל</TableHead>
-                  <TableHead className="text-right w-[100px]">נהג+ מע״מ</TableHead>
-                  <TableHead className="text-right w-[100px]">נהג כולל</TableHead>
-                  <TableHead className="text-right w-[80px]">רווח</TableHead>
+                  {[
+                    { id: "date", label: "תאריך" }, { id: "customer", label: "שם לקוח" },
+                    { id: "pickup", label: "התייצבות" }, { id: "route", label: "מסלול" },
+                    { id: "dropoff", label: "חזור" }, { id: "vehicleType", label: "סוג רכב" },
+                    { id: "driver", label: "שם נהג" }, { id: "vehicleNum", label: "מספר רכב" },
+                    { id: "p1", label: "לקוח+ מע״מ" }, { id: "p2", label: "לקוח כולל" },
+                    { id: "p3", label: "נהג+ מע״מ" }, { id: "p4", label: "נהג כולל" },
+                    { id: "profit", label: "רווח" },
+                  ].map(col => (
+                    <TableHead key={col.id} className="text-right relative border-l select-none group hover:bg-muted/30" style={{ width: colWidths[col.id] }}>
+                      {col.label}
+                      <div onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); resizeCol(col.id, e.clientX, colWidths[col.id]); }}
+                        className="absolute top-0 left-0 w-[4px] h-full cursor-col-resize bg-transparent hover:bg-primary/50 active:bg-primary/70" />
+                    </TableHead>
+                  ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredData.map((record) => (
                   <TableRow key={record.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setEditingRecord(record)}>
                     <TableCell className="text-right pr-4 truncate">{record.fields[WS.DATE] ? format(new Date(record.fields[WS.DATE]), "dd/MM/yyyy") : "-"}</TableCell>
-                    <TableCell className="text-center"><Checkbox checked={!!record.fields[WS.SENT]} disabled className="h-4 w-4" /></TableCell>
-                    <TableCell className="text-center"><Checkbox checked={!!record.fields[WS.APPROVED]} disabled className="h-4 w-4" /></TableCell>
                     <TableCell className="text-right truncate">{renderLinkField(record.fields[WS.CUSTOMER])}</TableCell>
                     <TableCell className="text-right truncate">{record.fields[WS.PICKUP_TIME] || "-"}</TableCell>
                     <TableCell className="text-right truncate" title={record.fields[WS.DESCRIPTION]}>{record.fields[WS.DESCRIPTION] || "-"}</TableCell>

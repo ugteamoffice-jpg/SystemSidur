@@ -72,7 +72,6 @@ export function RecordEditDialog({ record, schema, open, onOpenChange, onSave }:
       if (response.ok) {
         const updatedRecord = await response.json()
         onSave({ ...record, fields: fieldsToSave })
-        toast.success("הרשומה עודכנה בהצלחה")
         onOpenChange(false)
       } else {
         toast.error("שגיאה בעדכון הרשומה")
