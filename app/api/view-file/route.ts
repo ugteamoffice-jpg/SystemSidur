@@ -21,19 +21,55 @@ export async function GET(request: NextRequest) {
     const { config, apiKey } = ctx;
 
     const token = request.nextUrl.searchParams.get("token")
-    if (!token) return NextResponse.json({ error: "Missing token" }, { status: 400 })
+    const directUrl = request.nextUrl.searchParams.get("url")
+    const fileName = request.nextUrl.searchParams.get("name") || "file"
 
+    // Option 1: Direct URL provided
+    if (directUrl) {
+      const fileResponse = await fetch(directUrl)
+      if (!fileResponse.ok) throw new Error(`Failed to fetch direct URL: ${fileResponse.status}`)
+      const fileBuffer = await fileResponse.arrayBuffer()
+      let contentType = fileResponse.headers.get("content-type") || getMimeTypeByExtension(fileName)
+      return new NextResponse(fileBuffer, {
+        headers: { "Content-Type": contentType, "Content-Disposition": "inline", "Cache-Control": "public, max-age=3600" }
+      })
+    }
+
+    // Option 2: Token-based
+    if (!token) return NextResponse.json({ error: "Missing token or url" }, { status: 400 })
+
+    // Try presigned URL endpoint
     const urlResponse = await fetch(`${config.apiUrl}/api/attachments/${token}/presignedUrl`, {
       headers: { Authorization: `Bearer ${apiKey}` },
     })
-    if (!urlResponse.ok) throw new Error("Failed to get presigned URL")
+    
+    if (!urlResponse.ok) {
+      console.error("Presigned URL failed:", urlResponse.status, await urlResponse.text())
+      // Try direct token URL as fallback
+      const directFetch = await fetch(`${config.apiUrl}/api/attachments/${token}`, {
+        headers: { Authorization: `Bearer ${apiKey}` },
+      })
+      if (!directFetch.ok) {
+        console.error("Direct attachment fetch also failed:", directFetch.status)
+        return NextResponse.json({ error: "Failed to load file", details: "Could not get file URL from Teable" }, { status: 500 })
+      }
+      const fileBuffer = await directFetch.arrayBuffer()
+      return new NextResponse(fileBuffer, {
+        headers: { "Content-Type": getMimeTypeByExtension(fileName), "Content-Disposition": "inline", "Cache-Control": "public, max-age=3600" }
+      })
+    }
 
-    const { presignedUrl } = await urlResponse.json()
+    const urlData = await urlResponse.json()
+    const presignedUrl = urlData.presignedUrl || urlData.url
+    if (!presignedUrl) {
+      console.error("No presignedUrl in response:", JSON.stringify(urlData))
+      return NextResponse.json({ error: "No URL in response" }, { status: 500 })
+    }
+
     const fileResponse = await fetch(presignedUrl)
-    if (!fileResponse.ok) throw new Error("Failed to fetch file")
+    if (!fileResponse.ok) throw new Error(`Failed to fetch file: ${fileResponse.status}`)
 
     const fileBuffer = await fileResponse.arrayBuffer()
-    const fileName = fileResponse.headers.get("content-disposition")?.match(/filename="?([^"]+)"?/)?.[1] || "file"
     let contentType = fileResponse.headers.get("content-type") || ""
     if (!contentType || contentType === "application/octet-stream") {
       contentType = getMimeTypeByExtension(fileName)
@@ -49,6 +85,6 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error("Error proxying file:", error)
-    return NextResponse.json({ error: "Failed to load file" }, { status: 500 })
+    return NextResponse.json({ error: "Failed to load file", details: String(error) }, { status: 500 })
   }
 }

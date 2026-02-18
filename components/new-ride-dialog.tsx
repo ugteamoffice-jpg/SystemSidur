@@ -585,7 +585,17 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                       )}
                       {att.token && (
                         <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-blue-600 hover:text-blue-800 shrink-0" 
-                          onClick={() => window.open(`/api/view-file?token=${att.token}`, '_blank')}>
+                          onClick={() => {
+                            const tenant = window.location.pathname.split('/')[1] || 'UrbanTours'
+                            const params = new URLSearchParams({ tenant })
+                            if (att.presignedUrl || att.url) {
+                              params.set('url', att.presignedUrl || att.url)
+                            } else {
+                              params.set('token', att.token)
+                            }
+                            if (att.name) params.set('name', att.name)
+                            window.open(`/api/view-file?${params.toString()}`, '_blank')
+                          }}>
                           <Eye className="w-3 h-3 ml-1" />
                           <span className="text-xs">צפה</span>
                         </Button>
