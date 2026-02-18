@@ -463,41 +463,42 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
               <TabsTrigger value="extra">פרטים נוספים</TabsTrigger>
             </TabsList>
 
-            <div className="flex-1 overflow-y-auto p-4 border rounded mt-2">
-              <TabsContent value="details" className="space-y-4">
-                <div className="space-y-1">
-                  <Label className={cn(showErrors && !date && "text-red-500")}>תאריך *</Label>
-                  <Button
-                    variant={"outline"}
-                    className={cn("w-full justify-start text-right", showErrors && !date && "border-red-500")}
-                    onClick={() => setCalendarModal({
-                      open: true,
-                      selected: date,
-                      onSelect: (d) => { if (d) setDate(d) }
-                    })}
-                    type="button"
-                  >
-                    <CalendarIcon className="ml-2 h-4 w-4" />
-                    {date ? format(date, "PPP", { locale: he }) : "בחר תאריך"}
-                  </Button>
-                </div>
-
-                <div className="space-y-1">
-                  <Label className={cn(showErrors && !form.customer && "text-red-500")}>שם לקוח *</Label>
-                  <AutoComplete
-                    options={lists.customers}
-                    value={form.customer}
-                    onChange={(v: string) => {
-                      setForm(p => ({ ...p, customer: v }));
-                      setSelectedIds(p => ({ ...p, customerId: "" }));
-                    }}
-                    onItemSelect={(item: ListItem) => {
-                      setForm(p => ({ ...p, customer: item.title }));
-                      setSelectedIds(p => ({ ...p, customerId: item.id }));
-                    }}
-                    placeholder=""
-                    isError={showErrors && !form.customer}
-                  />
+            <div className="flex-1 overflow-y-auto p-3 border rounded mt-2">
+              <TabsContent value="details" className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className={cn(showErrors && !date && "text-red-500")}>תאריך *</Label>
+                    <Button
+                      variant={"outline"}
+                      className={cn("w-full justify-start text-right h-9", showErrors && !date && "border-red-500")}
+                      onClick={() => setCalendarModal({
+                        open: true,
+                        selected: date,
+                        onSelect: (d) => { if (d) setDate(d) }
+                      })}
+                      type="button"
+                    >
+                      <CalendarIcon className="ml-2 h-4 w-4" />
+                      {date ? format(date, "PPP", { locale: he }) : "בחר תאריך"}
+                    </Button>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className={cn(showErrors && !form.customer && "text-red-500")}>שם לקוח *</Label>
+                    <AutoComplete
+                      options={lists.customers}
+                      value={form.customer}
+                      onChange={(v: string) => {
+                        setForm(p => ({ ...p, customer: v }));
+                        setSelectedIds(p => ({ ...p, customerId: "" }));
+                      }}
+                      onItemSelect={(item: ListItem) => {
+                        setForm(p => ({ ...p, customer: item.title }));
+                        setSelectedIds(p => ({ ...p, customerId: item.id }));
+                      }}
+                      placeholder=""
+                      isError={showErrors && !form.customer}
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-1">
@@ -505,58 +506,61 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                   <Textarea
                     value={form.description}
                     onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-                    className={cn("text-right", showErrors && !form.description && "border-red-500")}
+                    className={cn("text-right h-16", showErrors && !form.description && "border-red-500")}
                     placeholder=""
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <Label className={cn(showErrors && !form.pickup && "text-red-500")}>התייצבות *</Label>
-                    <Input type="time" value={form.pickup} onChange={e => setForm(p => ({ ...p, pickup: e.target.value }))} className={cn(showErrors && !form.pickup && "border-red-500")} />
+                    <Input type="time" value={form.pickup} onChange={e => setForm(p => ({ ...p, pickup: e.target.value }))} className={cn("h-9", showErrors && !form.pickup && "border-red-500")} />
                   </div>
-                  <div className="space-y-1"><Label>חזור</Label><Input type="time" value={form.dropoff} onChange={e => setForm(p => ({ ...p, dropoff: e.target.value }))} /></div>
+                  <div className="space-y-1"><Label>חזור</Label><Input type="time" value={form.dropoff} onChange={e => setForm(p => ({ ...p, dropoff: e.target.value }))} className="h-9" /></div>
                 </div>
 
-                <div className="space-y-1">
-                  <Label>נהג</Label>
-                  <AutoComplete
-                    options={lists.drivers}
-                    value={form.driver}
-                    onChange={(v: string) => {
-                      setForm(p => ({ ...p, driver: v }));
-                      setSelectedIds(p => ({ ...p, driverId: "" }));
-                    }}
-                    onItemSelect={(item: ListItem) => {
-                      setForm(p => ({ ...p, driver: item.title }));
-                      setSelectedIds(p => ({ ...p, driverId: item.id }));
-                    }}
-                    placeholder=""
-                  />
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label>נהג</Label>
+                    <AutoComplete
+                      options={lists.drivers}
+                      value={form.driver}
+                      onChange={(v: string) => {
+                        setForm(p => ({ ...p, driver: v }));
+                        setSelectedIds(p => ({ ...p, driverId: "" }));
+                      }}
+                      onItemSelect={(item: ListItem) => {
+                        setForm(p => ({ ...p, driver: item.title }));
+                        setSelectedIds(p => ({ ...p, driverId: item.id }));
+                      }}
+                      placeholder=""
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>סוג רכב</Label>
+                    <AutoComplete
+                      options={lists.vehicles}
+                      value={form.vehicleType}
+                      onChange={(v: string) => {
+                        setForm(p => ({ ...p, vehicleType: v }));
+                        setSelectedIds(p => ({ ...p, vehicleTypeId: "" }));
+                      }}
+                      onItemSelect={(item: ListItem) => {
+                        setForm(p => ({ ...p, vehicleType: item.title }));
+                        setSelectedIds(p => ({ ...p, vehicleTypeId: item.id }));
+                      }}
+                      placeholder=""
+                    />
+                  </div>
                 </div>
 
                 {/* --- כאן היו הצ'קבוקסים - מחקתי אותם! --- */}
 
-                <div className="space-y-1">
-                  <Label>סוג רכב</Label>
-                  <AutoComplete
-                    options={lists.vehicles}
-                    value={form.vehicleType}
-                    onChange={(v: string) => {
-                      setForm(p => ({ ...p, vehicleType: v }));
-                      setSelectedIds(p => ({ ...p, vehicleTypeId: "" }));
-                    }}
-                    onItemSelect={(item: ListItem) => {
-                      setForm(p => ({ ...p, vehicleType: item.title }));
-                      setSelectedIds(p => ({ ...p, vehicleTypeId: item.id }));
-                    }}
-                    placeholder=""
-                  />
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-1"><Label>מס' רכב</Label><Input value={form.vehicleNum} onChange={e => setForm(p => ({ ...p, vehicleNum: e.target.value }))} className="text-right h-9" /></div>
+                  <div className="space-y-1"><Label>הערות מנהל</Label><Textarea value={form.managerNotes} onChange={e => setForm(p => ({ ...p, managerNotes: e.target.value }))} className="text-right border-blue-200 bg-blue-50/30 h-16" /></div>
+                  <div className="space-y-1"><Label>הערות נהג</Label><Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} className="text-right h-16" /></div>
                 </div>
-
-                <div className="space-y-1"><Label>מס' רכב</Label><Input value={form.vehicleNum} onChange={e => setForm(p => ({ ...p, vehicleNum: e.target.value }))} className="text-right" /></div>
-                <div className="space-y-1"><Label>הערות מנהל</Label><Textarea value={form.managerNotes} onChange={e => setForm(p => ({ ...p, managerNotes: e.target.value }))} className="text-right border-blue-200 bg-blue-50/30" /></div>
-                <div className="space-y-1"><Label>הערות נהג</Label><Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} className="text-right" /></div>
 
                 <div className="space-y-2 pt-4 border-t mt-4">
                   <Label className="flex items-center gap-2 font-bold text-blue-700"><Upload className="w-4 h-4" /> טופס הזמנה / קובץ נלווה</Label>

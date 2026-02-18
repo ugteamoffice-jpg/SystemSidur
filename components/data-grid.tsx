@@ -504,7 +504,9 @@ function DataGrid({ schema }: { schema?: any }) {
       setBulkDuplicateRecords([])
       setRowSelection({})
       
+      const scrollTop = tableScrollRef.current?.scrollTop || 0;
       await fetchData()
+      requestAnimationFrame(() => { if (tableScrollRef.current) tableScrollRef.current.scrollTop = scrollTop; });
       
       if (firstNewRecord && recordsToDuplicate.length === 1) {
         setEditingRecord(firstNewRecord)
@@ -555,11 +557,12 @@ function DataGrid({ schema }: { schema?: any }) {
     return filtered
   }, [data, dateFilter, globalFilter])
 
-  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [sorting, setSorting] = React.useState<SortingState>([{ id: "pickup", desc: false }])
 
   const table = useReactTable({
     data: filteredData, columns, columnResizeMode: "onChange", getCoreRowModel: getCoreRowModel(), getSortedRowModel: getSortedRowModel(), getFilteredRowModel: getFilteredRowModel(),
     onRowSelectionChange: setRowSelection, onColumnSizingChange: setColumnSizing, onSortingChange: setSorting,
+    enableSortingRemoval: false,
     meta: { updateRecordField }, state: { rowSelection, columnSizing, sorting },
   })
 
@@ -587,8 +590,8 @@ function DataGrid({ schema }: { schema?: any }) {
   const selectedCount = table.getFilteredSelectedRowModel().rows.length;
 
   return (
-    <div className="w-full h-[calc(100vh-2rem)] flex flex-col space-y-4 p-4 overflow-hidden" dir="rtl">
-      <div className="flex flex-col gap-4 flex-none">
+    <div className="w-full h-[calc(100vh-2rem)] flex flex-col space-y-2 p-4 overflow-hidden" dir="rtl">
+      <div className="flex flex-col gap-2 flex-none">
         {/* שורה אחת - הכל */}
         <div className="flex items-center gap-2 flex-wrap">
           <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
@@ -642,7 +645,7 @@ function DataGrid({ schema }: { schema?: any }) {
               <Button 
                 variant="outline" 
                 size="sm"
-                className="shrink-0 text-xs"
+                className="shrink-0 text-xs h-8 px-2"
                 onClick={async () => {
                   const rows = table.getFilteredSelectedRowModel().rows;
                   for (const row of rows) {
@@ -650,15 +653,14 @@ function DataGrid({ schema }: { schema?: any }) {
                   }
                   setRowSelection({});
                 }}
-                title="סמן שלח לכל המסומנות"
               >
-                <Send className="h-3.5 w-3.5 ml-1" />
-                סמן שלח ({selectedCount})
+                <Send className="h-3 w-3 ml-1" />
+                שלח ({selectedCount})
               </Button>
               <Button 
                 variant="outline" 
                 size="sm"
-                className="shrink-0 text-xs"
+                className="shrink-0 text-xs h-8 px-2"
                 onClick={async () => {
                   const rows = table.getFilteredSelectedRowModel().rows;
                   for (const row of rows) {
@@ -666,10 +668,9 @@ function DataGrid({ schema }: { schema?: any }) {
                   }
                   setRowSelection({});
                 }}
-                title="סמן מאושר לכל המסומנות"
               >
-                <CheckCircle2 className="h-3.5 w-3.5 ml-1" />
-                סמן מאושר ({selectedCount})
+                <CheckCircle2 className="h-3 w-3 ml-1" />
+                אשר ({selectedCount})
               </Button>
             </>
           )}

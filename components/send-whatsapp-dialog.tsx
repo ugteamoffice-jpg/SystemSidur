@@ -183,6 +183,7 @@ export function SendWhatsappDialog({
       const goTime = fields[WS?.PICKUP_TIME || ""] || "-"
       const route = fields[WS?.DESCRIPTION || ""] || "-"
       const returnTime = fields[WS?.DROPOFF_TIME || ""] || ""
+      const vehicleType = getVehicleType(record, WS?.VEHICLE_TYPE || "")
       const priceBeforeVat = Number(fields[WS?.PRICE_DRIVER_EXCL || ""]) || 0
       const priceWithVat = Number(fields[WS?.PRICE_DRIVER_INCL || ""]) || 0
 
@@ -190,6 +191,11 @@ export function SendWhatsappDialog({
       totalWithVat += priceWithVat
 
       message += `\n*תאריך* - ${dateStr}\n`
+
+      // סוג רכב רק לקבלנים
+      if (isContractor) {
+        message += `*סוג רכב* - ${vehicleType}\n`
+      }
 
       // שעת חזור רק אם קיימת
       if (returnTime) {
