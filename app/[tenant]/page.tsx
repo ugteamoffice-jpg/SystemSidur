@@ -3,13 +3,14 @@
 import { useState } from "react"
 import { DataGrid } from "@/components/data-grid"
 import { AppHeader } from "@/components/app-header"
+import type { PageType } from "@/components/app-header"
 import { CustomersPage } from "@/components/customers-page"
 import { DriversPage } from "@/components/drivers-page"
 import { VehiclesPage } from "@/components/vehicles-page"
+import { ReportPage } from "@/components/report-page"
+import type { ReportType } from "@/components/report-page"
 import { useTenant } from "@/lib/tenant-context"
 import { Loader2 } from "lucide-react"
-
-type PageType = "work-schedule" | "customers" | "drivers" | "vehicles"
 
 export default function TenantHomePage() {
   const { config, loading } = useTenant()
@@ -23,6 +24,8 @@ export default function TenantHomePage() {
     )
   }
 
+  const isReport = activePage.startsWith("report-")
+
   return (
     <div className="flex flex-col h-screen">
       <AppHeader activePage={activePage} onPageChange={setActivePage} />
@@ -30,6 +33,7 @@ export default function TenantHomePage() {
       {activePage === "customers" && <CustomersPage />}
       {activePage === "drivers" && <DriversPage />}
       {activePage === "vehicles" && <VehiclesPage />}
+      {isReport && <ReportPage key={activePage} reportType={activePage as ReportType} />}
     </div>
   )
 }

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Plus, Loader2, Pencil, Upload, Calendar as CalendarIcon, X, FileText } from "lucide-react"
+import { Plus, Loader2, Pencil, Upload, Calendar as CalendarIcon, X, FileText, Eye } from "lucide-react"
 import { format } from "date-fns"
 import { he } from "date-fns/locale"
 import { Button } from "@/components/ui/button"
@@ -582,6 +582,13 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                         <span className="text-xs text-muted-foreground shrink-0">
                           {new Date(attachmentDate).toLocaleDateString('he-IL')} {new Date(attachmentDate).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
                         </span>
+                      )}
+                      {att.token && (
+                        <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-blue-600 hover:text-blue-800 shrink-0" 
+                          onClick={() => window.open(`/api/view-file?token=${att.token}`, '_blank')}>
+                          <Eye className="w-3 h-3 ml-1" />
+                          <span className="text-xs">צפה</span>
+                        </Button>
                       )}
                       {isEdit && (
                         <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 text-red-500 hover:text-red-700 shrink-0" 
