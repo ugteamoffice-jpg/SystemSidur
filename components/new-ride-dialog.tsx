@@ -556,135 +556,98 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
 
                 {/* --- כאן היו הצ'קבוקסים - מחקתי אותם! --- */}
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1"><Label>מס' רכב</Label><Input value={form.vehicleNum} onChange={e => setForm(p => ({ ...p, vehicleNum: e.target.value }))} className="text-right h-9" /></div>
-                  <div className="space-y-1"><Label>הערות מנהל</Label><Textarea value={form.managerNotes} onChange={e => setForm(p => ({ ...p, managerNotes: e.target.value }))} className="text-right border-blue-200 bg-blue-50/30 h-16" /></div>
-                  <div className="space-y-1"><Label>הערות נהג</Label><Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} className="text-right h-16" /></div>
+                  <div className="space-y-1">
+                    <Label className="flex items-center gap-1 text-xs"><Upload className="w-3 h-3" /> קובץ</Label>
+                    <div className="flex items-center gap-1">
+                      {existingAttachment.length > 0 ? (
+                        <div className="flex items-center gap-1 flex-1 h-9 px-2 border rounded bg-green-50 text-xs">
+                          <FileText className="w-3 h-3 text-green-600 shrink-0" />
+                          <span className="truncate flex-1">{existingAttachment[0]?.name || 'קובץ'}</span>
+                          {existingAttachment[0]?.token && (
+                            <Button type="button" variant="ghost" size="sm" className="h-5 px-1 text-blue-600 shrink-0" onClick={() => {
+                              const att = existingAttachment[0]
+                              const tenant = window.location.pathname.split('/')[1] || 'UrbanTours'
+                              const params = new URLSearchParams({ tenant })
+                              if (att.presignedUrl || att.url) params.set('url', att.presignedUrl || att.url)
+                              else params.set('token', att.token)
+                              if (att.name) params.set('name', att.name)
+                              window.open(`/api/view-file?${params.toString()}`, '_blank')
+                            }}><Eye className="w-3 h-3" /></Button>
+                          )}
+                          {isEdit && (
+                            <Button type="button" variant="ghost" size="sm" className="h-5 w-5 p-0 text-red-500 shrink-0" onClick={async () => {
+                              setExistingAttachment([])
+                              try { await fetch(`/api/work-schedule/${initialData.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { [FIELDS.ORDER_FORM]: null } }) }) } catch {}
+                            }}><X className="w-3 h-3" /></Button>
+                          )}
+                        </div>
+                      ) : orderFormFile ? (
+                        <div className="flex items-center gap-1 flex-1 h-9 px-2 border rounded bg-blue-50 text-xs">
+                          <FileText className="w-3 h-3 text-blue-600 shrink-0" />
+                          <span className="truncate flex-1">{newFileName}</span>
+                          <Button type="button" variant="ghost" size="sm" className="h-5 w-5 p-0 text-red-500" onClick={() => { setOrderFormFile(null); setNewFileName(''); if (fileInputRef.current) fileInputRef.current.value = '' }}><X className="w-3 h-3" /></Button>
+                        </div>
+                      ) : (
+                        <Button type="button" variant="outline" size="sm" className="w-full h-9 text-xs" onClick={() => fileInputRef.current?.click()}>
+                          <Upload className="w-3 h-3 ml-1" /> בחר קובץ
+                        </Button>
+                      )}
+                    </div>
+                    <input ref={fileInputRef} type="file" className="hidden" onChange={(e) => { if (e.target.files?.[0]) { setOrderFormFile(e.target.files[0]); setNewFileName(e.target.files[0].name) } }} />
+                  </div>
                 </div>
 
-                <div className="space-y-2 pt-4 border-t mt-4">
-                  <Label className="flex items-center gap-2 font-bold text-blue-700"><Upload className="w-4 h-4" /> טופס הזמנה / קובץ נלווה</Label>
-                  
-                  {/* Existing attachments */}
-                  {existingAttachment.map((att: any, i: number) => (
-                    <div key={att.token || i} className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded text-sm">
-                      <FileText className="w-4 h-4 text-green-600 shrink-0" />
-                      <input 
-                        type="text"
-                        className="truncate flex-1 bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none px-1 cursor-text"
-                        value={att.name || 'קובץ מצורף'}
-                        onChange={(e) => {
-                          const updated = [...existingAttachment]
-                          updated[i] = { ...updated[i], name: e.target.value }
-                          setExistingAttachment(updated)
-                        }}
-                        onBlur={async () => {
-                          if (!isEdit) return
-                          try {
-                            await fetch(`/api/work-schedule/${initialData.id}`, {
-                              method: 'PATCH',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ fields: { [FIELDS.ORDER_FORM]: existingAttachment } })
-                            })
-                          } catch { console.error('Failed to update file name') }
-                        }}
-                      />
-                      {attachmentDate && (
-                        <span className="text-xs text-muted-foreground shrink-0">
-                          {new Date(attachmentDate).toLocaleDateString('he-IL')} {new Date(attachmentDate).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      )}
-                      {att.token && (
-                        <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-blue-600 hover:text-blue-800 shrink-0" 
-                          onClick={() => {
-                            const tenant = window.location.pathname.split('/')[1] || 'UrbanTours'
-                            const params = new URLSearchParams({ tenant })
-                            if (att.presignedUrl || att.url) {
-                              params.set('url', att.presignedUrl || att.url)
-                            } else {
-                              params.set('token', att.token)
-                            }
-                            if (att.name) params.set('name', att.name)
-                            window.open(`/api/view-file?${params.toString()}`, '_blank')
-                          }}>
-                          <Eye className="w-3 h-3 ml-1" />
-                          <span className="text-xs">צפה</span>
-                        </Button>
-                      )}
-                      {isEdit && (
-                        <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 text-red-500 hover:text-red-700 shrink-0" 
-                          onClick={async () => {
-                            const remaining = existingAttachment.filter((_: any, idx: number) => idx !== i)
-                            setExistingAttachment(remaining)
-                            try {
-                              await fetch(`/api/work-schedule/${initialData.id}`, {
-                                method: 'PATCH',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ fields: { [FIELDS.ORDER_FORM]: remaining.length > 0 ? remaining : null } })
-                              })
-                              // file removed
-                            } catch { toast({ title: "שגיאה בהסרת הקובץ", variant: "destructive" }) }
-                          }}>
-                          <X className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-
-                  {/* New file selected */}
-                  {orderFormFile && (
-                    <div className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
-                      <FileText className="w-4 h-4 text-blue-600 shrink-0" />
-                      <input 
-                        type="text"
-                        className="truncate flex-1 bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none px-1 cursor-text"
-                        value={newFileName}
-                        onChange={(e) => setNewFileName(e.target.value)}
-                      />
-                      <span className="text-xs text-muted-foreground shrink-0">{(orderFormFile.size / 1024).toFixed(0)} KB</span>
-                      <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 text-red-500 hover:text-red-700" onClick={() => { setOrderFormFile(null); setNewFileName(''); if (fileInputRef.current) fileInputRef.current.value = '' }}>
-                        <X className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  )}
-
-                  <input 
-                    ref={fileInputRef}
-                    type="file" 
-                    className="hidden"
-                    onChange={(e) => { if (e.target.files?.[0]) { setOrderFormFile(e.target.files[0]); setNewFileName(e.target.files[0].name) } }}
-                  />
-                  <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => fileInputRef.current?.click()}>
-                    <Upload className="w-4 h-4 ml-2" />
-                    {orderFormFile || existingAttachment.length > 0 ? 'הוסף קובץ נוסף' : 'בחר קובץ'}
-                  </Button>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1"><Label>הערות מנהל</Label><Textarea value={form.managerNotes} onChange={e => setForm(p => ({ ...p, managerNotes: e.target.value }))} className="text-right border-blue-200 bg-blue-50/30 h-14" /></div>
+                  <div className="space-y-1"><Label>הערות נהג</Label><Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} className="text-right h-14" /></div>
                 </div>
               </TabsContent>
 
-              <TabsContent value="prices" className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4 p-4 border rounded-lg bg-blue-50/50">
+              <TabsContent value="prices" className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-3 p-3 border rounded-lg bg-blue-50/50">
                     <div className="flex justify-between items-center">
-                      <h3 className="font-bold text-blue-700">מחיר לקוח</h3>
-                      <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-blue-700 text-sm">מחיר לקוח</h3>
+                      <div className="flex items-center gap-1">
                         <Label className="text-xs whitespace-nowrap">מע"מ %</Label>
-                        <Input type="number" value={vatClient} onChange={(e) => setVatClient(e.target.value)} className="w-16 h-8 bg-white text-center" />
+                        <Input type="number" value={vatClient} onChange={(e) => setVatClient(e.target.value)} className="w-14 h-7 bg-white text-center text-xs" />
                       </div>
                     </div>
-                    <div className="space-y-1"><Label className="text-xs">לפני מע"מ</Label><Input type="number" value={prices.ce} onChange={(e) => calculateVat(e.target.value, 'excl', 'client')} className="bg-white" /></div>
-                    <div className="space-y-1"><Label className="text-xs">כולל מע"מ</Label><Input type="number" value={prices.ci} onChange={(e) => calculateVat(e.target.value, 'incl', 'client')} className="bg-white font-bold" /></div>
+                    <div className="space-y-1"><Label className="text-xs">לפני מע"מ</Label><Input type="number" value={prices.ce} onChange={(e) => calculateVat(e.target.value, 'excl', 'client')} className="bg-white h-9" /></div>
+                    <div className="space-y-1"><Label className="text-xs">כולל מע"מ</Label><Input type="number" value={prices.ci} onChange={(e) => calculateVat(e.target.value, 'incl', 'client')} className="bg-white font-bold h-9" /></div>
                   </div>
 
-                  <div className="space-y-4 p-4 border rounded-lg bg-orange-50/50">
+                  <div className="space-y-3 p-3 border rounded-lg bg-orange-50/50">
                     <div className="flex justify-between items-center">
-                      <h3 className="font-bold text-orange-700">מחיר נהג</h3>
-                      <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-orange-700 text-sm">מחיר נהג</h3>
+                      <div className="flex items-center gap-1">
                         <Label className="text-xs whitespace-nowrap">מע"מ %</Label>
-                        <Input type="number" value={vatDriver} onChange={(e) => setVatDriver(e.target.value)} className="w-16 h-8 bg-white text-center" />
+                        <Input type="number" value={vatDriver} onChange={(e) => setVatDriver(e.target.value)} className="w-14 h-7 bg-white text-center text-xs" />
                       </div>
                     </div>
-                    <div className="space-y-1"><Label className="text-xs">לפני מע"מ</Label><Input type="number" value={prices.de} onChange={(e) => calculateVat(e.target.value, 'excl', 'driver')} className="bg-white" /></div>
-                    <div className="space-y-1"><Label className="text-xs">כולל מע"מ</Label><Input type="number" value={prices.di} onChange={(e) => calculateVat(e.target.value, 'incl', 'driver')} className="bg-white font-bold" /></div>
+                    <div className="space-y-1"><Label className="text-xs">לפני מע"מ</Label><Input type="number" value={prices.de} onChange={(e) => calculateVat(e.target.value, 'excl', 'driver')} className="bg-white h-9" /></div>
+                    <div className="space-y-1"><Label className="text-xs">כולל מע"מ</Label><Input type="number" value={prices.di} onChange={(e) => calculateVat(e.target.value, 'incl', 'driver')} className="bg-white font-bold h-9" /></div>
+                  </div>
+                </div>
+
+                {/* Profit summary */}
+                <div className="p-3 border rounded-lg bg-green-50/50">
+                  <h3 className="font-bold text-green-700 text-sm mb-2">רווח</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label className="text-xs">רווח לפני מע"מ</Label>
+                      <div className="h-9 flex items-center px-3 border rounded bg-white font-bold text-green-700">
+                        {((parseFloat(prices.ce) || 0) - (parseFloat(prices.de) || 0)).toLocaleString()} ₪
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">רווח כולל מע"מ</Label>
+                      <div className="h-9 flex items-center px-3 border rounded bg-white font-bold text-green-700">
+                        {((parseFloat(prices.ci) || 0) - (parseFloat(prices.di) || 0)).toLocaleString()} ₪
+                      </div>
+                    </div>
                   </div>
                 </div>
               </TabsContent>

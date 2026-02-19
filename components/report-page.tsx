@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { useTenantFields } from "@/lib/tenant-context"
+import { useTenantFields, useTenant } from "@/lib/tenant-context"
 import { useToast } from "@/hooks/use-toast"
 import { RideDialog } from "@/components/new-ride-dialog"
 
@@ -54,6 +54,7 @@ interface FilterState {
 
 export function ReportPage({ reportType }: ReportPageProps) {
   const tenantFields = useTenantFields()
+  const { tenantId } = useTenant()
   const WS = tenantFields?.workSchedule || ({} as any)
   const { toast } = useToast()
 
@@ -64,13 +65,23 @@ export function ReportPage({ reportType }: ReportPageProps) {
   const [editingRecord, setEditingRecord] = React.useState<WorkScheduleRecord | null>(null)
   const [globalFilter, setGlobalFilter] = React.useState("")
 
-  // Column resizing
+  // Column resizing with localStorage persistence
+  const REPORT_COL_KEY = `reportColumnWidths_${tenantId}_${reportType}`
   const defaultWidths: Record<string, number> = {
     date: 95, customer: 130, pickup: 80, route: 200, dropoff: 80, 
     vehicleType: 100, driver: 110, vehicleNum: 85, 
     p1: 100, p2: 110, p3: 100, p4: 100, profit: 80
   }
-  const [colWidths, setColWidths] = React.useState<Record<string, number>>(defaultWidths)
+  const [colWidths, setColWidths] = React.useState<Record<string, number>>(() => {
+    try {
+      const saved = localStorage.getItem(REPORT_COL_KEY)
+      if (saved) return { ...defaultWidths, ...JSON.parse(saved) }
+    } catch {}
+    return defaultWidths
+  })
+  React.useEffect(() => {
+    try { localStorage.setItem(REPORT_COL_KEY, JSON.stringify(colWidths)) } catch {}
+  }, [colWidths, REPORT_COL_KEY])
   const resizeCol = (colId: string, startX: number, startWidth: number) => {
     const onMouseMove = (e: MouseEvent) => {
       const newWidth = Math.max(50, startWidth + (startX - e.clientX))
@@ -419,15 +430,21 @@ export function ReportPage({ reportType }: ReportPageProps) {
           )}
 
           {hasSearched && filteredData.length > 0 && (
-            <div className="flex gap-4 text-xs bg-muted/20 border rounded px-3 py-1.5 shadow-sm items-center shrink-0 mr-auto">
-              <span>לקוח+ מע"מ: <span className="font-bold">{totals.p1.toLocaleString()} ₪</span></span>
-              <span>לקוח כולל: <span className="font-bold">{totals.p2.toLocaleString()} ₪</span></span>
-              <span className="text-border">|</span>
-              <span>נהג+ מע"מ: <span className="font-bold">{totals.p3.toLocaleString()} ₪</span></span>
-              <span>נהג כולל: <span className="font-bold">{totals.p4.toLocaleString()} ₪</span></span>
-              <span className="text-border">|</span>
-              <span className="text-green-600 dark:text-green-400 font-medium">רווח: <span className="font-bold">{totals.p5.toLocaleString()} ₪</span></span>
-              <span className="text-green-600 dark:text-green-400 font-medium">רווח כולל: <span className="font-bold">{totals.p6.toLocaleString()} ₪</span></span>
+            <div className="flex flex-wrap gap-3 text-xs bg-muted/20 border rounded px-3 py-1.5 shadow-sm items-center shrink-0 mr-auto">
+              <div className="flex flex-col gap-0.5 whitespace-nowrap">
+                <span>לקוח+ מע"מ: <span className="font-bold">{totals.p1.toLocaleString()} ₪</span></span>
+                <span>לקוח כולל: <span className="font-bold">{totals.p2.toLocaleString()} ₪</span></span>
+              </div>
+              <div className="w-px bg-border self-stretch my-0.5"></div>
+              <div className="flex flex-col gap-0.5 whitespace-nowrap">
+                <span>נהג+ מע"מ: <span className="font-bold">{totals.p3.toLocaleString()} ₪</span></span>
+                <span>נהג כולל: <span className="font-bold">{totals.p4.toLocaleString()} ₪</span></span>
+              </div>
+              <div className="w-px bg-border self-stretch my-0.5"></div>
+              <div className="flex flex-col gap-0.5 text-green-600 dark:text-green-400 font-medium whitespace-nowrap">
+                <span>רווח: <span className="font-bold">{totals.p5.toLocaleString()} ₪</span></span>
+                <span>רווח כולל: <span className="font-bold">{totals.p6.toLocaleString()} ₪</span></span>
+              </div>
             </div>
           )}
         </div>

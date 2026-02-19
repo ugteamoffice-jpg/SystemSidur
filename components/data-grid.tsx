@@ -12,7 +12,7 @@ import {
   useReactTable,
   ColumnSizingState,
 } from "@tanstack/react-table"
-import { Calendar as CalendarIcon, LayoutDashboard, AlertCircle, CheckCircle2, UserMinus, Trash2, Loader2, Send } from "lucide-react"
+import { Calendar as CalendarIcon, LayoutDashboard, AlertCircle, CheckCircle2, UserMinus, Trash2, Loader2 } from "lucide-react"
 import { format } from "date-fns"
 import { he } from "date-fns/locale"
 
@@ -638,49 +638,13 @@ function DataGrid({ schema }: { schema?: any }) {
           >
             <Trash2 className="h-4 w-4" />
           </Button>
-
-          {/* Bulk mark sent/approved */}
-          {selectedCount > 0 && (
-            <>
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="shrink-0 text-xs h-8 px-2"
-                onClick={async () => {
-                  const rows = table.getFilteredSelectedRowModel().rows;
-                  for (const row of rows) {
-                    await updateRecordField(row.original.id, WS.SENT, true);
-                  }
-                  setRowSelection({});
-                }}
-              >
-                <Send className="h-3 w-3 ml-1" />
-                שלח ({selectedCount})
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="shrink-0 text-xs h-8 px-2"
-                onClick={async () => {
-                  const rows = table.getFilteredSelectedRowModel().rows;
-                  for (const row of rows) {
-                    await updateRecordField(row.original.id, WS.APPROVED, true);
-                  }
-                  setRowSelection({});
-                }}
-              >
-                <CheckCircle2 className="h-3 w-3 ml-1" />
-                אשר ({selectedCount})
-              </Button>
-            </>
-          )}
           
-          <div className="flex-1 min-w-[120px]">
+          <div className="w-[150px] shrink-0">
             <Input 
                 placeholder="חיפוש..." 
                 value={globalFilter} 
                 onChange={(e) => setGlobalFilter(e.target.value)} 
-                className="w-full h-10" 
+                className="w-full h-9" 
             />
           </div>
 
@@ -840,6 +804,31 @@ function DataGrid({ schema }: { schema?: any }) {
                     >
                       שלח בוואטסאפ
                     </ContextMenuItem>
+                    {table.getFilteredSelectedRowModel().rows.length > 0 && (
+                      <>
+                        <div className="h-px bg-border my-1" />
+                        <ContextMenuItem
+                          onSelect={async () => {
+                            const rows = table.getFilteredSelectedRowModel().rows;
+                            for (const r of rows) { await updateRecordField(r.original.id, WS.SENT, true); }
+                            setRowSelection({});
+                          }}
+                          className="cursor-pointer text-right text-blue-600"
+                        >
+                          סמן שלח ל-{table.getFilteredSelectedRowModel().rows.length} נסיעות
+                        </ContextMenuItem>
+                        <ContextMenuItem
+                          onSelect={async () => {
+                            const rows = table.getFilteredSelectedRowModel().rows;
+                            for (const r of rows) { await updateRecordField(r.original.id, WS.APPROVED, true); }
+                            setRowSelection({});
+                          }}
+                          className="cursor-pointer text-right text-green-600"
+                        >
+                          סמן מאושר ל-{table.getFilteredSelectedRowModel().rows.length} נסיעות
+                        </ContextMenuItem>
+                      </>
+                    )}
                   </ContextMenuContent>
                 </ContextMenu>
               ))
