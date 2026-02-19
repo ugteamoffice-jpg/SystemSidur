@@ -676,20 +676,20 @@ function DataGrid({ schema }: { schema?: any }) {
           </div>
 
           {/* חלון סיכום מחירים */}
-          <div className="flex flex-wrap gap-3 text-xs bg-muted/20 p-2 px-4 rounded-md border shadow-sm items-center">
-             <div className="flex flex-col gap-1 items-start justify-center whitespace-nowrap">
-               <span>לקוח+ מע"מ: <span className="font-bold text-sm">{totals.p1.toLocaleString()} ₪</span></span>
-               <span>לקוח כולל: <span className="font-bold text-sm">{totals.p2.toLocaleString()} ₪</span></span>
+          <div className="flex flex-wrap gap-3 text-sm bg-muted/20 p-2 px-4 rounded-md border shadow-sm items-center">
+             <div className="flex flex-col gap-0.5 items-start justify-center whitespace-nowrap">
+               <span>לקוח+ מע"מ: <span className="font-bold">{totals.p1.toLocaleString()} ₪</span></span>
+               <span>לקוח כולל: <span className="font-bold">{totals.p2.toLocaleString()} ₪</span></span>
              </div>
              <div className="w-px bg-border self-stretch my-1"></div>
-             <div className="flex flex-col gap-1 items-start justify-center whitespace-nowrap">
-               <span>נהג+ מע"מ: <span className="font-bold text-sm">{totals.p3.toLocaleString()} ₪</span></span>
-               <span>נהג כולל: <span className="font-bold text-sm">{totals.p4.toLocaleString()} ₪</span></span>
+             <div className="flex flex-col gap-0.5 items-start justify-center whitespace-nowrap">
+               <span>נהג+ מע"מ: <span className="font-bold">{totals.p3.toLocaleString()} ₪</span></span>
+               <span>נהג כולל: <span className="font-bold">{totals.p4.toLocaleString()} ₪</span></span>
              </div>
              <div className="w-px bg-border self-stretch my-1"></div>
-             <div className="flex flex-col gap-1 items-start justify-center text-green-600 dark:text-green-400 font-medium whitespace-nowrap">
-               <span>רווח+ מע"מ: <span className="font-bold text-sm">{totals.p5.toLocaleString()} ₪</span></span>
-               <span>רווח כולל: <span className="font-bold text-sm">{totals.p6.toLocaleString()} ₪</span></span>
+             <div className="flex flex-col gap-0.5 items-start justify-center text-green-600 dark:text-green-400 font-medium whitespace-nowrap">
+               <span>רווח+ מע"מ: <span className="font-bold">{totals.p5.toLocaleString()} ₪</span></span>
+               <span>רווח כולל: <span className="font-bold">{totals.p6.toLocaleString()} ₪</span></span>
              </div>
           </div>
         </div>
@@ -804,51 +804,39 @@ function DataGrid({ schema }: { schema?: any }) {
                     >
                       שלח בוואטסאפ
                     </ContextMenuItem>
-                    {table.getFilteredSelectedRowModel().rows.length > 0 && (
-                      <>
-                        <div className="h-px bg-border my-1" />
-                        <ContextMenuItem
-                          onSelect={async () => {
-                            const rows = table.getFilteredSelectedRowModel().rows;
-                            for (const r of rows) { await updateRecordField(r.original.id, WS.SENT, true); }
-                            setRowSelection({});
-                          }}
-                          className="cursor-pointer text-right"
-                        >
-                          סמן שלח ל-{table.getFilteredSelectedRowModel().rows.length} נסיעות
-                        </ContextMenuItem>
-                        <ContextMenuItem
-                          onSelect={async () => {
-                            const rows = table.getFilteredSelectedRowModel().rows;
-                            for (const r of rows) { await updateRecordField(r.original.id, WS.SENT, false); }
-                            setRowSelection({});
-                          }}
-                          className="cursor-pointer text-right"
-                        >
-                          בטל שלח ל-{table.getFilteredSelectedRowModel().rows.length} נסיעות
-                        </ContextMenuItem>
-                        <ContextMenuItem
-                          onSelect={async () => {
-                            const rows = table.getFilteredSelectedRowModel().rows;
-                            for (const r of rows) { await updateRecordField(r.original.id, WS.APPROVED, true); }
-                            setRowSelection({});
-                          }}
-                          className="cursor-pointer text-right"
-                        >
-                          סמן מאושר ל-{table.getFilteredSelectedRowModel().rows.length} נסיעות
-                        </ContextMenuItem>
-                        <ContextMenuItem
-                          onSelect={async () => {
-                            const rows = table.getFilteredSelectedRowModel().rows;
-                            for (const r of rows) { await updateRecordField(r.original.id, WS.APPROVED, false); }
-                            setRowSelection({});
-                          }}
-                          className="cursor-pointer text-right"
-                        >
-                          בטל מאושר ל-{table.getFilteredSelectedRowModel().rows.length} נסיעות
-                        </ContextMenuItem>
-                      </>
-                    )}
+                    {table.getFilteredSelectedRowModel().rows.length > 0 && (() => {
+                      const selectedRows = table.getFilteredSelectedRowModel().rows;
+                      const count = selectedRows.length;
+                      const allSent = selectedRows.every(r => r.original.fields[WS.SENT]);
+                      const allApproved = selectedRows.every(r => r.original.fields[WS.APPROVED]);
+                      const noneSent = selectedRows.every(r => !r.original.fields[WS.SENT]);
+                      const noneApproved = selectedRows.every(r => !r.original.fields[WS.APPROVED]);
+                      return (
+                        <>
+                          <div className="h-px bg-border my-1" />
+                          {!allSent && (
+                            <ContextMenuItem onSelect={async () => { for (const r of selectedRows) { await updateRecordField(r.original.id, WS.SENT, true); } setRowSelection({}); }} className="cursor-pointer text-right">
+                              סמן שלח ל-{count} נסיעות
+                            </ContextMenuItem>
+                          )}
+                          {!noneSent && (
+                            <ContextMenuItem onSelect={async () => { for (const r of selectedRows) { await updateRecordField(r.original.id, WS.SENT, false); } setRowSelection({}); }} className="cursor-pointer text-right">
+                              בטל שלח ל-{count} נסיעות
+                            </ContextMenuItem>
+                          )}
+                          {!allApproved && (
+                            <ContextMenuItem onSelect={async () => { for (const r of selectedRows) { await updateRecordField(r.original.id, WS.APPROVED, true); } setRowSelection({}); }} className="cursor-pointer text-right">
+                              סמן מאושר ל-{count} נסיעות
+                            </ContextMenuItem>
+                          )}
+                          {!noneApproved && (
+                            <ContextMenuItem onSelect={async () => { for (const r of selectedRows) { await updateRecordField(r.original.id, WS.APPROVED, false); } setRowSelection({}); }} className="cursor-pointer text-right">
+                              בטל מאושר ל-{count} נסיעות
+                            </ContextMenuItem>
+                          )}
+                        </>
+                      );
+                    })()}
                   </ContextMenuContent>
                 </ContextMenu>
               ))
@@ -1116,6 +1104,8 @@ function DataGrid({ schema }: { schema?: any }) {
         }} 
         triggerChild={<span />}
         defaultDate={format(dateFilter, "yyyy-MM-dd")}
+        allRides={table.getRowModel().rows.map(r => r.original)}
+        onNavigate={(record) => setEditingRecord(record)}
       />
       
       <SplitRideDialog 

@@ -94,10 +94,17 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
               <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setShowReportSettings(true)} title="הגדרות ייצוא דוח">
                 <Settings className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} title={theme === "dark" ? "מצב בהיר" : "מצב כהה"}>
-                <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-              </Button>
+              <div className="flex items-center gap-1.5 bg-muted rounded-full px-1.5 py-0.5 h-8">
+                <Sun className="h-3.5 w-3.5 text-amber-500" />
+                <button
+                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                  className={`relative w-10 h-5 rounded-full transition-colors duration-300 ${theme === "dark" ? "bg-indigo-600" : "bg-gray-300"}`}
+                  title={theme === "dark" ? "מצב בהיר" : "מצב כהה"}
+                >
+                  <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all duration-300 ${theme === "dark" ? "right-0.5" : "right-[22px]"}`} />
+                </button>
+                <Moon className="h-3.5 w-3.5 text-indigo-400" />
+              </div>
               <UserButton 
                 afterSignOutUrl="/sign-in"
                 appearance={{ elements: { avatarBox: "h-8 w-8" } }}

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Plus, Loader2, Pencil, Upload, Calendar as CalendarIcon, X, FileText, Eye } from "lucide-react"
+import { Plus, Loader2, Pencil, Upload, Calendar as CalendarIcon, X, FileText, Eye, ChevronRight, ChevronLeft } from "lucide-react"
 import { format } from "date-fns"
 import { he } from "date-fns/locale"
 import { Button } from "@/components/ui/button"
@@ -69,7 +69,7 @@ function AutoComplete({ options, value, onChange, onItemSelect, placeholder, isE
   )
 }
 
-export function RideDialog({ onRideSaved, initialData, triggerChild, open: controlledOpen, onOpenChange: setControlledOpen, defaultDate }: any) {
+export function RideDialog({ onRideSaved, initialData, triggerChild, open: controlledOpen, onOpenChange: setControlledOpen, defaultDate, allRides, onNavigate }: any) {
   const tenantFields = useTenantFields()
   const tenantTables = useTenantTables()
   const FIELDS = tenantFields?.workSchedule || {} as any
@@ -356,7 +356,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
           [FIELDS.PRICE_DRIVER_EXCL]: prices.de ? parseFloat(prices.de) : null,
           [FIELDS.PRICE_DRIVER_INCL]: prices.di ? parseFloat(prices.di) : null,
           [FIELDS.ORDER_NAME]: form.orderName || null,
-          [FIELDS.MOBILE]: form.mobile ? Number(form.mobile) : null,
+          [FIELDS.MOBILE]: form.mobile || null,
           [FIELDS.ID_NUM]: form.idNum ? Number(form.idNum) : null,
           [FIELDS.SENT]: status.sent,
           [FIELDS.APPROVED]: status.approved,
@@ -449,9 +449,27 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
           )}
         </DialogTrigger>
       )}
-      <DialogContent className="sm:max-w-[900px] max-h-[90vh] flex flex-col" dir="rtl">
+      <DialogContent className="sm:max-w-[900px] h-[85vh] flex flex-col" dir="rtl">
         <DialogHeader className="pb-1">
-          <DialogTitle className="text-base">{isEdit ? "עריכת נסיעה" : "נסיעה חדשה"}</DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-base">{isEdit ? "עריכת נסיעה" : "נסיעה חדשה"}</DialogTitle>
+            {isEdit && allRides && onNavigate && (() => {
+              const idx = allRides.findIndex((r: any) => r.id === initialData?.id);
+              const hasPrev = idx > 0;
+              const hasNext = idx >= 0 && idx < allRides.length - 1;
+              return (
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-muted-foreground">{idx + 1}/{allRides.length}</span>
+                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" disabled={!hasNext} onClick={() => onNavigate(allRides[idx + 1])}>
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" disabled={!hasPrev} onClick={() => onNavigate(allRides[idx - 1])}>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              );
+            })()}
+          </div>
           <DialogDescription className="text-xs">מלא את פרטי הנסיעה. שדות * = חובה.</DialogDescription>
         </DialogHeader>
 
