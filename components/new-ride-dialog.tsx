@@ -482,10 +482,10 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
             </TabsList>
 
             <div className="flex-1 overflow-y-auto p-2 border rounded mt-1">
-              <TabsContent value="details" className="space-y-2 mt-0">
+              <TabsContent value="details" className="space-y-1 mt-0">
                 <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
                   <div>
-                    <Label className={cn("text-xs mb-0.5 block", showErrors && !date && "text-red-500")}>תאריך *</Label>
+                    <Label className={cn("text-sm leading-none block", showErrors && !date && "text-red-500")}>תאריך *</Label>
                     <Button
                       variant={"outline"}
                       className={cn("w-full justify-start text-right h-8 text-sm", showErrors && !date && "border-red-500")}
@@ -501,7 +501,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                     </Button>
                   </div>
                   <div>
-                    <Label className={cn("text-xs mb-0.5 block", showErrors && !form.customer && "text-red-500")}>שם לקוח *</Label>
+                    <Label className={cn("text-sm leading-none block", showErrors && !form.customer && "text-red-500")}>שם לקוח *</Label>
                     <AutoComplete
                       options={lists.customers}
                       value={form.customer}
@@ -520,7 +520,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                 </div>
 
                 <div>
-                  <Label className={cn("text-xs mb-0.5 block", showErrors && !form.description && "text-red-500")}>תיאור (מסלול) *</Label>
+                  <Label className={cn("text-sm leading-none block", showErrors && !form.description && "text-red-500")}>תיאור (מסלול) *</Label>
                   <Input
                     value={form.description}
                     onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
@@ -531,18 +531,18 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
 
                 <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
                   <div>
-                    <Label className={cn("text-xs mb-0.5 block", showErrors && !form.pickup && "text-red-500")}>התייצבות *</Label>
+                    <Label className={cn("text-sm leading-none block", showErrors && !form.pickup && "text-red-500")}>התייצבות *</Label>
                     <Input type="time" value={form.pickup} onChange={e => setForm(p => ({ ...p, pickup: e.target.value }))} className={cn("h-8", showErrors && !form.pickup && "border-red-500")} />
                   </div>
                   <div>
-                    <Label className="text-xs mb-0.5 block">חזור</Label>
+                    <Label className="text-sm leading-none block">חזור</Label>
                     <Input type="time" value={form.dropoff} onChange={e => setForm(p => ({ ...p, dropoff: e.target.value }))} className="h-8" />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
                   <div>
-                    <Label className="text-xs mb-0.5 block">סוג רכב</Label>
+                    <Label className="text-sm leading-none block">סוג רכב</Label>
                     <AutoComplete
                       options={lists.vehicles}
                       value={form.vehicleType}
@@ -558,7 +558,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                     />
                   </div>
                   <div>
-                    <Label className="text-xs mb-0.5 block">נהג</Label>
+                    <Label className="text-sm leading-none block">נהג</Label>
                     <AutoComplete
                       options={lists.drivers}
                       value={form.driver}
@@ -579,11 +579,11 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
 
                 <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
                   <div>
-                    <Label className="text-xs mb-0.5 block">מס' רכב</Label>
+                    <Label className="text-sm leading-none block">מס' רכב</Label>
                     <Input value={form.vehicleNum} onChange={e => setForm(p => ({ ...p, vehicleNum: e.target.value }))} className="text-right h-8" />
                   </div>
                   <div>
-                    <Label className="text-xs mb-0.5 block"><Upload className="w-3 h-3 inline ml-1" />קובץ</Label>
+                    <Label className="text-sm leading-none block"><Upload className="w-3 h-3 inline ml-1" />קובץ</Label>
                     <div className="flex items-center gap-1">
                       {existingAttachment.length > 0 ? (
                         <div className="flex items-center gap-1 flex-1 h-8 px-2 border rounded bg-green-50 text-sm">
@@ -625,12 +625,12 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
 
                 <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
                   <div>
-                    <Label className="text-xs mb-0.5 block">הערות מנהל</Label>
-                    <Textarea value={form.managerNotes} onChange={e => setForm(p => ({ ...p, managerNotes: e.target.value }))} className="text-right border-blue-200 bg-blue-50/30 h-12 text-sm resize-none" />
+                    <Label className="text-sm leading-none block">הערות מנהל</Label>
+                    <Textarea value={form.managerNotes} onChange={e => setForm(p => ({ ...p, managerNotes: e.target.value }))} className="text-right border-blue-200 bg-blue-50/30 h-10 text-sm resize-none" />
                   </div>
                   <div>
-                    <Label className="text-xs mb-0.5 block">הערות נהג</Label>
-                    <Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} className="text-right h-12 text-sm resize-none" />
+                    <Label className="text-sm leading-none block">הערות נהג</Label>
+                    <Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} className="text-right h-10 text-sm resize-none" />
                   </div>
                 </div>
               </TabsContent>
@@ -641,24 +641,24 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                     <div className="flex justify-between items-center">
                       <h3 className="font-bold text-blue-700 text-sm">מחיר לקוח</h3>
                       <div className="flex items-center gap-1">
-                        <Label className="text-xs whitespace-nowrap">מע"מ %</Label>
+                        <Label className="text-sm whitespace-nowrap">מע"מ %</Label>
                         <Input type="number" value={vatClient} onChange={(e) => setVatClient(e.target.value)} className="w-14 h-7 bg-white text-center text-xs" />
                       </div>
                     </div>
-                    <div className="space-y-1"><Label className="text-xs">לפני מע"מ</Label><Input type="number" value={prices.ce} onChange={(e) => calculateVat(e.target.value, 'excl', 'client')} className="bg-white h-9" /></div>
-                    <div className="space-y-1"><Label className="text-xs">כולל מע"מ</Label><Input type="number" value={prices.ci} onChange={(e) => calculateVat(e.target.value, 'incl', 'client')} className="bg-white font-bold h-9" /></div>
+                    <div className="space-y-1"><Label className="text-sm">לפני מע"מ</Label><Input type="number" value={prices.ce} onChange={(e) => calculateVat(e.target.value, 'excl', 'client')} className="bg-white h-9" /></div>
+                    <div className="space-y-1"><Label className="text-sm">כולל מע"מ</Label><Input type="number" value={prices.ci} onChange={(e) => calculateVat(e.target.value, 'incl', 'client')} className="bg-white font-bold h-9" /></div>
                   </div>
 
                   <div className="space-y-3 p-3 border rounded-lg bg-orange-50/50">
                     <div className="flex justify-between items-center">
                       <h3 className="font-bold text-orange-700 text-sm">מחיר נהג</h3>
                       <div className="flex items-center gap-1">
-                        <Label className="text-xs whitespace-nowrap">מע"מ %</Label>
+                        <Label className="text-sm whitespace-nowrap">מע"מ %</Label>
                         <Input type="number" value={vatDriver} onChange={(e) => setVatDriver(e.target.value)} className="w-14 h-7 bg-white text-center text-xs" />
                       </div>
                     </div>
-                    <div className="space-y-1"><Label className="text-xs">לפני מע"מ</Label><Input type="number" value={prices.de} onChange={(e) => calculateVat(e.target.value, 'excl', 'driver')} className="bg-white h-9" /></div>
-                    <div className="space-y-1"><Label className="text-xs">כולל מע"מ</Label><Input type="number" value={prices.di} onChange={(e) => calculateVat(e.target.value, 'incl', 'driver')} className="bg-white font-bold h-9" /></div>
+                    <div className="space-y-1"><Label className="text-sm">לפני מע"מ</Label><Input type="number" value={prices.de} onChange={(e) => calculateVat(e.target.value, 'excl', 'driver')} className="bg-white h-9" /></div>
+                    <div className="space-y-1"><Label className="text-sm">כולל מע"מ</Label><Input type="number" value={prices.di} onChange={(e) => calculateVat(e.target.value, 'incl', 'driver')} className="bg-white font-bold h-9" /></div>
                   </div>
                 </div>
 
@@ -667,13 +667,13 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                   <h3 className="font-bold text-green-700 text-sm mb-2">רווח</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <Label className="text-xs">רווח לפני מע"מ</Label>
+                      <Label className="text-sm">רווח לפני מע"מ</Label>
                       <div className="h-9 flex items-center px-3 border rounded bg-white font-bold text-green-700">
                         {((parseFloat(prices.ce) || 0) - (parseFloat(prices.de) || 0)).toLocaleString()} ₪
                       </div>
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-xs">רווח כולל מע"מ</Label>
+                      <Label className="text-sm">רווח כולל מע"מ</Label>
                       <div className="h-9 flex items-center px-3 border rounded bg-white font-bold text-green-700">
                         {((parseFloat(prices.ci) || 0) - (parseFloat(prices.di) || 0)).toLocaleString()} ₪
                       </div>
