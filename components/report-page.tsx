@@ -404,7 +404,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
       </Dialog>
 
       {/* Main table view */}
-      <div className="w-full h-[calc(100vh-4.5rem)] flex flex-col p-4 overflow-hidden" dir="rtl">
+      <div className="w-full h-[calc(100vh-2rem)] flex flex-col p-4 overflow-hidden" dir="rtl">
         {/* Top bar */}
         <div className="flex items-center gap-3 pb-3 flex-none flex-wrap">
           <Button variant="outline" size="sm" onClick={openFilterDialog} className="shrink-0">

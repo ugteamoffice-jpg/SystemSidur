@@ -233,8 +233,8 @@ export default function DriversGrid() {
   const offsetY = startIndex * ROW_HEIGHT
 
   return (
-    <div className="w-full h-[calc(100vh-60px)] flex flex-col p-6 space-y-4 text-right overflow-hidden" dir="rtl">
-      <div className="flex items-center gap-4 flex-none">
+    <div className="w-full h-[calc(100vh-2rem)] flex flex-col space-y-2 p-4 overflow-hidden" dir="rtl">
+      <div className="flex items-center gap-3 flex-none">
         <Select value={statusFilter} onValueChange={(value: "פעיל" | "לא פעיל") => setStatusFilter(value)}>
           <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
           <SelectContent><SelectItem value="פעיל">פעיל</SelectItem><SelectItem value="לא פעיל">לא פעיל</SelectItem></SelectContent>
