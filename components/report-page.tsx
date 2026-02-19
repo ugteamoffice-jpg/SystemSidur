@@ -430,7 +430,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
           )}
 
           {hasSearched && filteredData.length > 0 && (
-            <div className="flex flex-wrap gap-3 text-xs bg-muted/20 border rounded px-3 py-1.5 shadow-sm items-center shrink-0 mr-auto">
+            <div className="flex flex-wrap gap-3 text-sm bg-muted/20 border rounded px-3 py-1.5 shadow-sm items-center shrink-0 mr-auto">
               <div className="flex flex-col gap-0.5 whitespace-nowrap">
                 <span>לקוח+ מע"מ: <span className="font-bold">{totals.p1.toLocaleString()} ₪</span></span>
                 <span>לקוח כולל: <span className="font-bold">{totals.p2.toLocaleString()} ₪</span></span>

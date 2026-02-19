@@ -813,9 +813,19 @@ function DataGrid({ schema }: { schema?: any }) {
                             for (const r of rows) { await updateRecordField(r.original.id, WS.SENT, true); }
                             setRowSelection({});
                           }}
-                          className="cursor-pointer text-right text-blue-600"
+                          className="cursor-pointer text-right"
                         >
                           סמן שלח ל-{table.getFilteredSelectedRowModel().rows.length} נסיעות
+                        </ContextMenuItem>
+                        <ContextMenuItem
+                          onSelect={async () => {
+                            const rows = table.getFilteredSelectedRowModel().rows;
+                            for (const r of rows) { await updateRecordField(r.original.id, WS.SENT, false); }
+                            setRowSelection({});
+                          }}
+                          className="cursor-pointer text-right"
+                        >
+                          בטל שלח ל-{table.getFilteredSelectedRowModel().rows.length} נסיעות
                         </ContextMenuItem>
                         <ContextMenuItem
                           onSelect={async () => {
@@ -823,9 +833,19 @@ function DataGrid({ schema }: { schema?: any }) {
                             for (const r of rows) { await updateRecordField(r.original.id, WS.APPROVED, true); }
                             setRowSelection({});
                           }}
-                          className="cursor-pointer text-right text-green-600"
+                          className="cursor-pointer text-right"
                         >
                           סמן מאושר ל-{table.getFilteredSelectedRowModel().rows.length} נסיעות
+                        </ContextMenuItem>
+                        <ContextMenuItem
+                          onSelect={async () => {
+                            const rows = table.getFilteredSelectedRowModel().rows;
+                            for (const r of rows) { await updateRecordField(r.original.id, WS.APPROVED, false); }
+                            setRowSelection({});
+                          }}
+                          className="cursor-pointer text-right"
+                        >
+                          בטל מאושר ל-{table.getFilteredSelectedRowModel().rows.length} נסיעות
                         </ContextMenuItem>
                       </>
                     )}
