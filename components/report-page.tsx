@@ -3,7 +3,7 @@
 import * as React from "react"
 import { format } from "date-fns"
 import { he } from "date-fns/locale"
-import { Calendar as CalendarIcon, Loader2, Search, X, LayoutDashboard, SlidersHorizontal, Download, FileSpreadsheet, Printer, Receipt } from "lucide-react"
+import { Calendar as CalendarIcon, Loader2, Search, X, LayoutDashboard, SlidersHorizontal, Download, FileSpreadsheet, Printer } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -669,16 +669,17 @@ export function ReportPage({ reportType }: ReportPageProps) {
             <Label>מס' חשבונית</Label>
             <Input 
               value={bulkInvoiceNum} 
-              onChange={(e) => setBulkInvoiceNum(e.target.value)} 
-              placeholder="הזן מס' חשבונית (או השאר ריק למחיקה)..." 
+              onChange={(e) => setBulkInvoiceNum(e.target.value.replace(/\D/g, ''))} 
+              placeholder="הזן מס' חשבונית (מספרים בלבד)..." 
               className="mt-2 text-right"
+              inputMode="numeric"
             />
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setShowInvoiceDialog(false)} disabled={isUpdatingInvoice}>ביטול</Button>
             <Button onClick={handleBulkUpdateInvoice} disabled={isUpdatingInvoice}>
-              {isUpdatingInvoice ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <Receipt className="h-4 w-4 ml-2" />}
-              עדכן חשבונית
+              {isUpdatingInvoice && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+              שמור
             </Button>
           </div>
         </DialogContent>
@@ -699,7 +700,6 @@ export function ReportPage({ reportType }: ReportPageProps) {
             onClick={() => setShowInvoiceDialog(true)}
             disabled={selectedRowIds.size === 0}
           >
-            <Receipt className="h-4 w-4 ml-2" />
             עדכן חשבונית
           </Button>
 
@@ -849,7 +849,6 @@ export function ReportPage({ reportType }: ReportPageProps) {
                         }}
                         className="cursor-pointer"
                       >
-                        <Receipt className="h-4 w-4 ml-2" />
                         עדכון מס' חשבונית
                       </ContextMenuItem>
                     </ContextMenuContent>
