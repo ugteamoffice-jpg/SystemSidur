@@ -700,7 +700,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
             disabled={selectedRowIds.size === 0}
           >
             <Receipt className="h-4 w-4 ml-2" />
-            עדכן חשבונית {selectedRowIds.size > 0 ? `(${selectedRowIds.size})` : ''}
+            עדכן חשבונית
           </Button>
 
           {/* Export Button */}
