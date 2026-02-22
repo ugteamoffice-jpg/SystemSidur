@@ -3,7 +3,7 @@
 import * as React from "react"
 import { format } from "date-fns"
 import { he } from "date-fns/locale"
-import { Calendar as CalendarIcon, Loader2, Search, X, LayoutDashboard, SlidersHorizontal, Download, FileSpreadsheet, Printer } from "lucide-react"
+import { Calendar as CalendarIcon, Loader2, Search, X, LayoutDashboard, SlidersHorizontal, Download, FileSpreadsheet, Printer, Receipt } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -16,6 +16,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useTenantFields, useTenant } from "@/lib/tenant-context"
 import { useToast } from "@/hooks/use-toast"
 import { loadReportSettings } from "@/components/report-settings-dialog"
+import { RideDialog } from "@/components/new-ride-dialog"
 
 interface WorkScheduleRecord {
   id: string
@@ -74,10 +75,19 @@ export function ReportPage({ reportType }: ReportPageProps) {
   const [hasSearched, setHasSearched] = React.useState(false)
   const [globalFilter, setGlobalFilter] = React.useState("")
 
+  // Edit Ride Dialog State
+  const [editingRecord, setEditingRecord] = React.useState<WorkScheduleRecord | null>(null)
+
+  // Selection & Bulk Invoice State
+  const [selectedRowIds, setSelectedRowIds] = React.useState<Set<string>>(new Set())
+  const [showInvoiceDialog, setShowInvoiceDialog] = React.useState(false)
+  const [bulkInvoiceNum, setBulkInvoiceNum] = React.useState("")
+  const [isUpdatingInvoice, setIsUpdatingInvoice] = React.useState(false)
+
   // Column resizing with localStorage persistence
   const REPORT_COL_KEY = `reportColumnWidths_${tenantId}_${reportType}`
   const defaultWidths: Record<string, number> = {
-    invoiceNum: 90, date: 95, customer: 130, pickup: 80, route: 200, dropoff: 80, 
+    select: 45, invoiceNum: 90, date: 95, customer: 130, pickup: 80, route: 200, dropoff: 80, 
     vehicleType: 100, driver: 110, vehicleNum: 85, 
     p1: 100, p2: 110, p3: 100, p4: 100, profit: 80
   }
@@ -172,6 +182,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
   const applyFilters = async () => {
     setFilters(tempFilters)
     setShowFilterDialog(false)
+    setSelectedRowIds(new Set()) // איפוס בחירות בחיפוש מחדש
     
     try {
       setIsLoading(true)
@@ -251,6 +262,11 @@ export function ReportPage({ reportType }: ReportPageProps) {
     return filtered
   }, [allData, filters, globalFilter, WS])
 
+  React.useEffect(() => {
+    // מנקה את הבחירה כשמבצעים סינון פנימי חדש (Global Filter)
+    setSelectedRowIds(new Set())
+  }, [filteredData])
+
   const totals = React.useMemo(() => ({
     totalRows: filteredData.length,
     p1: filteredData.reduce((s, r) => s + (Number(r.fields[WS.PRICE_CLIENT_EXCL]) || 0), 0),
@@ -266,14 +282,62 @@ export function ReportPage({ reportType }: ReportPageProps) {
     if (filters.startDate && filters.endDate) parts.push(`${format(filters.startDate, "dd/MM/yyyy")} - ${format(filters.endDate, "dd/MM/yyyy")}`)
     if (filters.customerName) parts.push(`לקוח: ${filters.customerName}`)
     if (filters.driverName) parts.push(`נהג: ${filters.driverName}`)
-    if (!filters.withInvoice) parts.push("ללא חשבוניות")
-    if (!filters.withoutInvoice) parts.push("רק עם חשבוניות")
+    if (!filters.withInvoice) parts.push("ללא מס' חשבונית")
+    if (!filters.withoutInvoice) parts.push("מס' חשבונית קיים")
     if (!filters.withClientPrice) parts.push("ללא מחיר לקוח")
     if (!filters.withoutClientPrice) parts.push("עם מחיר לקוח")
     if (!filters.withDriverPrice) parts.push("ללא מחיר נהג")
     if (!filters.withoutDriverPrice) parts.push("עם מחיר נהג")
     return parts.join(" | ")
   }, [filters])
+
+  // --- Row Selection Logic ---
+  const handleToggleAll = () => {
+    if (selectedRowIds.size === filteredData.length) {
+      setSelectedRowIds(new Set())
+    } else {
+      setSelectedRowIds(new Set(filteredData.map(r => r.id)))
+    }
+  }
+
+  const handleToggleRow = (id: string) => {
+    const newSet = new Set(selectedRowIds)
+    if (newSet.has(id)) newSet.delete(id)
+    else newSet.add(id)
+    setSelectedRowIds(newSet)
+  }
+
+  // --- Bulk Update Invoice ---
+  const handleBulkUpdateInvoice = async () => {
+    if (selectedRowIds.size === 0) return
+    setIsUpdatingInvoice(true)
+    let errorCount = 0
+
+    for (const id of selectedRowIds) {
+      try {
+        const res = await fetch(`/api/work-schedule/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fields: { [INVOICE_FIELD_ID]: bulkInvoiceNum } })
+        })
+        if (!res.ok) errorCount++
+      } catch {
+        errorCount++
+      }
+    }
+
+    setIsUpdatingInvoice(false)
+    setShowInvoiceDialog(false)
+    setBulkInvoiceNum("")
+
+    if (errorCount > 0) {
+      toast({ title: "שגיאה", description: `נכשל בעדכון של ${errorCount} נסיעות`, variant: "destructive" })
+    } else {
+      toast({ title: "הצלחה", description: "מספרי החשבונית עודכנו בהצלחה" })
+    }
+    
+    applyFilters() // מפעיל רענון של הנתונים מהשרת
+  }
 
   // --- ייצוא לאקסל (CSV) ---
   const exportToCsv = () => {
@@ -551,11 +615,11 @@ export function ReportPage({ reportType }: ReportPageProps) {
               <div className="grid grid-cols-2 gap-3">
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
                   <Checkbox checked={tempFilters.withInvoice} onCheckedChange={(c) => setTempFilters(p => ({ ...p, withInvoice: !!c }))} />
-                  הופקה חשבונית (יש מספר)
+                  מס' חשבונית קיים
                 </label>
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
                   <Checkbox checked={tempFilters.withoutInvoice} onCheckedChange={(c) => setTempFilters(p => ({ ...p, withoutInvoice: !!c }))} />
-                  טרם הופקה (ללא מספר)
+                  ללא מס' חשבונית
                 </label>
               </div>
             </div>
@@ -590,6 +654,35 @@ export function ReportPage({ reportType }: ReportPageProps) {
         </DialogContent>
       </Dialog>
 
+      {/* Bulk Invoice Update Dialog */}
+      <Dialog open={showInvoiceDialog} onOpenChange={setShowInvoiceDialog}>
+        <DialogContent dir="rtl" className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>עדכון מס' חשבונית מרוכז</DialogTitle>
+            <DialogDescription>
+              הזן מספר חשבונית לעדכון עבור {selectedRowIds.size} הנסיעות שנבחרו.
+              שים לב: מספרי חשבוניות קיימים יידרסו!
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label>מס' חשבונית</Label>
+            <Input 
+              value={bulkInvoiceNum} 
+              onChange={(e) => setBulkInvoiceNum(e.target.value)} 
+              placeholder="הזן מס' חשבונית (או השאר ריק למחיקה)..." 
+              className="mt-2 text-right"
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowInvoiceDialog(false)} disabled={isUpdatingInvoice}>ביטול</Button>
+            <Button onClick={handleBulkUpdateInvoice} disabled={isUpdatingInvoice}>
+              {isUpdatingInvoice ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <Receipt className="h-4 w-4 ml-2" />}
+              עדכן חשבונית
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <div className="w-full h-[calc(100vh-2rem)] flex flex-col p-4 overflow-hidden" dir="rtl">
         <div className="flex items-center gap-3 pb-3 flex-none flex-wrap">
           <Button variant="outline" size="sm" onClick={openFilterDialog} className="shrink-0">
@@ -597,7 +690,15 @@ export function ReportPage({ reportType }: ReportPageProps) {
             שינוי סינון
           </Button>
 
-          {/* New Export Button */}
+          {/* Bulk Action Button */}
+          {selectedRowIds.size > 0 && (
+            <Button variant="default" size="sm" className="bg-blue-600 hover:bg-blue-700 text-white shrink-0" onClick={() => setShowInvoiceDialog(true)}>
+              <Receipt className="h-4 w-4 ml-2" />
+              עדכן חשבונית ({selectedRowIds.size})
+            </Button>
+          )}
+
+          {/* Export Button */}
           {hasSearched && filteredData.length > 0 && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -678,6 +779,12 @@ export function ReportPage({ reportType }: ReportPageProps) {
             <Table className="relative w-full" style={{ tableLayout: "fixed" }}>
               <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                 <TableRow>
+                  <TableHead className="w-[45px] text-center border-l px-0">
+                    <Checkbox 
+                      checked={filteredData.length > 0 && selectedRowIds.size === filteredData.length} 
+                      onCheckedChange={handleToggleAll} 
+                    />
+                  </TableHead>
                   <TableHead className="text-right border-l" style={{ width: colWidths.invoiceNum }}>מס' חשבונית</TableHead>
                   <TableHead className="text-right border-l" style={{ width: colWidths.date }}>תאריך</TableHead>
                   <TableHead className="text-right border-l" style={{ width: colWidths.customer }}>שם לקוח</TableHead>
@@ -696,7 +803,17 @@ export function ReportPage({ reportType }: ReportPageProps) {
               </TableHeader>
               <TableBody>
                 {filteredData.map((record) => (
-                  <TableRow key={record.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setEditingRecord(record)}>
+                  <TableRow 
+                    key={record.id} 
+                    className={`cursor-pointer hover:bg-muted/50 ${selectedRowIds.has(record.id) ? 'bg-muted/30' : ''}`}
+                    onClick={() => setEditingRecord(record)}
+                  >
+                    <TableCell className="text-center border-l px-0" onClick={(e) => e.stopPropagation()}>
+                      <Checkbox 
+                        checked={selectedRowIds.has(record.id)} 
+                        onCheckedChange={() => handleToggleRow(record.id)} 
+                      />
+                    </TableCell>
                     <TableCell className="text-right border-l truncate">{record.fields[INVOICE_FIELD_ID] || "-"}</TableCell>
                     <TableCell className="text-right border-l truncate">{record.fields[WS.DATE] ? format(new Date(record.fields[WS.DATE]), "dd/MM/yyyy") : "-"}</TableCell>
                     <TableCell className="text-right border-l truncate">{renderLinkField(record.fields[WS.CUSTOMER])}</TableCell>
@@ -718,6 +835,16 @@ export function ReportPage({ reportType }: ReportPageProps) {
           )}
         </div>
       </div>
+
+      <RideDialog 
+        open={!!editingRecord} 
+        onOpenChange={(isOpen: boolean) => !isOpen && setEditingRecord(null)} 
+        initialData={editingRecord} 
+        onRideSaved={() => { setEditingRecord(null); applyFilters(); }} 
+        triggerChild={<span />}
+        allRides={filteredData}
+        onNavigate={(record: any) => setEditingRecord(record)}
+      />
     </>
   )
 }
