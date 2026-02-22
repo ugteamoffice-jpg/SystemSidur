@@ -13,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu"
 import { useTenantFields, useTenant } from "@/lib/tenant-context"
 import { useToast } from "@/hooks/use-toast"
 import { loadReportSettings } from "@/components/report-settings-dialog"
@@ -690,13 +691,17 @@ export function ReportPage({ reportType }: ReportPageProps) {
             שינוי סינון
           </Button>
 
-          {/* Bulk Action Button */}
-          {selectedRowIds.size > 0 && (
-            <Button variant="default" size="sm" className="bg-blue-600 hover:bg-blue-700 text-white shrink-0" onClick={() => setShowInvoiceDialog(true)}>
-              <Receipt className="h-4 w-4 ml-2" />
-              עדכן חשבונית ({selectedRowIds.size})
-            </Button>
-          )}
+          {/* Bulk Action Button - Always visible but disabled if nothing is selected */}
+          <Button 
+            variant={selectedRowIds.size > 0 ? "default" : "outline"} 
+            size="sm" 
+            className={`shrink-0 transition-colors ${selectedRowIds.size > 0 ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'opacity-50 cursor-not-allowed'}`}
+            onClick={() => setShowInvoiceDialog(true)}
+            disabled={selectedRowIds.size === 0}
+          >
+            <Receipt className="h-4 w-4 ml-2" />
+            עדכן חשבונית {selectedRowIds.size > 0 ? `(${selectedRowIds.size})` : ''}
+          </Button>
 
           {/* Export Button */}
           {hasSearched && filteredData.length > 0 && (
@@ -803,32 +808,52 @@ export function ReportPage({ reportType }: ReportPageProps) {
               </TableHeader>
               <TableBody>
                 {filteredData.map((record) => (
-                  <TableRow 
-                    key={record.id} 
-                    className={`cursor-pointer hover:bg-muted/50 ${selectedRowIds.has(record.id) ? 'bg-muted/30' : ''}`}
-                    onClick={() => setEditingRecord(record)}
-                  >
-                    <TableCell className="text-center border-l px-0" onClick={(e) => e.stopPropagation()}>
-                      <Checkbox 
-                        checked={selectedRowIds.has(record.id)} 
-                        onCheckedChange={() => handleToggleRow(record.id)} 
-                      />
-                    </TableCell>
-                    <TableCell className="text-right border-l truncate">{record.fields[INVOICE_FIELD_ID] || "-"}</TableCell>
-                    <TableCell className="text-right border-l truncate">{record.fields[WS.DATE] ? format(new Date(record.fields[WS.DATE]), "dd/MM/yyyy") : "-"}</TableCell>
-                    <TableCell className="text-right border-l truncate">{renderLinkField(record.fields[WS.CUSTOMER])}</TableCell>
-                    <TableCell className="text-right border-l truncate">{record.fields[WS.PICKUP_TIME] || "-"}</TableCell>
-                    <TableCell className="text-right border-l truncate" title={record.fields[WS.DESCRIPTION]}>{record.fields[WS.DESCRIPTION] || "-"}</TableCell>
-                    <TableCell className="text-right border-l truncate">{record.fields[WS.DROPOFF_TIME] || "-"}</TableCell>
-                    <TableCell className="text-right border-l truncate">{renderLinkField(record.fields[WS.VEHICLE_TYPE])}</TableCell>
-                    <TableCell className="text-right border-l truncate">{renderLinkField(record.fields[WS.DRIVER])}</TableCell>
-                    <TableCell className="text-right border-l truncate">{record.fields[WS.VEHICLE_NUM] || "-"}</TableCell>
-                    <TableCell className="text-right border-l">{(Number(record.fields[WS.PRICE_CLIENT_EXCL]) || 0).toLocaleString()}</TableCell>
-                    <TableCell className="text-right border-l">{(Number(record.fields[WS.PRICE_CLIENT_INCL]) || 0).toLocaleString()}</TableCell>
-                    <TableCell className="text-right border-l">{(Number(record.fields[WS.PRICE_DRIVER_EXCL]) || 0).toLocaleString()}</TableCell>
-                    <TableCell className="text-right border-l">{(Number(record.fields[WS.PRICE_DRIVER_INCL]) || 0).toLocaleString()}</TableCell>
-                    <TableCell className="text-right border-l text-green-600 dark:text-green-400 font-medium">{(Number(record.fields[WS.PROFIT]) || 0).toLocaleString()}</TableCell>
-                  </TableRow>
+                  <ContextMenu key={record.id}>
+                    <ContextMenuTrigger asChild>
+                      <TableRow 
+                        className={`cursor-pointer transition-colors hover:bg-muted/50 ${selectedRowIds.has(record.id) ? 'bg-muted/30' : ''}`}
+                        onClick={() => setEditingRecord(record)}
+                      >
+                        <TableCell className="text-center border-l px-0" onClick={(e) => e.stopPropagation()}>
+                          <Checkbox 
+                            checked={selectedRowIds.has(record.id)} 
+                            onCheckedChange={() => handleToggleRow(record.id)} 
+                          />
+                        </TableCell>
+                        <TableCell className="text-right border-l truncate">{record.fields[INVOICE_FIELD_ID] || "-"}</TableCell>
+                        <TableCell className="text-right border-l truncate">{record.fields[WS.DATE] ? format(new Date(record.fields[WS.DATE]), "dd/MM/yyyy") : "-"}</TableCell>
+                        <TableCell className="text-right border-l truncate">{renderLinkField(record.fields[WS.CUSTOMER])}</TableCell>
+                        <TableCell className="text-right border-l truncate">{record.fields[WS.PICKUP_TIME] || "-"}</TableCell>
+                        <TableCell className="text-right border-l truncate" title={record.fields[WS.DESCRIPTION]}>{record.fields[WS.DESCRIPTION] || "-"}</TableCell>
+                        <TableCell className="text-right border-l truncate">{record.fields[WS.DROPOFF_TIME] || "-"}</TableCell>
+                        <TableCell className="text-right border-l truncate">{renderLinkField(record.fields[WS.VEHICLE_TYPE])}</TableCell>
+                        <TableCell className="text-right border-l truncate">{renderLinkField(record.fields[WS.DRIVER])}</TableCell>
+                        <TableCell className="text-right border-l truncate">{record.fields[WS.VEHICLE_NUM] || "-"}</TableCell>
+                        <TableCell className="text-right border-l">{(Number(record.fields[WS.PRICE_CLIENT_EXCL]) || 0).toLocaleString()}</TableCell>
+                        <TableCell className="text-right border-l">{(Number(record.fields[WS.PRICE_CLIENT_INCL]) || 0).toLocaleString()}</TableCell>
+                        <TableCell className="text-right border-l">{(Number(record.fields[WS.PRICE_DRIVER_EXCL]) || 0).toLocaleString()}</TableCell>
+                        <TableCell className="text-right border-l">{(Number(record.fields[WS.PRICE_DRIVER_INCL]) || 0).toLocaleString()}</TableCell>
+                        <TableCell className="text-right border-l text-green-600 dark:text-green-400 font-medium">{(Number(record.fields[WS.PROFIT]) || 0).toLocaleString()}</TableCell>
+                      </TableRow>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent dir="rtl" className="w-48">
+                      <ContextMenuItem onSelect={() => setEditingRecord(record)} className="cursor-pointer">
+                        עריכת נסיעה
+                      </ContextMenuItem>
+                      <ContextMenuItem 
+                        onSelect={() => {
+                          if (!selectedRowIds.has(record.id)) {
+                            setSelectedRowIds(new Set([record.id]))
+                          }
+                          setShowInvoiceDialog(true)
+                        }}
+                        className="cursor-pointer"
+                      >
+                        <Receipt className="h-4 w-4 ml-2" />
+                        עדכון מס' חשבונית
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
                 ))}
               </TableBody>
             </Table>
