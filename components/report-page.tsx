@@ -3,7 +3,7 @@
 import * as React from "react"
 import { format } from "date-fns"
 import { he } from "date-fns/locale"
-import { Calendar as CalendarIcon, Loader2, Search, X, LayoutDashboard, SlidersHorizontal, Download, FileSpreadsheet, Printer } from "lucide-react"
+import { Calendar as CalendarIcon, Loader2, Search, X, LayoutDashboard, SlidersHorizontal, Download, FileSpreadsheet, Printer, Receipt } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -410,34 +410,33 @@ export function ReportPage({ reportType }: ReportPageProps) {
       const profit = (Number(f[WS.PROFIT]) || 0).toLocaleString("he-IL")
 
       return `<tr>
-        <td class="c">${index + 1}</td>
-        <td class="c">${invoiceNum}</td>
+        <td class="c text-muted">${index + 1}</td>
+        <td class="c font-medium">${invoiceNum !== "-" ? invoiceNum : ""}</td>
         <td class="c">${dateStr}</td>
-        <td>${customer}</td>
+        <td class="font-medium">${customer}</td>
         <td class="c">${goTime}</td>
-        <td>${route}</td>
+        <td class="route-cell">${route}</td>
         <td class="c">${returnTime}</td>
         <td class="c">${vehicleType}</td>
         <td class="c">${driver}</td>
-        <td class="c">${vehicleNum}</td>
-        <td class="c">${p1} ₪</td>
-        <td class="c">${p2} ₪</td>
-        <td class="c">${p3} ₪</td>
-        <td class="c">${p4} ₪</td>
-        <td class="c"><strong>${profit} ₪</strong></td>
+        <td class="c text-muted">${vehicleNum}</td>
+        <td class="l">${p1}</td>
+        <td class="l">${p2}</td>
+        <td class="l">${p3}</td>
+        <td class="l">${p4}</td>
+        <td class="l profit-cell">${profit}</td>
       </tr>`
     }).join("")
 
-    const logoHtml = settings.logoBase64 ? `<img src="${settings.logoBase64}" class="logo" alt="לוגו"/>` : ""
-    const companyNameHtml = settings.companyName ? `<div class="company-name">${escapeHtml(settings.companyName)}</div>` : ""
-    const headerSection = (settings.logoBase64 || settings.companyName) ? `<div class="company-header">${logoHtml}${companyNameHtml}</div>` : ""
-
+    const logoHtml = settings.logoBase64 ? `<img src="${settings.logoBase64}" class="logo" alt="לוגו חברה"/>` : ""
+    const companyNameHtml = settings.companyName ? `<h2>${escapeHtml(settings.companyName)}</h2>` : ""
+    
     const footerParts = []
     if (settings.address) footerParts.push(escapeHtml(settings.address))
     if (settings.phone) footerParts.push(`טלפון: ${escapeHtml(settings.phone)}`)
     if (settings.email) footerParts.push(escapeHtml(settings.email))
-    
-    const footerLine1 = footerParts.length > 0 ? `<div class="footer-info">${footerParts.join(" | ")}</div>` : ""
+    const companyDetailsHtml = footerParts.length > 0 ? `<div class="company-details">${footerParts.join(" | ")}</div>` : ""
+
     const footerLine2 = settings.footerText ? `<div class="footer-custom">${escapeHtml(settings.footerText)}</div>` : ""
 
     const html = `<!DOCTYPE html>
@@ -447,68 +446,148 @@ export function ReportPage({ reportType }: ReportPageProps) {
       <title>${reportTitles[reportType]}</title>
       <style>
         @page { size: A4 landscape; margin: 12mm; }
-        body { font-family: sans-serif; direction: rtl; padding: 20px; font-size: 10.5px; color: #111; }
-        .company-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-        .logo { height: 45px; max-width: 150px; object-fit: contain; }
-        .company-name { font-size: 18px; font-weight: bold; }
-        h1 { text-align: center; font-size: 22px; margin: 10px 0; }
-        .info-line { text-align: center; font-size: 13px; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 2px solid #333; }
-        table { width: 100%; border-collapse: collapse; font-size: 10.5px; margin-bottom: 20px; }
-        th, td { padding: 5px 3px; border-bottom: 1px solid #ddd; text-align: right; }
-        th { background: #f0f0f0; border-top: 2px solid #333; border-bottom: 2px solid #333; white-space: nowrap; font-weight: bold;}
+        * { box-sizing: border-box; }
+        body { 
+          font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+          direction: rtl; 
+          padding: 10px 20px; 
+          font-size: 11px; 
+          color: #1e293b; 
+          line-height: 1.4;
+          background: #fff;
+        }
+        
+        /* Header Section */
+        .header-container { 
+          display: flex; 
+          justify-content: space-between; 
+          align-items: flex-start; 
+          margin-bottom: 25px; 
+          border-bottom: 2px solid #e2e8f0; 
+          padding-bottom: 15px; 
+        }
+        .company-info { display: flex; align-items: center; gap: 15px; }
+        .logo { max-height: 65px; max-width: 180px; object-fit: contain; }
+        .company-text h2 { margin: 0 0 4px 0; font-size: 20px; color: #0f172a; font-weight: 700; }
+        .company-details { font-size: 11px; color: #64748b; }
+        
+        .report-meta { text-align: left; }
+        .report-meta h1 { margin: 0 0 8px 0; font-size: 22px; color: #0f172a; font-weight: 800; }
+        .meta-item { font-size: 11px; color: #475569; margin-bottom: 4px; }
+        .meta-filters { font-size: 10px; color: #64748b; max-width: 300px; line-height: 1.3; margin-top: 6px; }
+
+        /* Table Section */
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th { 
+          background-color: #f8fafc; 
+          color: #334155; 
+          font-weight: 600; 
+          padding: 10px 6px; 
+          text-align: right; 
+          border-bottom: 2px solid #cbd5e1; 
+          white-space: nowrap;
+        }
+        td { 
+          padding: 8px 6px; 
+          border-bottom: 1px solid #f1f5f9; 
+          vertical-align: middle; 
+        }
+        tr:nth-child(even) td { background-color: #fdfdfd; }
+        
+        /* Alignment and Styling */
         .c { text-align: center; }
-        tr:nth-child(even) { background: #fafafa; }
-        tr.total td { font-weight: bold; border-top: 2px solid #333; border-bottom: 2px solid #333; background: #f0f0f0; }
-        .footer { text-align: center; font-size: 10px; color: #555; border-top: 1px solid #ccc; padding-top: 10px; margin-top: 20px;}
-        .footer-info, .footer-custom { margin-bottom: 3px; }
-        @media print { body { padding: 0; } }
+        .l { text-align: left; }
+        .text-muted { color: #94a3b8; }
+        .font-medium { font-weight: 500; color: #0f172a; }
+        .route-cell { max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .profit-cell { color: #16a34a; font-weight: 600; }
+        
+        /* Total Row */
+        tr.total td { 
+          background-color: #f1f5f9; 
+          font-weight: 700; 
+          border-top: 2px solid #94a3b8; 
+          border-bottom: none;
+          padding: 12px 6px; 
+          color: #0f172a; 
+        }
+
+        /* Footer */
+        .footer { 
+          margin-top: 30px; 
+          text-align: center; 
+          font-size: 10px; 
+          color: #94a3b8; 
+          border-top: 1px solid #e2e8f0; 
+          padding-top: 15px; 
+        }
+        .footer-custom { margin-top: 5px; color: #64748b; }
+        
+        @media print { 
+          body { padding: 0; } 
+          .header-container { page-break-inside: avoid; }
+        }
       </style>
     </head>
     <body>
-      ${headerSection}
-      <h1>${reportTitles[reportType]}</h1>
-      <div class="info-line">
-        <span>סה"כ רשומות: ${filteredData.length}</span> &nbsp;|&nbsp; 
-        <span>תאריך הפקה: ${format(new Date(), "dd/MM/yyyy")}</span>
-        <div style="font-size:11px; color:#555; margin-top:4px;">${escapeHtml(filterSummary)}</div>
+      <div class="header-container">
+        <div class="company-info">
+          ${logoHtml}
+          <div class="company-text">
+            ${companyNameHtml}
+            ${companyDetailsHtml}
+          </div>
+        </div>
+        <div class="report-meta">
+          <h1>${reportTitles[reportType]}</h1>
+          <div class="meta-item"><strong>תאריך הפקה:</strong> ${format(new Date(), "dd/MM/yyyy")}</div>
+          <div class="meta-item"><strong>סה"כ רשומות:</strong> ${filteredData.length}</div>
+          <div class="meta-filters">${escapeHtml(filterSummary)}</div>
+        </div>
       </div>
+
       <table>
         <thead>
           <tr>
             <th class="c" style="width:25px">#</th>
-            <th class="c" style="width:65px">חשבונית</th>
+            <th class="c" style="width:65px">מס' חשבונית</th>
             <th class="c" style="width:65px">תאריך</th>
-            <th>לקוח</th>
+            <th>שם לקוח</th>
             <th class="c" style="width:45px">הלוך</th>
             <th>מסלול</th>
             <th class="c" style="width:45px">חזור</th>
-            <th class="c">רכב</th>
-            <th class="c">נהג</th>
+            <th class="c">סוג רכב</th>
+            <th class="c">שם נהג</th>
             <th class="c" style="width:60px">מס' רכב</th>
-            <th class="c" style="width:65px">לקוח ע"מ</th>
-            <th class="c" style="width:65px">לקוח כולל</th>
-            <th class="c" style="width:65px">נהג ע"מ</th>
-            <th class="c" style="width:65px">נהג כולל</th>
-            <th class="c" style="width:65px">רווח</th>
+            <th class="l" style="width:65px">לקוח ע"מ</th>
+            <th class="l" style="width:65px">לקוח כולל</th>
+            <th class="l" style="width:65px">נהג ע"מ</th>
+            <th class="l" style="width:65px">נהג כולל</th>
+            <th class="l" style="width:65px">רווח</th>
           </tr>
         </thead>
         <tbody>
           ${tableRows}
           <tr class="total">
             <td colspan="10" style="text-align:left; font-size:12px;">סה"כ:</td>
-            <td class="c">${totals.p1.toLocaleString("he-IL")} ₪</td>
-            <td class="c">${totals.p2.toLocaleString("he-IL")} ₪</td>
-            <td class="c">${totals.p3.toLocaleString("he-IL")} ₪</td>
-            <td class="c">${totals.p4.toLocaleString("he-IL")} ₪</td>
-            <td class="c">${totals.p5.toLocaleString("he-IL")} ₪</td>
+            <td class="l">${totals.p1.toLocaleString("he-IL")} ₪</td>
+            <td class="l">${totals.p2.toLocaleString("he-IL")} ₪</td>
+            <td class="l">${totals.p3.toLocaleString("he-IL")} ₪</td>
+            <td class="l">${totals.p4.toLocaleString("he-IL")} ₪</td>
+            <td class="l profit-cell">${totals.p5.toLocaleString("he-IL")} ₪</td>
           </tr>
         </tbody>
       </table>
+
       <div class="footer">
-        ${footerLine1}
         ${footerLine2}
+        <div>הופק באמצעות מערכת סידור עבודה</div>
       </div>
-      <script>window.onload = function() { window.print(); }</script>
+      <script>
+        window.onload = function() { 
+          setTimeout(function() { window.print(); }, 500); 
+        }
+      </script>
     </body>
     </html>`
 
