@@ -3,7 +3,7 @@
 import * as React from "react"
 import { format } from "date-fns"
 import { he } from "date-fns/locale"
-import { Calendar as CalendarIcon, Loader2, Search, X, LayoutDashboard, SlidersHorizontal } from "lucide-react"
+import { Calendar as CalendarIcon, Loader2, Search, X, LayoutDashboard, SlidersHorizontal, Download, FileSpreadsheet, Printer } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -12,9 +12,10 @@ import { Label } from "@/components/ui/label"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useTenantFields, useTenant } from "@/lib/tenant-context"
 import { useToast } from "@/hooks/use-toast"
-import { RideDialog } from "@/components/new-ride-dialog"
+import { loadReportSettings } from "@/components/report-settings-dialog"
 
 interface WorkScheduleRecord {
   id: string
@@ -52,6 +53,10 @@ interface FilterState {
   withoutDriverPrice: boolean
 }
 
+const escapeHtml = (str: string) => {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
+}
+
 export function ReportPage({ reportType }: ReportPageProps) {
   const tenantFields = useTenantFields()
   const { tenantId } = useTenant()
@@ -62,7 +67,6 @@ export function ReportPage({ reportType }: ReportPageProps) {
   const [isLoading, setIsLoading] = React.useState(false)
   const [showFilterDialog, setShowFilterDialog] = React.useState(true)
   const [hasSearched, setHasSearched] = React.useState(false)
-  const [editingRecord, setEditingRecord] = React.useState<WorkScheduleRecord | null>(null)
   const [globalFilter, setGlobalFilter] = React.useState("")
 
   // Column resizing with localStorage persistence
@@ -82,15 +86,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
   React.useEffect(() => {
     try { localStorage.setItem(REPORT_COL_KEY, JSON.stringify(colWidths)) } catch {}
   }, [colWidths, REPORT_COL_KEY])
-  const resizeCol = (colId: string, startX: number, startWidth: number) => {
-    const onMouseMove = (e: MouseEvent) => {
-      const newWidth = Math.max(50, startWidth + (startX - e.clientX))
-      setColWidths(prev => ({ ...prev, [colId]: newWidth }))
-    }
-    const onMouseUp = () => { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); }
-    document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp)
-  }
-
+  
   const today = new Date()
   const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
 
@@ -105,12 +101,10 @@ export function ReportPage({ reportType }: ReportPageProps) {
     withoutDriverPrice: true,
   })
 
-  // Temp filters for dialog
   const [tempFilters, setTempFilters] = React.useState<FilterState>(filters)
   const [startCalOpen, setStartCalOpen] = React.useState(false)
   const [endCalOpen, setEndCalOpen] = React.useState(false)
 
-  // Autocomplete
   const [customerOptions, setCustomerOptions] = React.useState<string[]>([])
   const [driverOptions, setDriverOptions] = React.useState<string[]>([])
   const [showCustomerSuggestions, setShowCustomerSuggestions] = React.useState(false)
@@ -118,7 +112,6 @@ export function ReportPage({ reportType }: ReportPageProps) {
   const customerRef = React.useRef<HTMLDivElement>(null)
   const driverRef = React.useRef<HTMLDivElement>(null)
 
-  // Close suggestions on outside click
   React.useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (customerRef.current && !customerRef.current.contains(e.target as Node)) setShowCustomerSuggestions(false)
@@ -128,7 +121,6 @@ export function ReportPage({ reportType }: ReportPageProps) {
     return () => document.removeEventListener("mousedown", handler)
   }, [])
 
-  // Fetch names for autocomplete
   React.useEffect(() => {
     const fetchNames = async () => {
       try {
@@ -189,11 +181,9 @@ export function ReportPage({ reportType }: ReportPageProps) {
     }
   }
 
-  // Filter data based on applied filters
   const filteredData = React.useMemo(() => {
     let filtered = allData
 
-    // Date range
     if (filters.startDate) {
       const startStr = format(filters.startDate, "yyyy-MM-dd")
       filtered = filtered.filter((r) => (r.fields[WS.DATE] || "").substring(0, 10) >= startStr)
@@ -203,19 +193,16 @@ export function ReportPage({ reportType }: ReportPageProps) {
       filtered = filtered.filter((r) => (r.fields[WS.DATE] || "").substring(0, 10) <= endStr)
     }
 
-    // Customer name
     if (filters.customerName.trim()) {
       const search = filters.customerName.trim().toLowerCase()
       filtered = filtered.filter((r) => renderLinkField(r.fields[WS.CUSTOMER]).toLowerCase().includes(search))
     }
 
-    // Driver name
     if (filters.driverName.trim()) {
       const search = filters.driverName.trim().toLowerCase()
       filtered = filtered.filter((r) => renderLinkField(r.fields[WS.DRIVER]).toLowerCase().includes(search))
     }
 
-    // Price filters
     if (!filters.withClientPrice) {
       filtered = filtered.filter((r) => !(Number(r.fields[WS.PRICE_CLIENT_EXCL]) > 0))
     }
@@ -229,7 +216,6 @@ export function ReportPage({ reportType }: ReportPageProps) {
       filtered = filtered.filter((r) => Number(r.fields[WS.PRICE_DRIVER_EXCL]) > 0)
     }
 
-    // Global search
     if (globalFilter.trim()) {
       const search = globalFilter.trim().toLowerCase()
       filtered = filtered.filter((r) => {
@@ -240,7 +226,6 @@ export function ReportPage({ reportType }: ReportPageProps) {
       })
     }
 
-    // Sort by date
     filtered.sort((a, b) => {
       const da = (a.fields[WS.DATE] || "").substring(0, 10)
       const db = (b.fields[WS.DATE] || "").substring(0, 10)
@@ -250,7 +235,6 @@ export function ReportPage({ reportType }: ReportPageProps) {
     return filtered
   }, [allData, filters, globalFilter, WS])
 
-  // Totals
   const totals = React.useMemo(() => ({
     totalRows: filteredData.length,
     p1: filteredData.reduce((s, r) => s + (Number(r.fields[WS.PRICE_CLIENT_EXCL]) || 0), 0),
@@ -261,7 +245,6 @@ export function ReportPage({ reportType }: ReportPageProps) {
     p6: filteredData.reduce((s, r) => s + ((Number(r.fields[WS.PRICE_CLIENT_INCL]) || 0) - (Number(r.fields[WS.PRICE_DRIVER_INCL]) || 0)), 0),
   }), [filteredData, WS])
 
-  // Active filter description
   const filterSummary = React.useMemo(() => {
     const parts: string[] = []
     if (filters.startDate && filters.endDate) parts.push(`${format(filters.startDate, "dd/MM/yyyy")} - ${format(filters.endDate, "dd/MM/yyyy")}`)
@@ -274,9 +257,182 @@ export function ReportPage({ reportType }: ReportPageProps) {
     return parts.join(" | ")
   }, [filters])
 
+  // --- ייצוא לאקסל (CSV) ---
+  const exportToCsv = () => {
+    if (filteredData.length === 0) return
+
+    const headers = [
+      "תאריך", "שם לקוח", "התייצבות", "מסלול", "חזור", "סוג רכב", "שם נהג", "מספר רכב",
+      'לקוח לפני מע"מ', 'לקוח כולל מע"מ', 'נהג לפני מע"מ', 'נהג כולל מע"מ', "רווח"
+    ]
+
+    const csvRows = [
+      headers.join(","),
+      ...filteredData.map(record => {
+        const f = record.fields
+        return [
+          f[WS.DATE] ? format(new Date(f[WS.DATE]), "dd/MM/yyyy") : "",
+          `"${renderLinkField(f[WS.CUSTOMER]).replace(/"/g, '""')}"`,
+          `"${f[WS.PICKUP_TIME] || ""}"`,
+          `"${(f[WS.DESCRIPTION] || "").replace(/"/g, '""')}"`,
+          `"${f[WS.DROPOFF_TIME] || ""}"`,
+          `"${renderLinkField(f[WS.VEHICLE_TYPE]).replace(/"/g, '""')}"`,
+          `"${renderLinkField(f[WS.DRIVER]).replace(/"/g, '""')}"`,
+          `"${f[WS.VEHICLE_NUM] || ""}"`,
+          Number(f[WS.PRICE_CLIENT_EXCL]) || 0,
+          Number(f[WS.PRICE_CLIENT_INCL]) || 0,
+          Number(f[WS.PRICE_DRIVER_EXCL]) || 0,
+          Number(f[WS.PRICE_DRIVER_INCL]) || 0,
+          Number(f[WS.PROFIT]) || 0
+        ].join(",")
+      })
+    ]
+
+    const csvContent = "\uFEFF" + csvRows.join("\n") // \uFEFF מבטיח שהאקסל יקרא עברית ב-UTF-8
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `${reportTitles[reportType]}_${format(new Date(), "dd-MM-yyyy")}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
+  // --- ייצוא ל-PDF / הדפסה ---
+  const exportToPdf = () => {
+    if (filteredData.length === 0) return
+
+    const settings = loadReportSettings(tenantId)
+
+    const tableRows = filteredData.map((record, index) => {
+      const f = record.fields
+      const dateStr = f[WS.DATE] ? format(new Date(f[WS.DATE]), "dd/MM/yyyy") : ""
+      const customer = escapeHtml(renderLinkField(f[WS.CUSTOMER]))
+      const goTime = escapeHtml(f[WS.PICKUP_TIME] || "-")
+      const route = escapeHtml(f[WS.DESCRIPTION] || "-")
+      const returnTime = escapeHtml(f[WS.DROPOFF_TIME] || "-")
+      const vehicleType = escapeHtml(renderLinkField(f[WS.VEHICLE_TYPE]))
+      const driver = escapeHtml(renderLinkField(f[WS.DRIVER]))
+      const vehicleNum = escapeHtml(f[WS.VEHICLE_NUM] || "-")
+
+      const p1 = (Number(f[WS.PRICE_CLIENT_EXCL]) || 0).toLocaleString("he-IL")
+      const p2 = (Number(f[WS.PRICE_CLIENT_INCL]) || 0).toLocaleString("he-IL")
+      const p3 = (Number(f[WS.PRICE_DRIVER_EXCL]) || 0).toLocaleString("he-IL")
+      const p4 = (Number(f[WS.PRICE_DRIVER_INCL]) || 0).toLocaleString("he-IL")
+      const profit = (Number(f[WS.PROFIT]) || 0).toLocaleString("he-IL")
+
+      return `<tr>
+        <td class="c">${index + 1}</td>
+        <td class="c">${dateStr}</td>
+        <td>${customer}</td>
+        <td class="c">${goTime}</td>
+        <td>${route}</td>
+        <td class="c">${returnTime}</td>
+        <td class="c">${vehicleType}</td>
+        <td class="c">${driver}</td>
+        <td class="c">${vehicleNum}</td>
+        <td class="c">${p1} ₪</td>
+        <td class="c">${p2} ₪</td>
+        <td class="c">${p3} ₪</td>
+        <td class="c">${p4} ₪</td>
+        <td class="c"><strong>${profit} ₪</strong></td>
+      </tr>`
+    }).join("")
+
+    const logoHtml = settings.logoBase64 ? `<img src="${settings.logoBase64}" class="logo" alt="לוגו"/>` : ""
+    const companyNameHtml = settings.companyName ? `<div class="company-name">${escapeHtml(settings.companyName)}</div>` : ""
+    const headerSection = (settings.logoBase64 || settings.companyName) ? `<div class="company-header">${logoHtml}${companyNameHtml}</div>` : ""
+
+    const footerParts = []
+    if (settings.address) footerParts.push(escapeHtml(settings.address))
+    if (settings.phone) footerParts.push(`טלפון: ${escapeHtml(settings.phone)}`)
+    if (settings.email) footerParts.push(escapeHtml(settings.email))
+    
+    const footerLine1 = footerParts.length > 0 ? `<div class="footer-info">${footerParts.join(" | ")}</div>` : ""
+    const footerLine2 = settings.footerText ? `<div class="footer-custom">${escapeHtml(settings.footerText)}</div>` : ""
+
+    const html = `<!DOCTYPE html>
+    <html dir="rtl" lang="he">
+    <head>
+      <meta charset="UTF-8"/>
+      <title>${reportTitles[reportType]}</title>
+      <style>
+        @page { size: A4 landscape; margin: 12mm; }
+        body { font-family: sans-serif; direction: rtl; padding: 20px; font-size: 11px; color: #111; }
+        .company-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+        .logo { height: 45px; max-width: 150px; object-fit: contain; }
+        .company-name { font-size: 18px; font-weight: bold; }
+        h1 { text-align: center; font-size: 22px; margin: 10px 0; }
+        .info-line { text-align: center; font-size: 13px; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 2px solid #333; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 20px; }
+        th, td { padding: 6px 4px; border-bottom: 1px solid #ddd; text-align: right; }
+        th { background: #f0f0f0; border-top: 2px solid #333; border-bottom: 2px solid #333; white-space: nowrap; font-weight: bold;}
+        .c { text-align: center; }
+        tr:nth-child(even) { background: #fafafa; }
+        tr.total td { font-weight: bold; border-top: 2px solid #333; border-bottom: 2px solid #333; background: #f0f0f0; }
+        .footer { text-align: center; font-size: 10px; color: #555; border-top: 1px solid #ccc; padding-top: 10px; margin-top: 20px;}
+        .footer-info, .footer-custom { margin-bottom: 3px; }
+        @media print { body { padding: 0; } }
+      </style>
+    </head>
+    <body>
+      ${headerSection}
+      <h1>${reportTitles[reportType]}</h1>
+      <div class="info-line">
+        <span>סה"כ רשומות: ${filteredData.length}</span> &nbsp;|&nbsp; 
+        <span>תאריך הפקה: ${format(new Date(), "dd/MM/yyyy")}</span>
+        <div style="font-size:11px; color:#555; margin-top:4px;">${escapeHtml(filterSummary)}</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th class="c" style="width:30px">#</th>
+            <th class="c" style="width:70px">תאריך</th>
+            <th>לקוח</th>
+            <th class="c" style="width:50px">הלוך</th>
+            <th>מסלול</th>
+            <th class="c" style="width:50px">חזור</th>
+            <th class="c">רכב</th>
+            <th class="c">נהג</th>
+            <th class="c" style="width:65px">מס' רכב</th>
+            <th class="c" style="width:65px">לקוח ע"מ</th>
+            <th class="c" style="width:65px">לקוח כולל</th>
+            <th class="c" style="width:65px">נהג ע"מ</th>
+            <th class="c" style="width:65px">נהג כולל</th>
+            <th class="c" style="width:65px">רווח</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableRows}
+          <tr class="total">
+            <td colspan="9" style="text-align:left; font-size:12px;">סה"כ:</td>
+            <td class="c">${totals.p1.toLocaleString("he-IL")} ₪</td>
+            <td class="c">${totals.p2.toLocaleString("he-IL")} ₪</td>
+            <td class="c">${totals.p3.toLocaleString("he-IL")} ₪</td>
+            <td class="c">${totals.p4.toLocaleString("he-IL")} ₪</td>
+            <td class="c">${totals.p5.toLocaleString("he-IL")} ₪</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="footer">
+        ${footerLine1}
+        ${footerLine2}
+      </div>
+      <script>window.onload = function() { window.print(); }</script>
+    </body>
+    </html>`
+
+    const printWindow = window.open("", "_blank")
+    if (printWindow) {
+      printWindow.document.write(html)
+      printWindow.document.close()
+    } else {
+      toast({ title: "שגיאה", description: "הדפדפן חסם פתיחת חלון חדש. אנא אשר חלונות קופצים לאתר זה.", variant: "destructive" })
+    }
+  }
+
   return (
     <>
-      {/* Filter Dialog */}
       <Dialog open={showFilterDialog} onOpenChange={setShowFilterDialog}>
         <DialogContent className="sm:max-w-[480px]" dir="rtl">
           <DialogHeader>
@@ -285,7 +441,6 @@ export function ReportPage({ reportType }: ReportPageProps) {
           </DialogHeader>
 
           <div className="flex flex-col gap-4 py-2">
-            {/* Date range */}
             <div className="space-y-2">
               <Label className="font-bold">טווח תאריכים</Label>
               <div className="flex items-center gap-3">
@@ -315,7 +470,6 @@ export function ReportPage({ reportType }: ReportPageProps) {
               </div>
             </div>
 
-            {/* Customer name */}
             <div className="space-y-2">
               <Label className="font-bold">שם לקוח</Label>
               <div className="relative" ref={customerRef}>
@@ -343,7 +497,6 @@ export function ReportPage({ reportType }: ReportPageProps) {
               </div>
             </div>
 
-            {/* Driver name */}
             <div className="space-y-2">
               <Label className="font-bold">שם נהג</Label>
               <div className="relative" ref={driverRef}>
@@ -371,7 +524,6 @@ export function ReportPage({ reportType }: ReportPageProps) {
               </div>
             </div>
 
-            {/* Price filters */}
             <div className="space-y-2">
               <Label className="font-bold">סינון מחירים</Label>
               <div className="grid grid-cols-2 gap-3">
@@ -394,7 +546,6 @@ export function ReportPage({ reportType }: ReportPageProps) {
               </div>
             </div>
 
-            {/* Submit */}
             <Button onClick={applyFilters} disabled={isLoading} className="h-10 mt-2">
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <Search className="h-4 w-4 ml-2" />}
               הצג דוח
@@ -403,14 +554,34 @@ export function ReportPage({ reportType }: ReportPageProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Main table view */}
       <div className="w-full h-[calc(100vh-2rem)] flex flex-col p-4 overflow-hidden" dir="rtl">
-        {/* Top bar */}
         <div className="flex items-center gap-3 pb-3 flex-none flex-wrap">
           <Button variant="outline" size="sm" onClick={openFilterDialog} className="shrink-0">
             <SlidersHorizontal className="h-4 w-4 ml-2" />
             שינוי סינון
           </Button>
+
+          {/* New Export Button */}
+          {hasSearched && filteredData.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="shrink-0">
+                  <Download className="h-4 w-4 ml-2" />
+                  ייצוא דוח
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" dir="rtl">
+                <DropdownMenuItem onClick={exportToCsv} className="cursor-pointer">
+                  <FileSpreadsheet className="h-4 w-4 ml-2 text-green-600" />
+                  ייצוא לאקסל (CSV)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={exportToPdf} className="cursor-pointer">
+                  <Printer className="h-4 w-4 ml-2 text-blue-600" />
+                  הדפסה / PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
 
           {hasSearched && (
             <div className="text-xs text-muted-foreground border rounded px-3 py-1.5 bg-muted/30 shrink-0">
@@ -449,7 +620,6 @@ export function ReportPage({ reportType }: ReportPageProps) {
           )}
         </div>
 
-        {/* Table */}
         <div className="rounded-md border flex-1 overflow-auto min-h-0">
           {!hasSearched && !isLoading && (
             <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -472,39 +642,37 @@ export function ReportPage({ reportType }: ReportPageProps) {
             <Table className="relative w-full" style={{ tableLayout: "fixed" }}>
               <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                 <TableRow>
-                  {[
-                    { id: "date", label: "תאריך" }, { id: "customer", label: "שם לקוח" },
-                    { id: "pickup", label: "התייצבות" }, { id: "route", label: "מסלול" },
-                    { id: "dropoff", label: "חזור" }, { id: "vehicleType", label: "סוג רכב" },
-                    { id: "driver", label: "שם נהג" }, { id: "vehicleNum", label: "מספר רכב" },
-                    { id: "p1", label: "לקוח+ מע״מ" }, { id: "p2", label: "לקוח כולל" },
-                    { id: "p3", label: "נהג+ מע״מ" }, { id: "p4", label: "נהג כולל" },
-                    { id: "profit", label: "רווח" },
-                  ].map(col => (
-                    <TableHead key={col.id} className="text-right relative border-l select-none group hover:bg-muted/30" style={{ width: colWidths[col.id] }}>
-                      {col.label}
-                      <div onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); resizeCol(col.id, e.clientX, colWidths[col.id]); }}
-                        className="absolute top-0 left-0 w-[4px] h-full cursor-col-resize bg-transparent hover:bg-primary/50 active:bg-primary/70" />
-                    </TableHead>
-                  ))}
+                  <TableHead className="text-right border-l" style={{ width: colWidths.date }}>תאריך</TableHead>
+                  <TableHead className="text-right border-l" style={{ width: colWidths.customer }}>שם לקוח</TableHead>
+                  <TableHead className="text-right border-l" style={{ width: colWidths.pickup }}>התייצבות</TableHead>
+                  <TableHead className="text-right border-l" style={{ width: colWidths.route }}>מסלול</TableHead>
+                  <TableHead className="text-right border-l" style={{ width: colWidths.dropoff }}>חזור</TableHead>
+                  <TableHead className="text-right border-l" style={{ width: colWidths.vehicleType }}>סוג רכב</TableHead>
+                  <TableHead className="text-right border-l" style={{ width: colWidths.driver }}>שם נהג</TableHead>
+                  <TableHead className="text-right border-l" style={{ width: colWidths.vehicleNum }}>מספר רכב</TableHead>
+                  <TableHead className="text-right border-l" style={{ width: colWidths.p1 }}>לקוח+ מע״מ</TableHead>
+                  <TableHead className="text-right border-l" style={{ width: colWidths.p2 }}>לקוח כולל מע״מ</TableHead>
+                  <TableHead className="text-right border-l" style={{ width: colWidths.p3 }}>נהג+ מע״מ</TableHead>
+                  <TableHead className="text-right border-l" style={{ width: colWidths.p4 }}>נהג כולל מע״מ</TableHead>
+                  <TableHead className="text-right border-l" style={{ width: colWidths.profit }}>רווח</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredData.map((record) => (
                   <TableRow key={record.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setEditingRecord(record)}>
-                    <TableCell className="text-right pr-4 truncate">{record.fields[WS.DATE] ? format(new Date(record.fields[WS.DATE]), "dd/MM/yyyy") : "-"}</TableCell>
-                    <TableCell className="text-right truncate">{renderLinkField(record.fields[WS.CUSTOMER])}</TableCell>
-                    <TableCell className="text-right truncate">{record.fields[WS.PICKUP_TIME] || "-"}</TableCell>
-                    <TableCell className="text-right truncate" title={record.fields[WS.DESCRIPTION]}>{record.fields[WS.DESCRIPTION] || "-"}</TableCell>
-                    <TableCell className="text-right truncate">{record.fields[WS.DROPOFF_TIME] || "-"}</TableCell>
-                    <TableCell className="text-right truncate">{renderLinkField(record.fields[WS.VEHICLE_TYPE])}</TableCell>
-                    <TableCell className="text-right truncate">{renderLinkField(record.fields[WS.DRIVER])}</TableCell>
-                    <TableCell className="text-right truncate">{record.fields[WS.VEHICLE_NUM] || "-"}</TableCell>
-                    <TableCell className="text-right">{(Number(record.fields[WS.PRICE_CLIENT_EXCL]) || 0).toLocaleString()}</TableCell>
-                    <TableCell className="text-right">{(Number(record.fields[WS.PRICE_CLIENT_INCL]) || 0).toLocaleString()}</TableCell>
-                    <TableCell className="text-right">{(Number(record.fields[WS.PRICE_DRIVER_EXCL]) || 0).toLocaleString()}</TableCell>
-                    <TableCell className="text-right">{(Number(record.fields[WS.PRICE_DRIVER_INCL]) || 0).toLocaleString()}</TableCell>
-                    <TableCell className="text-right text-green-600 dark:text-green-400 font-medium">{(Number(record.fields[WS.PROFIT]) || 0).toLocaleString()}</TableCell>
+                    <TableCell className="text-right border-l truncate">{record.fields[WS.DATE] ? format(new Date(record.fields[WS.DATE]), "dd/MM/yyyy") : "-"}</TableCell>
+                    <TableCell className="text-right border-l truncate">{renderLinkField(record.fields[WS.CUSTOMER])}</TableCell>
+                    <TableCell className="text-right border-l truncate">{record.fields[WS.PICKUP_TIME] || "-"}</TableCell>
+                    <TableCell className="text-right border-l truncate" title={record.fields[WS.DESCRIPTION]}>{record.fields[WS.DESCRIPTION] || "-"}</TableCell>
+                    <TableCell className="text-right border-l truncate">{record.fields[WS.DROPOFF_TIME] || "-"}</TableCell>
+                    <TableCell className="text-right border-l truncate">{renderLinkField(record.fields[WS.VEHICLE_TYPE])}</TableCell>
+                    <TableCell className="text-right border-l truncate">{renderLinkField(record.fields[WS.DRIVER])}</TableCell>
+                    <TableCell className="text-right border-l truncate">{record.fields[WS.VEHICLE_NUM] || "-"}</TableCell>
+                    <TableCell className="text-right border-l">{(Number(record.fields[WS.PRICE_CLIENT_EXCL]) || 0).toLocaleString()}</TableCell>
+                    <TableCell className="text-right border-l">{(Number(record.fields[WS.PRICE_CLIENT_INCL]) || 0).toLocaleString()}</TableCell>
+                    <TableCell className="text-right border-l">{(Number(record.fields[WS.PRICE_DRIVER_EXCL]) || 0).toLocaleString()}</TableCell>
+                    <TableCell className="text-right border-l">{(Number(record.fields[WS.PRICE_DRIVER_INCL]) || 0).toLocaleString()}</TableCell>
+                    <TableCell className="text-right border-l text-green-600 dark:text-green-400 font-medium">{(Number(record.fields[WS.PROFIT]) || 0).toLocaleString()}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -512,16 +680,6 @@ export function ReportPage({ reportType }: ReportPageProps) {
           )}
         </div>
       </div>
-
-      {/* Edit dialog */}
-      <RideDialog
-        open={!!editingRecord}
-        onOpenChange={(isOpen: boolean) => !isOpen && setEditingRecord(null)}
-        initialData={editingRecord}
-        onRideSaved={() => { setEditingRecord(null); applyFilters(); }}
-        triggerChild={<span />}
-        defaultDate={editingRecord?.fields[WS.DATE] ? (editingRecord.fields[WS.DATE] as string).substring(0, 10) : format(new Date(), "yyyy-MM-dd")}
-      />
     </>
   )
 }
