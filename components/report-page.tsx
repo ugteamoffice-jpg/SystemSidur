@@ -314,12 +314,15 @@ export function ReportPage({ reportType }: ReportPageProps) {
     setIsUpdatingInvoice(true)
     let errorCount = 0
 
+    // משתמשים ב-null אם השדה נותר ריק כדי להבטיח מחיקה מלאה ב-Teable
+    const valueToSave = bulkInvoiceNum.trim() === "" ? null : bulkInvoiceNum
+
     for (const id of selectedRowIds) {
       try {
         const res = await fetch(`/api/work-schedule/${id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ fields: { [INVOICE_FIELD_ID]: bulkInvoiceNum } })
+          body: JSON.stringify({ fields: { [INVOICE_FIELD_ID]: valueToSave } })
         })
         if (!res.ok) errorCount++
       } catch {
@@ -670,7 +673,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
             <Input 
               value={bulkInvoiceNum} 
               onChange={(e) => setBulkInvoiceNum(e.target.value.replace(/\D/g, ''))} 
-              placeholder="הזן מס' חשבונית (מספרים בלבד)..." 
+              placeholder="הזן מס' חשבונית (או השאר ריק למחיקה)..." 
               className="mt-2 text-right"
               inputMode="numeric"
             />
