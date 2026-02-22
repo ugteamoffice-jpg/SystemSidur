@@ -51,11 +51,16 @@ interface FilterState {
   withoutClientPrice: boolean
   withDriverPrice: boolean
   withoutDriverPrice: boolean
+  withInvoice: boolean
+  withoutInvoice: boolean
 }
 
 const escapeHtml = (str: string) => {
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
 }
+
+// Field ID for Invoice Number
+const INVOICE_FIELD_ID = "fldHPYyOX0OGZHCeXJD"
 
 export function ReportPage({ reportType }: ReportPageProps) {
   const tenantFields = useTenantFields()
@@ -72,7 +77,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
   // Column resizing with localStorage persistence
   const REPORT_COL_KEY = `reportColumnWidths_${tenantId}_${reportType}`
   const defaultWidths: Record<string, number> = {
-    date: 95, customer: 130, pickup: 80, route: 200, dropoff: 80, 
+    invoiceNum: 90, date: 95, customer: 130, pickup: 80, route: 200, dropoff: 80, 
     vehicleType: 100, driver: 110, vehicleNum: 85, 
     p1: 100, p2: 110, p3: 100, p4: 100, profit: 80
   }
@@ -99,6 +104,8 @@ export function ReportPage({ reportType }: ReportPageProps) {
     withoutClientPrice: true,
     withDriverPrice: true,
     withoutDriverPrice: true,
+    withInvoice: true,
+    withoutInvoice: true,
   })
 
   const [tempFilters, setTempFilters] = React.useState<FilterState>(filters)
@@ -203,6 +210,15 @@ export function ReportPage({ reportType }: ReportPageProps) {
       filtered = filtered.filter((r) => renderLinkField(r.fields[WS.DRIVER]).toLowerCase().includes(search))
     }
 
+    // Invoice filters
+    if (!filters.withInvoice) {
+      filtered = filtered.filter((r) => !r.fields[INVOICE_FIELD_ID])
+    }
+    if (!filters.withoutInvoice) {
+      filtered = filtered.filter((r) => !!r.fields[INVOICE_FIELD_ID])
+    }
+
+    // Price filters
     if (!filters.withClientPrice) {
       filtered = filtered.filter((r) => !(Number(r.fields[WS.PRICE_CLIENT_EXCL]) > 0))
     }
@@ -250,6 +266,8 @@ export function ReportPage({ reportType }: ReportPageProps) {
     if (filters.startDate && filters.endDate) parts.push(`${format(filters.startDate, "dd/MM/yyyy")} - ${format(filters.endDate, "dd/MM/yyyy")}`)
     if (filters.customerName) parts.push(`לקוח: ${filters.customerName}`)
     if (filters.driverName) parts.push(`נהג: ${filters.driverName}`)
+    if (!filters.withInvoice) parts.push("ללא חשבוניות")
+    if (!filters.withoutInvoice) parts.push("רק עם חשבוניות")
     if (!filters.withClientPrice) parts.push("ללא מחיר לקוח")
     if (!filters.withoutClientPrice) parts.push("עם מחיר לקוח")
     if (!filters.withDriverPrice) parts.push("ללא מחיר נהג")
@@ -262,7 +280,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
     if (filteredData.length === 0) return
 
     const headers = [
-      "תאריך", "שם לקוח", "התייצבות", "מסלול", "חזור", "סוג רכב", "שם נהג", "מספר רכב",
+      "מס' חשבונית", "תאריך", "שם לקוח", "התייצבות", "מסלול", "חזור", "סוג רכב", "שם נהג", "מספר רכב",
       'לקוח לפני מע"מ', 'לקוח כולל מע"מ', 'נהג לפני מע"מ', 'נהג כולל מע"מ', "רווח"
     ]
 
@@ -271,6 +289,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
       ...filteredData.map(record => {
         const f = record.fields
         return [
+          `"${f[INVOICE_FIELD_ID] || ""}"`,
           f[WS.DATE] ? format(new Date(f[WS.DATE]), "dd/MM/yyyy") : "",
           `"${renderLinkField(f[WS.CUSTOMER]).replace(/"/g, '""')}"`,
           `"${f[WS.PICKUP_TIME] || ""}"`,
@@ -288,7 +307,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
       })
     ]
 
-    const csvContent = "\uFEFF" + csvRows.join("\n") // \uFEFF מבטיח שהאקסל יקרא עברית ב-UTF-8
+    const csvContent = "\uFEFF" + csvRows.join("\n")
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
     const url = URL.createObjectURL(blob)
     const link = document.createElement("a")
@@ -306,6 +325,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
 
     const tableRows = filteredData.map((record, index) => {
       const f = record.fields
+      const invoiceNum = escapeHtml(f[INVOICE_FIELD_ID] || "-")
       const dateStr = f[WS.DATE] ? format(new Date(f[WS.DATE]), "dd/MM/yyyy") : ""
       const customer = escapeHtml(renderLinkField(f[WS.CUSTOMER]))
       const goTime = escapeHtml(f[WS.PICKUP_TIME] || "-")
@@ -323,6 +343,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
 
       return `<tr>
         <td class="c">${index + 1}</td>
+        <td class="c">${invoiceNum}</td>
         <td class="c">${dateStr}</td>
         <td>${customer}</td>
         <td class="c">${goTime}</td>
@@ -358,14 +379,14 @@ export function ReportPage({ reportType }: ReportPageProps) {
       <title>${reportTitles[reportType]}</title>
       <style>
         @page { size: A4 landscape; margin: 12mm; }
-        body { font-family: sans-serif; direction: rtl; padding: 20px; font-size: 11px; color: #111; }
+        body { font-family: sans-serif; direction: rtl; padding: 20px; font-size: 10.5px; color: #111; }
         .company-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
         .logo { height: 45px; max-width: 150px; object-fit: contain; }
         .company-name { font-size: 18px; font-weight: bold; }
         h1 { text-align: center; font-size: 22px; margin: 10px 0; }
         .info-line { text-align: center; font-size: 13px; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 2px solid #333; }
-        table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 20px; }
-        th, td { padding: 6px 4px; border-bottom: 1px solid #ddd; text-align: right; }
+        table { width: 100%; border-collapse: collapse; font-size: 10.5px; margin-bottom: 20px; }
+        th, td { padding: 5px 3px; border-bottom: 1px solid #ddd; text-align: right; }
         th { background: #f0f0f0; border-top: 2px solid #333; border-bottom: 2px solid #333; white-space: nowrap; font-weight: bold;}
         .c { text-align: center; }
         tr:nth-child(even) { background: #fafafa; }
@@ -386,15 +407,16 @@ export function ReportPage({ reportType }: ReportPageProps) {
       <table>
         <thead>
           <tr>
-            <th class="c" style="width:30px">#</th>
-            <th class="c" style="width:70px">תאריך</th>
+            <th class="c" style="width:25px">#</th>
+            <th class="c" style="width:65px">חשבונית</th>
+            <th class="c" style="width:65px">תאריך</th>
             <th>לקוח</th>
-            <th class="c" style="width:50px">הלוך</th>
+            <th class="c" style="width:45px">הלוך</th>
             <th>מסלול</th>
-            <th class="c" style="width:50px">חזור</th>
+            <th class="c" style="width:45px">חזור</th>
             <th class="c">רכב</th>
             <th class="c">נהג</th>
-            <th class="c" style="width:65px">מס' רכב</th>
+            <th class="c" style="width:60px">מס' רכב</th>
             <th class="c" style="width:65px">לקוח ע"מ</th>
             <th class="c" style="width:65px">לקוח כולל</th>
             <th class="c" style="width:65px">נהג ע"מ</th>
@@ -405,7 +427,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
         <tbody>
           ${tableRows}
           <tr class="total">
-            <td colspan="9" style="text-align:left; font-size:12px;">סה"כ:</td>
+            <td colspan="10" style="text-align:left; font-size:12px;">סה"כ:</td>
             <td class="c">${totals.p1.toLocaleString("he-IL")} ₪</td>
             <td class="c">${totals.p2.toLocaleString("he-IL")} ₪</td>
             <td class="c">${totals.p3.toLocaleString("he-IL")} ₪</td>
@@ -521,6 +543,20 @@ export function ReportPage({ reportType }: ReportPageProps) {
                     ))}
                   </div>
                 )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="font-bold">סטטוס חשבונית</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <Checkbox checked={tempFilters.withInvoice} onCheckedChange={(c) => setTempFilters(p => ({ ...p, withInvoice: !!c }))} />
+                  הופקה חשבונית (יש מספר)
+                </label>
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <Checkbox checked={tempFilters.withoutInvoice} onCheckedChange={(c) => setTempFilters(p => ({ ...p, withoutInvoice: !!c }))} />
+                  טרם הופקה (ללא מספר)
+                </label>
               </div>
             </div>
 
@@ -642,6 +678,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
             <Table className="relative w-full" style={{ tableLayout: "fixed" }}>
               <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                 <TableRow>
+                  <TableHead className="text-right border-l" style={{ width: colWidths.invoiceNum }}>מס' חשבונית</TableHead>
                   <TableHead className="text-right border-l" style={{ width: colWidths.date }}>תאריך</TableHead>
                   <TableHead className="text-right border-l" style={{ width: colWidths.customer }}>שם לקוח</TableHead>
                   <TableHead className="text-right border-l" style={{ width: colWidths.pickup }}>התייצבות</TableHead>
@@ -660,6 +697,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
               <TableBody>
                 {filteredData.map((record) => (
                   <TableRow key={record.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setEditingRecord(record)}>
+                    <TableCell className="text-right border-l truncate">{record.fields[INVOICE_FIELD_ID] || "-"}</TableCell>
                     <TableCell className="text-right border-l truncate">{record.fields[WS.DATE] ? format(new Date(record.fields[WS.DATE]), "dd/MM/yyyy") : "-"}</TableCell>
                     <TableCell className="text-right border-l truncate">{renderLinkField(record.fields[WS.CUSTOMER])}</TableCell>
                     <TableCell className="text-right border-l truncate">{record.fields[WS.PICKUP_TIME] || "-"}</TableCell>
