@@ -24,7 +24,13 @@ export async function GET(request: Request) {
 
     let endpoint = `${API_URL}/api/table/${TABLE_ID}/record?take=${take}&fieldKeyType=id`;
     if (dateParam) {
-      const filterObj = { conjunction: "and", filterSet: [{ fieldId: DATE_FIELD_ID, operator: "is", value: dateParam }] };
+      const filterObj = {
+        conjunction: "and",
+        filterSet: [
+          { fieldId: DATE_FIELD_ID, operator: "isOnOrAfter", value: `${dateParam}T00:00:00.000Z` },
+          { fieldId: DATE_FIELD_ID, operator: "isOnOrBefore", value: `${dateParam}T23:59:59.999Z` }
+        ]
+      };
       endpoint += `&filter=${encodeURIComponent(JSON.stringify(filterObj))}`;
     }
 
