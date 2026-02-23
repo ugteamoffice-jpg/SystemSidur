@@ -387,16 +387,12 @@ export function ReportPage({ reportType }: ReportPageProps) {
   // --- Bulk Update Invoice ---
   const handleBulkUpdateInvoice = async () => {
     if (selectedRowIds.size === 0) return
+    setIsUpdatingInvoice(true)
 
     const valueToSave = bulkInvoiceNum.trim() === "" ? null : bulkInvoiceNum
     const ids = Array.from(selectedRowIds)
 
-    // סוגר את החלון מיד
-    setShowInvoiceDialog(false)
-    setBulkInvoiceNum("")
-
-    // עדכון ברקע
-    Promise.all(ids.map(async (id) => {
+    const results = await Promise.all(ids.map(async (id) => {
       try {
         const res = await fetch(`/api/work-schedule/${id}?tenant=${tenantId}`, {
           method: "PATCH",
@@ -407,15 +403,20 @@ export function ReportPage({ reportType }: ReportPageProps) {
       } catch {
         return false
       }
-    })).then((results) => {
-      const errorCount = results.filter(ok => !ok).length
-      if (errorCount > 0) {
-        toast({ title: "שגיאה", description: `נכשל בעדכון של ${errorCount} נסיעות`, variant: "destructive" })
-      } else {
-        toast({ title: "הצלחה", description: "מספרי החשבונית עודכנו בהצלחה" })
-      }
-      applyFilters()
-    })
+    }))
+    const errorCount = results.filter(ok => !ok).length
+
+    await applyFilters()
+
+    setIsUpdatingInvoice(false)
+    setShowInvoiceDialog(false)
+    setBulkInvoiceNum("")
+
+    if (errorCount > 0) {
+      toast({ title: "שגיאה", description: `נכשל בעדכון של ${errorCount} נסיעות`, variant: "destructive" })
+    } else {
+      toast({ title: "הצלחה", description: "מספרי החשבונית עודכנו בהצלחה" })
+    }
   }
 
   // --- ייצוא לאקסל (CSV) ---
