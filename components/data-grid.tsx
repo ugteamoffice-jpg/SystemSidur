@@ -11,8 +11,9 @@ import {
   getSortedRowModel,
   useReactTable,
   ColumnSizingState,
+  ColumnOrderState,
 } from "@tanstack/react-table"
-import { Calendar as CalendarIcon, LayoutDashboard, AlertCircle, CheckCircle2, UserMinus, Trash2, Loader2 } from "lucide-react"
+import { Calendar as CalendarIcon, LayoutDashboard, AlertCircle, CheckCircle2, UserMinus, Trash2, Loader2, ChevronLeft, ChevronRight } from "lucide-react"
 import { format } from "date-fns"
 import { he } from "date-fns/locale"
 
@@ -270,6 +271,7 @@ function DataGrid({ schema }: { schema?: any }) {
   const fields = useTenantFields()
   const { tenantId } = useTenant()
   const COLUMN_SIZING_KEY = `workScheduleColumnSizing_${tenantId}`
+  const COLUMN_ORDER_KEY  = `workScheduleColumnOrder_${tenantId}`
   const WS = fields?.workSchedule || {} as any
   const columns = React.useMemo(() => createColumns(WS), [WS])
   const [data, setData] = React.useState<WorkScheduleRecord[]>([])
@@ -294,6 +296,17 @@ function DataGrid({ schema }: { schema?: any }) {
     }
     return {}
   })
+
+  const [columnOrder, setColumnOrder] = React.useState<ColumnOrderState>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem(COLUMN_ORDER_KEY)
+        if (saved) return JSON.parse(saved)
+      } catch {}
+    }
+    return []
+  })
+  const [draggingColId, setDraggingColId] = React.useState<string | null>(null)
   
   const { toast } = useToast()
   const [editingRecord, setEditingRecord] = React.useState<WorkScheduleRecord | null>(null)
@@ -342,6 +355,13 @@ function DataGrid({ schema }: { schema?: any }) {
       }
     }
   }, [columnSizing])
+
+  // שמירת סדר עמודות ב-localStorage
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && columnOrder.length > 0) {
+      try { localStorage.setItem(COLUMN_ORDER_KEY, JSON.stringify(columnOrder)) } catch {}
+    }
+  }, [columnOrder])
 
   const fetchData = async () => {
     try {
@@ -562,8 +582,9 @@ function DataGrid({ schema }: { schema?: any }) {
   const table = useReactTable({
     data: filteredData, columns, columnResizeMode: "onChange", getCoreRowModel: getCoreRowModel(), getSortedRowModel: getSortedRowModel(), getFilteredRowModel: getFilteredRowModel(),
     onRowSelectionChange: setRowSelection, onColumnSizingChange: setColumnSizing, onSortingChange: setSorting,
+    onColumnOrderChange: setColumnOrder,
     enableSortingRemoval: false,
-    meta: { updateRecordField }, state: { rowSelection, columnSizing, sorting },
+    meta: { updateRecordField }, state: { rowSelection, columnSizing, sorting, columnOrder },
   })
 
   const totals = React.useMemo(() => {
@@ -590,7 +611,7 @@ function DataGrid({ schema }: { schema?: any }) {
   const selectedCount = table.getFilteredSelectedRowModel().rows.length;
 
   return (
-    <div className="w-full h-[calc(100vh-2rem)] flex flex-col space-y-2 p-4 overflow-hidden" dir="rtl">
+    <div className="w-full h-[calc(100vh-2rem)] flex flex-col space-y-2 p-2 md:p-4 overflow-hidden" dir="rtl">
       <div className="flex flex-col gap-2 flex-none">
         {/* שורה אחת - הכל */}
         <div className="flex items-center gap-2 flex-wrap">
@@ -618,6 +639,36 @@ function DataGrid({ schema }: { schema?: any }) {
               <div className="border-t p-2"><Button variant="ghost" className="w-full justify-center text-sm" onClick={handleTodayClick}>חזור להיום</Button></div>
             </PopoverContent>
           </Popover>
+
+          {/* חצי ניווט בין תאריכים */}
+          <Button
+            variant="outline"
+            size="icon"
+            className="shrink-0 h-9 w-9"
+            title="יום קודם"
+            onClick={() => {
+              const prev = new Date(dateFilter)
+              prev.setDate(prev.getDate() - 1)
+              setDateFilter(prev)
+              setCurrentMonth(prev)
+            }}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="shrink-0 h-9 w-9"
+            title="יום הבא"
+            onClick={() => {
+              const next = new Date(dateFilter)
+              next.setDate(next.getDate() + 1)
+              setDateFilter(next)
+              setCurrentMonth(next)
+            }}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
 
           <RideDialog 
             onRideSaved={fetchData} 
@@ -649,7 +700,7 @@ function DataGrid({ schema }: { schema?: any }) {
           </div>
 
           {/* חלון סיכום סה"כ שורות */}
-          <div className="flex bg-card p-2 px-4 rounded-md border shadow-sm items-center gap-6 whitespace-nowrap">
+          <div className="hidden md:flex bg-card p-2 px-4 rounded-md border shadow-sm items-center gap-6 whitespace-nowrap">
               <div className="flex flex-col gap-1">
                   <div className="flex items-center gap-2">
                       <LayoutDashboard className="w-4 h-4 text-muted-foreground" />
@@ -676,7 +727,7 @@ function DataGrid({ schema }: { schema?: any }) {
           </div>
 
           {/* חלון סיכום מחירים */}
-          <div className="flex flex-wrap gap-3 text-sm bg-muted/20 p-2 px-4 rounded-md border shadow-sm items-center">
+          <div className="hidden lg:flex flex-wrap gap-3 text-sm bg-muted/20 p-2 px-4 rounded-md border shadow-sm items-center">
              <div className="flex flex-col gap-0.5 items-start justify-center whitespace-nowrap">
                <span>לקוח+ מע"מ: <span className="font-bold">{totals.p1.toLocaleString()} ₪</span></span>
                <span>לקוח כולל: <span className="font-bold">{totals.p2.toLocaleString()} ₪</span></span>
@@ -701,7 +752,42 @@ function DataGrid({ schema }: { schema?: any }) {
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} colSpan={header.colSpan} className="text-right relative border-l select-none group hover:bg-muted/30" style={{ width: header.getSize() }}>
+                  <TableHead
+                    key={header.id}
+                    colSpan={header.colSpan}
+                    className={`text-right relative border-l select-none group hover:bg-muted/30 transition-colors ${draggingColId && draggingColId !== header.column.id ? 'border-l-2 border-l-primary/30' : ''}`}
+                    style={{ width: header.getSize(), cursor: header.column.id === 'select' ? 'default' : 'grab' }}
+                    draggable={header.column.id !== 'select'}
+                    onDragStart={(e) => {
+                      if (header.column.id === 'select') { e.preventDefault(); return }
+                      setDraggingColId(header.column.id)
+                      e.dataTransfer.effectAllowed = "move"
+                      e.dataTransfer.setData("text/plain", header.column.id)
+                    }}
+                    onDragOver={(e) => {
+                      if (header.column.id === 'select' || !draggingColId) return
+                      e.preventDefault()
+                      e.dataTransfer.dropEffect = "move"
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault()
+                      const sourceId = e.dataTransfer.getData("text/plain")
+                      if (!sourceId || sourceId === header.column.id || header.column.id === 'select') {
+                        setDraggingColId(null)
+                        return
+                      }
+                      const currentOrder = table.getAllLeafColumns().map(c => c.id)
+                      const fromIdx = currentOrder.indexOf(sourceId)
+                      const toIdx = currentOrder.indexOf(header.column.id)
+                      if (fromIdx === -1 || toIdx === -1) { setDraggingColId(null); return }
+                      const newOrder = [...currentOrder]
+                      newOrder.splice(fromIdx, 1)
+                      newOrder.splice(toIdx, 0, sourceId)
+                      table.setColumnOrder(newOrder)
+                      setDraggingColId(null)
+                    }}
+                    onDragEnd={() => setDraggingColId(null)}
+                  >
                     <div className={`flex items-center gap-1 ${header.column.getCanSort() ? 'cursor-pointer' : ''}`} onClick={header.column.getToggleSortingHandler()}>
                       {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                       {header.column.getIsSorted() === "asc" && <span className="text-xs">▲</span>}

@@ -46,21 +46,20 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
   return (
     <>
       <div className="border-b border-border bg-card" dir="rtl">
-        <div className="px-6 py-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Database className="h-7 w-7 text-primary" />
-                <h1 className="text-xl font-bold">מערכת ניהול</h1>
+        <div className="px-4 md:px-6 py-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 md:gap-4 min-w-0">
+              <div className="flex items-center gap-2 shrink-0">
+                <Database className="h-6 w-6 md:h-7 md:w-7 text-primary" />
+                <h1 className="text-base md:text-xl font-bold hidden sm:block">מערכת ניהול</h1>
               </div>
-              <nav className="flex gap-1">
+              <nav className="flex gap-0.5 md:gap-1 flex-wrap">
                 {navItems.map((item) => (
                   <Button
                     key={item.id}
                     variant="ghost"
-                    size="sm"
                     onClick={() => onPageChange(item.id)}
-                    className={`hover:bg-accent hover:text-accent-foreground ${
+                    className={`text-sm md:text-base font-medium px-2 md:px-3 h-9 hover:bg-accent hover:text-accent-foreground ${
                       activePage === item.id ? "bg-accent text-accent-foreground" : ""
                     }`}
                   >
@@ -71,8 +70,7 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
-                      size="sm"
-                      className={`hover:bg-accent hover:text-accent-foreground ${
+                      className={`text-sm md:text-base font-medium px-2 md:px-3 h-9 hover:bg-accent hover:text-accent-foreground ${
                         isReportActive ? "bg-accent text-accent-foreground" : ""
                       }`}
                     >
@@ -90,18 +88,18 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
               </nav>
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 md:gap-2 shrink-0">
               <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setShowReportSettings(true)} title="הגדרות ייצוא דוח">
                 <Settings className="h-4 w-4" />
               </Button>
-              <div className="flex items-center gap-1.5 h-8">
+              <div className="hidden sm:flex items-center gap-1.5 h-8">
                 <Sun className="h-3.5 w-3.5 text-amber-500 shrink-0" />
                 <input
                   type="range"
                   min="40"
                   max="100"
                   defaultValue={theme === "dark" ? "40" : "100"}
-                  className="w-20 h-1.5 accent-amber-500 cursor-pointer"
+                  className="w-16 md:w-20 h-1.5 accent-amber-500 cursor-pointer"
                   onChange={(e) => {
                     const val = parseInt(e.target.value);
                     if (val <= 60 && theme !== "dark") setTheme("dark");

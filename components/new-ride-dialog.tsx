@@ -475,15 +475,15 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
 
         <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
           <Tabs defaultValue="details" className="flex-1 flex flex-col overflow-hidden">
-            <TabsList className="grid w-full grid-cols-3 h-8">
-              <TabsTrigger value="details" className="text-xs py-1">פרטי נסיעה</TabsTrigger>
-              <TabsTrigger value="prices" className="text-xs py-1">מחירים</TabsTrigger>
-              <TabsTrigger value="extra" className="text-xs py-1">פרטים נוספים</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3 h-9">
+              <TabsTrigger value="details" className="text-sm py-1.5">פרטי נסיעה</TabsTrigger>
+              <TabsTrigger value="prices" className="text-sm py-1.5">מחירים</TabsTrigger>
+              <TabsTrigger value="extra" className="text-sm py-1.5">פרטים נוספים</TabsTrigger>
             </TabsList>
 
             <div className="flex-1 overflow-y-auto p-2 border rounded mt-1">
-              <TabsContent value="details" className="space-y-1 mt-0">
-                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+              <TabsContent value="details" className="space-y-3 mt-0">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-3">
                   <div>
                     <Label className={cn("text-sm leading-none block", showErrors && !date && "text-red-500")}>תאריך *</Label>
                     <Button
@@ -529,7 +529,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-3">
                   <div>
                     <Label className={cn("text-sm leading-none block", showErrors && !form.pickup && "text-red-500")}>התייצבות *</Label>
                     <Input type="time" value={form.pickup} onChange={e => setForm(p => ({ ...p, pickup: e.target.value }))} className={cn("h-8", showErrors && !form.pickup && "border-red-500")} />
@@ -540,7 +540,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-3">
                   <div>
                     <Label className="text-sm leading-none block">סוג רכב</Label>
                     <AutoComplete
@@ -577,7 +577,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
 
                 {/* --- כאן היו הצ'קבוקסים - מחקתי אותם! --- */}
 
-                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-3">
                   <div>
                     <Label className="text-sm leading-none block">מס' רכב</Label>
                     <Input value={form.vehicleNum} onChange={e => setForm(p => ({ ...p, vehicleNum: e.target.value }))} className="text-right h-8" />
@@ -623,7 +623,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-3">
                   <div>
                     <Label className="text-sm leading-none block">הערות מנהל</Label>
                     <Textarea value={form.managerNotes} onChange={e => setForm(p => ({ ...p, managerNotes: e.target.value }))} className="text-right border-blue-200 bg-blue-50/30 h-10 text-sm resize-none" />
