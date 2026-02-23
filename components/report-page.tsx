@@ -392,19 +392,22 @@ export function ReportPage({ reportType }: ReportPageProps) {
 
     // משתמשים ב-null אם השדה נותר ריק כדי להבטיח מחיקה מלאה ב-Teable
     const valueToSave = bulkInvoiceNum.trim() === "" ? null : bulkInvoiceNum
+    const ids = Array.from(selectedRowIds)
 
-    for (const id of selectedRowIds) {
+    // שולח את כל הבקשות במקביל
+    const results = await Promise.all(ids.map(async (id) => {
       try {
         const res = await fetch(`/api/work-schedule/${id}?tenant=${tenantId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ fields: { [INVOICE_FIELD_ID]: valueToSave } })
         })
-        if (!res.ok) errorCount++
+        return res.ok
       } catch {
-        errorCount++
+        return false
       }
-    }
+    }))
+    errorCount = results.filter(ok => !ok).length
 
     setIsUpdatingInvoice(false)
     setShowInvoiceDialog(false)
