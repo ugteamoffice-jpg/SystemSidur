@@ -24,7 +24,7 @@ export async function GET(request: Request) {
 
     let endpoint = `${API_URL}/api/table/${TABLE_ID}/record?take=${take}&fieldKeyType=id`;
     if (dateParam) {
-      const filterObj = { operator: "and", filterSet: [{ fieldId: DATE_FIELD_ID, operator: "is", value: dateParam }] };
+      const filterObj = { conjunction: "and", filterSet: [{ fieldId: DATE_FIELD_ID, operator: "is", value: dateParam }] };
       endpoint += `&filter=${encodeURIComponent(JSON.stringify(filterObj))}`;
     }
 
