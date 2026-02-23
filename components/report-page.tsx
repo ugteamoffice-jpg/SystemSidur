@@ -387,15 +387,16 @@ export function ReportPage({ reportType }: ReportPageProps) {
   // --- Bulk Update Invoice ---
   const handleBulkUpdateInvoice = async () => {
     if (selectedRowIds.size === 0) return
-    setIsUpdatingInvoice(true)
-    let errorCount = 0
 
-    // משתמשים ב-null אם השדה נותר ריק כדי להבטיח מחיקה מלאה ב-Teable
     const valueToSave = bulkInvoiceNum.trim() === "" ? null : bulkInvoiceNum
     const ids = Array.from(selectedRowIds)
 
-    // שולח את כל הבקשות במקביל
-    const results = await Promise.all(ids.map(async (id) => {
+    // סוגר את החלון מיד
+    setShowInvoiceDialog(false)
+    setBulkInvoiceNum("")
+
+    // עדכון ברקע
+    Promise.all(ids.map(async (id) => {
       try {
         const res = await fetch(`/api/work-schedule/${id}?tenant=${tenantId}`, {
           method: "PATCH",
@@ -406,20 +407,15 @@ export function ReportPage({ reportType }: ReportPageProps) {
       } catch {
         return false
       }
-    }))
-    errorCount = results.filter(ok => !ok).length
-
-    setIsUpdatingInvoice(false)
-    setShowInvoiceDialog(false)
-    setBulkInvoiceNum("")
-
-    if (errorCount > 0) {
-      toast({ title: "שגיאה", description: `נכשל בעדכון של ${errorCount} נסיעות`, variant: "destructive" })
-    } else {
-      toast({ title: "הצלחה", description: "מספרי החשבונית עודכנו בהצלחה" })
-    }
-    
-    applyFilters() // מפעיל רענון של הנתונים מהשרת
+    })).then((results) => {
+      const errorCount = results.filter(ok => !ok).length
+      if (errorCount > 0) {
+        toast({ title: "שגיאה", description: `נכשל בעדכון של ${errorCount} נסיעות`, variant: "destructive" })
+      } else {
+        toast({ title: "הצלחה", description: "מספרי החשבונית עודכנו בהצלחה" })
+      }
+      applyFilters()
+    })
   }
 
   // --- ייצוא לאקסל (CSV) ---
