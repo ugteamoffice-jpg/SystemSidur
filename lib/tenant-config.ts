@@ -42,6 +42,7 @@ export interface TenantConfig {
       DRIVER_LINK_SYMMETRIC: string
       SENT_RESET: string
       ORDER_FORM_ATTACHMENT: string
+      INVOICE: string
     }
     drivers: {
       FIRST_NAME: string

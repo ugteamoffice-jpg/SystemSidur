@@ -62,12 +62,13 @@ const escapeHtml = (str: string) => {
 }
 
 // Field ID for Invoice Number
-const INVOICE_FIELD_ID = "fldHPYyOX0OGZHCeXJD"
+// INVOICE_FIELD_ID now comes from tenant config (see below)
 
 export function ReportPage({ reportType }: ReportPageProps) {
   const tenantFields = useTenantFields()
   const { tenantId } = useTenant()
   const WS = tenantFields?.workSchedule || ({} as any)
+  const INVOICE_FIELD_ID = WS.INVOICE || ""
   const { toast } = useToast()
 
   const [allData, setAllData] = React.useState<WorkScheduleRecord[]>([])
