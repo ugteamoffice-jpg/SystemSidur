@@ -132,11 +132,15 @@ export function ReportPage({ reportType }: ReportPageProps) {
         { id: "route", label: "מסלול", width: colWidths.route || 200, render: mkRoute },
         { id: "dropoff", label: "חזור", width: colWidths.dropoff || 80, render: mkDropoff },
         { id: "vehicleType", label: "סוג רכב", width: colWidths.vehicleType || 100, render: mkVehicle },
+        { id: "driver", label: "שם נהג", width: colWidths.driver || 110, render: mkDriver },
         { id: "vehicleNum", label: "מספר רכב", width: colWidths.vehicleNum || 85, render: mkVehicleNum },
+        { id: "p3", label: 'נהג לפני מע"מ', width: colWidths.p3 || 100, render: mkP3 },
+        { id: "p4", label: 'נהג כולל מע"מ', width: colWidths.p4 || 100, render: mkP4 },
       ]
     } else if (reportType === "report-customer") {
       return [
         { id: "date", label: "תאריך", width: colWidths.date || 95, render: mkDate },
+        { id: "customer", label: "שם לקוח", width: colWidths.customer || 130, render: mkCustomer },
         { id: "pickup", label: "הלוך", width: colWidths.pickup || 80, render: mkPickup },
         { id: "route", label: "מסלול", width: colWidths.route || 200, render: mkRoute },
         { id: "vehicleType", label: "סוג רכב", width: colWidths.vehicleType || 100, render: mkVehicle },
@@ -146,6 +150,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
     } else if (reportType === "report-invoices") {
       return [
         { id: "invoiceNum", label: "מס' חשבונית", width: colWidths.invoiceNum || 90, render: mkInvoice },
+        { id: "customer", label: "שם לקוח", width: colWidths.customer || 130, render: mkCustomer },
         { id: "date", label: "תאריך", width: colWidths.date || 95, render: mkDate },
         { id: "pickup", label: "הלוך", width: colWidths.pickup || 80, render: mkPickup },
         { id: "route", label: "מסלול", width: colWidths.route || 200, render: mkRoute },
@@ -213,8 +218,8 @@ export function ReportPage({ reportType }: ReportPageProps) {
     const fetchNames = async () => {
       try {
         const [custRes, drvRes] = await Promise.all([
-          fetch("/api/customers?take=500"),
-          fetch("/api/drivers?take=500"),
+          fetch(`/api/customers?tenant=${tenantId}&take=500`),
+          fetch(`/api/drivers?tenant=${tenantId}&take=500`),
         ])
         if (custRes.ok) {
           const data = await custRes.json()
@@ -257,7 +262,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
     
     try {
       setIsLoading(true)
-      const response = await fetch(`/api/work-schedule?take=1000&_t=${Date.now()}`)
+      const response = await fetch(`/api/work-schedule?tenant=${tenantId}&take=1000&_t=${Date.now()}`)
       if (!response.ok) throw new Error("Failed to fetch")
       const json = await response.json()
       setAllData(json.records || [])
@@ -389,7 +394,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
 
     for (const id of selectedRowIds) {
       try {
-        const res = await fetch(`/api/work-schedule/${id}`, {
+        const res = await fetch(`/api/work-schedule/${id}?tenant=${tenantId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ fields: { [INVOICE_FIELD_ID]: valueToSave } })
@@ -495,11 +500,15 @@ export function ReportPage({ reportType }: ReportPageProps) {
         { header: "מסלול",               cls:"route",  getValue: mkRoute },
         { header: "חזור",    width:"50px", cls:"c",     getValue: mkRet },
         { header: "סוג רכב",width:"90px", cls:"c",     getValue: mkVT },
+        { header: "שם נהג", width:"90px", cls:"",      getValue: mkDrv },
         { header: "מספר רכב",width:"80px",cls:"c",     getValue: mkVN },
+        { header: 'נהג לפני מע"מ', width:"80px", cls:"l", getValue: mkP3, isTotalField:"p3" },
+        { header: 'נהג כולל מע"מ', width:"80px", cls:"l", getValue: mkP4, isTotalField:"p4" },
       ]
     } else if (reportType === "report-customer") {
       cols = [
         { header: "תאריך",                 width:"70px", cls:"c",   getValue: mkDate },
+        { header: "שם לקוח",              width:"100px",cls:"",    getValue: mkCust },
         { header: "הלוך",                  width:"50px", cls:"c",   getValue: mkGo },
         { header: "מסלול",                             cls:"route", getValue: mkRoute },
         { header: "סוג רכב",              width:"90px", cls:"c",   getValue: mkVT },
@@ -508,6 +517,8 @@ export function ReportPage({ reportType }: ReportPageProps) {
       ]
     } else if (reportType === "report-invoices") {
       cols = [
+        { header: "מס' חשבונית",          width:"80px", cls:"c",   getValue: (f: any) => escapeHtml(f[INVOICE_FIELD_ID] || "-") },
+        { header: "שם לקוח",              width:"100px",cls:"",    getValue: mkCust },
         { header: "תאריך",                 width:"70px", cls:"c",   getValue: mkDate },
         { header: "הלוך",                  width:"50px", cls:"c",   getValue: mkGo },
         { header: "מסלול",                             cls:"route", getValue: mkRoute },
@@ -870,21 +881,25 @@ export function ReportPage({ reportType }: ReportPageProps) {
             </div>
           )}
 
-          {hasSearched && filteredData.length > 0 && reportType !== "report-driver" && (
+          {hasSearched && filteredData.length > 0 && (
             <div className="flex flex-wrap gap-3 text-sm bg-muted/20 border rounded px-3 py-1.5 shadow-sm items-center shrink-0 mr-auto">
               {(reportType === "report-customer" || reportType === "report-invoices" || reportType === "report-profit") && (
                 <div className="flex flex-col gap-0.5 whitespace-nowrap">
-                  <span>לקוח+ מע"מ: <span className="font-bold">{totals.p1.toLocaleString()} ₪</span></span>
-                  <span>לקוח כולל: <span className="font-bold">{totals.p2.toLocaleString()} ₪</span></span>
+                  <span>לקוח לפני מע"מ: <span className="font-bold">{totals.p1.toLocaleString()} ₪</span></span>
+                  <span>לקוח כולל מע"מ: <span className="font-bold">{totals.p2.toLocaleString()} ₪</span></span>
                 </div>
+              )}
+              {(reportType === "report-driver" || reportType === "report-profit") && (
+                <>
+                  {reportType === "report-profit" && <div className="w-px bg-border self-stretch my-0.5"></div>}
+                  <div className="flex flex-col gap-0.5 whitespace-nowrap">
+                    <span>נהג לפני מע"מ: <span className="font-bold">{totals.p3.toLocaleString()} ₪</span></span>
+                    <span>נהג כולל מע"מ: <span className="font-bold">{totals.p4.toLocaleString()} ₪</span></span>
+                  </div>
+                </>
               )}
               {reportType === "report-profit" && (
                 <>
-                  <div className="w-px bg-border self-stretch my-0.5"></div>
-                  <div className="flex flex-col gap-0.5 whitespace-nowrap">
-                    <span>נהג+ מע"מ: <span className="font-bold">{totals.p3.toLocaleString()} ₪</span></span>
-                    <span>נהג כולל: <span className="font-bold">{totals.p4.toLocaleString()} ₪</span></span>
-                  </div>
                   <div className="w-px bg-border self-stretch my-0.5"></div>
                   <div className="flex flex-col gap-0.5 text-green-600 dark:text-green-400 font-medium whitespace-nowrap">
                     <span>רווח: <span className="font-bold">{totals.p5.toLocaleString()} ₪</span></span>

@@ -165,10 +165,3 @@
     color: var(--rdp-accent-color);
   }
 }
-
-/* Responsive: small screens */
-@media (max-width: 640px) {
-  .rdp {
-    --rdp-cell-size: 32px !important;
-  }
-}

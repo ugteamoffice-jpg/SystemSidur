@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getTenantFromRequest, isTenantError } from '@/lib/api-tenant-helper';
 
 export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+export const revalidate = 0;
 
 async function safeJsonParse(response: Response) {
   const text = await response.text();
@@ -35,7 +37,13 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Failed', details: errText }, { status: response.status });
     }
     const data = await safeJsonParse(response);
-    return NextResponse.json(data || { records: [] });
+    return NextResponse.json(data || { records: [] }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
+    });
   } catch (error) {
     console.error('GET Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

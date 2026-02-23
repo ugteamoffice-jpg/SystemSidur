@@ -365,7 +365,10 @@ function DataGrid({ schema }: { schema?: any }) {
 
   const fetchData = async () => {
     try {
-      const response = await fetch(`/api/work-schedule?take=1000&_t=${Date.now()}`) 
+      const response = await fetch(`/api/work-schedule?tenant=${tenantId}&take=1000&_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' }
+      }) 
       const json = await response.json()
       if (json.records) {
         setData(json.records.map((record: any) => ({ ...record, fields: { ...record.fields } })))
@@ -376,7 +379,7 @@ function DataGrid({ schema }: { schema?: any }) {
 
   const updateRecordField = async (recordId: string, fieldKey: string, value: any) => {
     try {
-      const response = await fetch("/api/work-schedule", {
+      const response = await fetch(`/api/work-schedule?tenant=${tenantId}`, {
         method: "PATCH",
         body: JSON.stringify({ recordId, fields: { [fieldKey]: value } })
       });
@@ -398,7 +401,7 @@ function DataGrid({ schema }: { schema?: any }) {
     let failCount = 0
     for (const id of idsToDelete) {
       try {
-        const response = await fetch(`/api/work-schedule?id=${id}`, { method: "DELETE" })
+        const response = await fetch(`/api/work-schedule?tenant=${tenantId}&id=${id}`, { method: "DELETE" })
         if (!response.ok) failCount++
       } catch { failCount++ }
     }
@@ -486,7 +489,7 @@ function DataGrid({ schema }: { schema?: any }) {
               newFields[WS.DRIVER] = null
             }
             
-            const response = await fetch('/api/work-schedule', {
+            const response = await fetch(`/api/work-schedule?tenant=${tenantId}`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ fields: newFields })
@@ -525,7 +528,7 @@ function DataGrid({ schema }: { schema?: any }) {
       setRowSelection({})
       
       const scrollTop = tableScrollRef.current?.scrollTop || 0;
-      await fetchData()
+      await fetchDataAfterSave()
       requestAnimationFrame(() => { if (tableScrollRef.current) tableScrollRef.current.scrollTop = scrollTop; });
       
       if (firstNewRecord && recordsToDuplicate.length === 1) {
@@ -543,7 +546,21 @@ function DataGrid({ schema }: { schema?: any }) {
     setShowSplitDialog(true)
   }
 
+  // Delayed fetch to allow Teable to commit changes before re-reading
+  const fetchDataAfterSave = React.useCallback(async () => {
+    await new Promise(r => setTimeout(r, 600))
+    await fetchData()
+  }, [])
+
   React.useEffect(() => { fetchData() }, [])
+
+  // Auto-refresh every 30 seconds so all users see the latest data
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      fetchData()
+    }, 30000)
+    return () => clearInterval(interval)
+  }, [])
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
@@ -671,7 +688,7 @@ function DataGrid({ schema }: { schema?: any }) {
           </Button>
 
           <RideDialog 
-            onRideSaved={fetchData} 
+            onRideSaved={fetchDataAfterSave} 
             defaultDate={format(dateFilter, "yyyy-MM-dd")}
             key={`new-ride-${format(dateFilter, "yyyy-MM-dd")}`}
           />
@@ -1184,7 +1201,7 @@ function DataGrid({ schema }: { schema?: any }) {
         onRideSaved={() => { 
           const scrollTop = tableScrollRef.current?.scrollTop || 0;
           setEditingRecord(null); 
-          fetchData().then(() => { 
+          fetchDataAfterSave().then(() => { 
             requestAnimationFrame(() => { if (tableScrollRef.current) tableScrollRef.current.scrollTop = scrollTop; });
           }); 
         }} 
@@ -1198,7 +1215,7 @@ function DataGrid({ schema }: { schema?: any }) {
         open={showSplitDialog} 
         onOpenChange={setShowSplitDialog} 
         record={contextRecord} 
-        onSplit={fetchData} 
+        onSplit={fetchDataAfterSave} 
       />
 
       <ExportDriverPdfDialog

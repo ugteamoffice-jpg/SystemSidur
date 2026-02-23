@@ -10,7 +10,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { useTenantFields } from "@/lib/tenant-context"
+import { useTenantFields, useTenant } from "@/lib/tenant-context"
 
 interface WorkScheduleRecord {
   id: string
@@ -41,6 +41,7 @@ const reportTitles: Record<ReportType, string> = {
 
 export function ReportDialog({ open, onOpenChange, reportType }: ReportDialogProps) {
   const tenantFields = useTenantFields()
+  const { tenantId } = useTenant()
   const WS = tenantFields?.workSchedule || ({} as any)
 
   const [filteredData, setFilteredData] = React.useState<WorkScheduleRecord[]>([])
@@ -124,7 +125,7 @@ export function ReportDialog({ open, onOpenChange, reportType }: ReportDialogPro
   const fetchData = async () => {
     try {
       setIsLoading(true)
-      const response = await fetch(`/api/work-schedule?take=1000&_t=${Date.now()}`)
+      const response = await fetch(`/api/work-schedule?tenant=${tenantId}&take=1000&_t=${Date.now()}`)
       if (!response.ok) throw new Error("Failed to fetch")
       const json = await response.json()
       let records: WorkScheduleRecord[] = json.records || []

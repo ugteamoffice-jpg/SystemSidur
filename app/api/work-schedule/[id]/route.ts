@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { getTenantFromRequest, isTenantError } from "@/lib/api-tenant-helper";
 
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }

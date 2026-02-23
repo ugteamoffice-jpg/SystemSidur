@@ -108,7 +108,7 @@ export default function CustomersGrid() {
     setCustomers([])
     
     try {
-      const response = await fetch('/api/customers');
+      const response = await fetch(`/api/customers?tenant=${tenantId}`);
       if (!response.ok) throw new Error("Fetch failed");
       
       const data = await response.json();
@@ -131,7 +131,7 @@ export default function CustomersGrid() {
         return acc
       }, {} as any)
       filteredFields[STATUS_FIELD_ID] = "פעיל"
-      const response = await fetch("/api/customers", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fields: filteredFields }) })
+      const response = await fetch(`/api/customers?tenant=${tenantId}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fields: filteredFields }) })
       if (!response.ok) throw new Error("Failed")
       toast({ title: "הצלחה", description: "נוצר בהצלחה" })
       setIsDialogOpen(false); resetForm(); fetchCustomers();
@@ -145,7 +145,7 @@ export default function CustomersGrid() {
         if (value !== "" && value !== undefined && value !== null) acc[key] = value
         return acc
       }, {} as any)
-      const response = await fetch(`/api/customers`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recordId: editingCustomerId, fields: filteredFields }) })
+      const response = await fetch(`/api/customers?tenant=${tenantId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recordId: editingCustomerId, fields: filteredFields }) })
       if (!response.ok) throw new Error("Failed")
       toast({ title: "הצלחה", description: "עודכן בהצלחה" })
       setIsDialogOpen(false); setEditingCustomerId(null); resetForm();
@@ -157,7 +157,7 @@ export default function CustomersGrid() {
     if (!editingCustomerId) return
     try {
       const newStatus = (newCustomer[STATUS_FIELD_ID] || "פעיל") === "לא פעיל" ? "פעיל" : "לא פעיל"
-      const response = await fetch(`/api/customers`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recordId: editingCustomerId, fields: { [STATUS_FIELD_ID]: newStatus } }) })
+      const response = await fetch(`/api/customers?tenant=${tenantId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recordId: editingCustomerId, fields: { [STATUS_FIELD_ID]: newStatus } }) })
       if (!response.ok) throw new Error("Failed")
       setIsDialogOpen(false); setEditingCustomerId(null); resetForm(); 
       setCustomers(prev => prev.map(c => c.id === editingCustomerId ? { ...c, fields: { ...c.fields, [STATUS_FIELD_ID]: newStatus } } : c));

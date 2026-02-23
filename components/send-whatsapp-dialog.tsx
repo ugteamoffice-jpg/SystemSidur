@@ -93,7 +93,7 @@ export function SendWhatsappDialog({
   const fetchDriverInfo = async (driverName: string) => {
     setIsLoading(true)
     try {
-      const res = await fetch("/api/drivers")
+      const res = await fetch(`/api/drivers?tenant=${tenantId}`)
       const json = await res.json()
       if (!json.records) throw new Error("No records")
 

@@ -95,7 +95,7 @@ export default function DriversGrid() {
     setDrivers([])
     
     try {
-      const response = await fetch('/api/drivers');
+      const response = await fetch(`/api/drivers?tenant=${tenantId}`);
       if (!response.ok) throw new Error("Fetch failed");
       
       const data = await response.json();
@@ -118,7 +118,7 @@ export default function DriversGrid() {
         return acc
       }, {} as any)
       filteredFields[STATUS_FIELD_ID] = "פעיל"
-      const response = await fetch("/api/drivers", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fields: filteredFields }) })
+      const response = await fetch(`/api/drivers?tenant=${tenantId}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fields: filteredFields }) })
       if (!response.ok) throw new Error("Failed")
       toast({ title: "הצלחה", description: "נוצר בהצלחה" })
       setIsDialogOpen(false); resetForm(); fetchDrivers();
@@ -132,7 +132,7 @@ export default function DriversGrid() {
         if (value !== "" && value !== undefined && value !== null) acc[key] = value
         return acc
       }, {} as any)
-      const response = await fetch(`/api/drivers`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recordId: editingDriverId, fields: filteredFields }) })
+      const response = await fetch(`/api/drivers?tenant=${tenantId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recordId: editingDriverId, fields: filteredFields }) })
       if (!response.ok) throw new Error("Failed")
       toast({ title: "הצלחה", description: "עודכן בהצלחה" })
       setIsDialogOpen(false); setEditingDriverId(null); resetForm();
@@ -144,7 +144,7 @@ export default function DriversGrid() {
     if (!editingDriverId) return
     try {
       const newStatus = (newDriver[STATUS_FIELD_ID] || "פעיל") === "לא פעיל" ? "פעיל" : "לא פעיל"
-      const response = await fetch(`/api/drivers`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recordId: editingDriverId, fields: { [STATUS_FIELD_ID]: newStatus } }) })
+      const response = await fetch(`/api/drivers?tenant=${tenantId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recordId: editingDriverId, fields: { [STATUS_FIELD_ID]: newStatus } }) })
       if (!response.ok) throw new Error("Failed")
       setIsDialogOpen(false); setEditingDriverId(null); resetForm(); 
       setDrivers(prev => prev.map(d => d.id === editingDriverId ? { ...d, fields: { ...d.fields, [STATUS_FIELD_ID]: newStatus } } : d));

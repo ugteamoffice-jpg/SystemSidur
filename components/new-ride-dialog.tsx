@@ -22,7 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
-import { useTenantFields, useTenantTables } from "@/lib/tenant-context"
+import { useTenantFields, useTenantTables, useTenant } from "@/lib/tenant-context"
 
 interface ListItem {
   id: string;
@@ -72,6 +72,7 @@ function AutoComplete({ options, value, onChange, onItemSelect, placeholder, isE
 export function RideDialog({ onRideSaved, initialData, triggerChild, open: controlledOpen, onOpenChange: setControlledOpen, defaultDate, allRides, onNavigate }: any) {
   const tenantFields = useTenantFields()
   const tenantTables = useTenantTables()
+  const { tenantId } = useTenant()
   const FIELDS = tenantFields?.workSchedule || {} as any
   const WS_TABLE_ID = tenantTables?.WORK_SCHEDULE || ""
 
@@ -179,7 +180,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
           return [];
         }
       }
-      Promise.all([load('/api/customers'), load('/api/drivers', true), load('/api/vehicles')])
+      Promise.all([load(`/api/customers?tenant=${tenantId}`), load(`/api/drivers?tenant=${tenantId}`, true), load(`/api/vehicles?tenant=${tenantId}`)])
         .then(([c, d, v]) => setLists({ customers: c, drivers: d, vehicles: v }))
     }
   }, [open])
@@ -376,7 +377,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
         fd.append('tableId', WS_TABLE_ID)
         fd.append('recordId', recordId)
         fd.append('fieldId', FIELDS.ORDER_FORM)
-        const uploadRes = await fetch('/api/upload-to-record', { method: 'POST', body: fd })
+        const uploadRes = await fetch(`/api/upload-to-record?tenant=${tenantId}`, { method: 'POST', body: fd })
         if (!uploadRes.ok) {
           console.error('File upload failed:', await uploadRes.text())
           toast({ title: "הנסיעה נשמרה אבל העלאת הקובץ נכשלה", variant: "destructive" })
@@ -385,7 +386,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
       }
 
       if (isEdit) {
-        const res = await fetch(`/api/work-schedule/${initialData.id}`, {
+        const res = await fetch(`/api/work-schedule/${initialData.id}?tenant=${tenantId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body)
@@ -407,7 +408,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
         throw new Error("Server rejected the data");
       }
 
-      const res = await fetch('/api/work-schedule', {
+      const res = await fetch(`/api/work-schedule?tenant=${tenantId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
@@ -449,8 +450,8 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
           )}
         </DialogTrigger>
       )}
-      <DialogContent className="w-[95vw] sm:max-w-[900px] h-[90vh] sm:h-[85vh] flex flex-col" dir="rtl">
-        <DialogHeader className="pb-1">
+      <DialogContent className="w-[95vw] sm:max-w-[900px] h-[85vh] flex flex-col" dir="rtl">
+        <DialogHeader className="pb-0.5">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-base">{isEdit ? "עריכת נסיעה" : "נסיעה חדשה"}</DialogTitle>
             {isEdit && allRides && onNavigate && (() => {
@@ -481,14 +482,14 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
               <TabsTrigger value="extra" className="text-base font-medium py-2">פרטים נוספים</TabsTrigger>
             </TabsList>
 
-            <div className="flex-1 overflow-y-auto p-3 border rounded mt-2">
-              <TabsContent value="details" className="space-y-4 mt-0">
-                <div className="grid grid-cols-2 gap-x-5 gap-y-4">
+            <div className="flex-1 overflow-y-auto p-2 border rounded mt-1">
+              <TabsContent value="details" className="space-y-2 mt-0">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                   <div>
-                    <Label className={cn("text-sm block mb-1.5", showErrors && !date && "text-red-500")}>תאריך *</Label>
+                    <Label className={cn("text-sm block mb-px", showErrors && !date && "text-red-500")}>תאריך *</Label>
                     <Button
                       variant={"outline"}
-                      className={cn("w-full justify-start text-right h-9 text-sm", showErrors && !date && "border-red-500")}
+                      className={cn("w-full justify-start text-right h-8 text-sm", showErrors && !date && "border-red-500")}
                       onClick={() => setCalendarModal({
                         open: true,
                         selected: date,
@@ -501,7 +502,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                     </Button>
                   </div>
                   <div>
-                    <Label className={cn("text-sm block mb-1.5", showErrors && !form.customer && "text-red-500")}>שם לקוח *</Label>
+                    <Label className={cn("text-sm block mb-px", showErrors && !form.customer && "text-red-500")}>שם לקוח *</Label>
                     <AutoComplete
                       options={lists.customers}
                       value={form.customer}
@@ -520,29 +521,29 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                 </div>
 
                 <div>
-                  <Label className={cn("text-sm block mb-1.5", showErrors && !form.description && "text-red-500")}>תיאור (מסלול) *</Label>
+                  <Label className={cn("text-sm block mb-px", showErrors && !form.description && "text-red-500")}>תיאור (מסלול) *</Label>
                   <Input
                     value={form.description}
                     onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-                    className={cn("text-right h-9 text-sm", showErrors && !form.description && "border-red-500")}
+                    className={cn("text-right h-8 text-sm", showErrors && !form.description && "border-red-500")}
                     placeholder=""
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-x-5 gap-y-4">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                   <div>
-                    <Label className={cn("text-sm block mb-1.5", showErrors && !form.pickup && "text-red-500")}>התייצבות *</Label>
-                    <Input type="time" value={form.pickup} onChange={e => setForm(p => ({ ...p, pickup: e.target.value }))} className={cn("h-9", showErrors && !form.pickup && "border-red-500")} />
+                    <Label className={cn("text-sm block mb-px", showErrors && !form.pickup && "text-red-500")}>התייצבות *</Label>
+                    <Input type="time" value={form.pickup} onChange={e => setForm(p => ({ ...p, pickup: e.target.value }))} className={cn("h-8", showErrors && !form.pickup && "border-red-500")} />
                   </div>
                   <div>
-                    <Label className="text-sm block mb-1.5">חזור</Label>
-                    <Input type="time" value={form.dropoff} onChange={e => setForm(p => ({ ...p, dropoff: e.target.value }))} className="h-9" />
+                    <Label className="text-sm block mb-px">חזור</Label>
+                    <Input type="time" value={form.dropoff} onChange={e => setForm(p => ({ ...p, dropoff: e.target.value }))} className="h-8" />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-x-5 gap-y-4">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                   <div>
-                    <Label className="text-sm block mb-1.5">סוג רכב</Label>
+                    <Label className="text-sm block mb-px">סוג רכב</Label>
                     <AutoComplete
                       options={lists.vehicles}
                       value={form.vehicleType}
@@ -558,7 +559,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                     />
                   </div>
                   <div>
-                    <Label className="text-sm block mb-1.5">נהג</Label>
+                    <Label className="text-sm block mb-px">נהג</Label>
                     <AutoComplete
                       options={lists.drivers}
                       value={form.driver}
@@ -577,16 +578,16 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
 
                 {/* --- כאן היו הצ'קבוקסים - מחקתי אותם! --- */}
 
-                <div className="grid grid-cols-2 gap-x-5 gap-y-4">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                   <div>
-                    <Label className="text-sm block mb-1.5">מס' רכב</Label>
-                    <Input value={form.vehicleNum} onChange={e => setForm(p => ({ ...p, vehicleNum: e.target.value }))} className="text-right h-9" />
+                    <Label className="text-sm block mb-px">מס' רכב</Label>
+                    <Input value={form.vehicleNum} onChange={e => setForm(p => ({ ...p, vehicleNum: e.target.value }))} className="text-right h-8" />
                   </div>
                   <div>
-                    <Label className="text-sm block mb-1.5"><Upload className="w-3 h-3 inline ml-1" />קובץ</Label>
+                    <Label className="text-sm block mb-px"><Upload className="w-3 h-3 inline ml-1" />קובץ</Label>
                     <div className="flex items-center gap-1">
                       {existingAttachment.length > 0 ? (
-                        <div className="flex items-center gap-1 flex-1 h-9 px-2 border rounded bg-green-50 text-sm">
+                        <div className="flex items-center gap-1 flex-1 h-8 px-2 border rounded bg-green-50 text-sm">
                           <FileText className="w-3 h-3 text-green-600 shrink-0" />
                           <span className="truncate flex-1">{existingAttachment[0]?.name || 'קובץ'}</span>
                           {existingAttachment[0]?.token && (
@@ -603,18 +604,18 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                           {isEdit && (
                             <Button type="button" variant="ghost" size="sm" className="h-5 w-5 p-0 text-red-500 shrink-0" onClick={async () => {
                               setExistingAttachment([])
-                              try { await fetch(`/api/work-schedule/${initialData.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { [FIELDS.ORDER_FORM]: null } }) }) } catch {}
+                              try { await fetch(`/api/work-schedule/${initialData.id}?tenant=${tenantId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { [FIELDS.ORDER_FORM]: null } }) }) } catch {}
                             }}><X className="w-3 h-3" /></Button>
                           )}
                         </div>
                       ) : orderFormFile ? (
-                        <div className="flex items-center gap-1 flex-1 h-9 px-2 border rounded bg-blue-50 text-sm">
+                        <div className="flex items-center gap-1 flex-1 h-8 px-2 border rounded bg-blue-50 text-sm">
                           <FileText className="w-3 h-3 text-blue-600 shrink-0" />
                           <span className="truncate flex-1">{newFileName}</span>
                           <Button type="button" variant="ghost" size="sm" className="h-5 w-5 p-0 text-red-500" onClick={() => { setOrderFormFile(null); setNewFileName(''); if (fileInputRef.current) fileInputRef.current.value = '' }}><X className="w-3 h-3" /></Button>
                         </div>
                       ) : (
-                        <Button type="button" variant="outline" size="sm" className="w-full h-9 text-sm" onClick={() => fileInputRef.current?.click()}>
+                        <Button type="button" variant="outline" size="sm" className="w-full h-8 text-sm" onClick={() => fileInputRef.current?.click()}>
                           <Upload className="w-3 h-3 ml-1" /> בחר קובץ
                         </Button>
                       )}
@@ -623,14 +624,14 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-x-5 gap-y-4">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                   <div>
-                    <Label className="text-sm block mb-1.5">הערות מנהל</Label>
-                    <Textarea value={form.managerNotes} onChange={e => setForm(p => ({ ...p, managerNotes: e.target.value }))} className="text-right border-blue-200 bg-blue-50/30 h-16 text-sm resize-none" />
+                    <Label className="text-sm block mb-px">הערות מנהל</Label>
+                    <Textarea value={form.managerNotes} onChange={e => setForm(p => ({ ...p, managerNotes: e.target.value }))} className="text-right border-blue-200 bg-blue-50/30 h-12 text-sm resize-none" />
                   </div>
                   <div>
-                    <Label className="text-sm block mb-1.5">הערות נהג</Label>
-                    <Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} className="text-right h-16 text-sm resize-none" />
+                    <Label className="text-sm block mb-px">הערות נהג</Label>
+                    <Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} className="text-right h-12 text-sm resize-none" />
                   </div>
                 </div>
               </TabsContent>
@@ -690,7 +691,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
             </div>
           </Tabs>
 
-          <DialogFooter className="mt-2 pt-2 border-t">
+          <DialogFooter className="mt-1.5 pt-1.5 border-t">
             <Button variant="outline" type="button" onClick={() => setOpen(false)}>ביטול</Button>
             <Button type="submit" disabled={loading}>
               {loading ? <Loader2 className="animate-spin ml-2" /> : <Pencil className="w-4 h-4 ml-2" />}

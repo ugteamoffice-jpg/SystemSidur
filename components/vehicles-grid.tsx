@@ -79,7 +79,7 @@ export default function VehiclesGrid() {
   const fetchVehicles = async () => {
     try {
       setIsLoading(true)
-      const response = await fetch(`/api/vehicles`)
+      const response = await fetch(`/api/vehicles?tenant=${tenantId}`)
       if (!response.ok) throw new Error("Failed to fetch")
       const data = await response.json()
 
@@ -105,7 +105,7 @@ export default function VehiclesGrid() {
         return acc
       }, {} as any)
 
-      const response = await fetch("/api/vehicles", {
+      const response = await fetch(`/api/vehicles?tenant=${tenantId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fields: filteredFields }),
@@ -143,7 +143,7 @@ export default function VehiclesGrid() {
         fields[VEHICLE_TYPE_FIELD_ID] = newVehicle[VEHICLE_TYPE_FIELD_ID]
       }
 
-      const response = await fetch(`/api/vehicles/${editingVehicleId}`, {
+      const response = await fetch(`/api/vehicles/${editingVehicleId}?tenant=${tenantId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fields }),

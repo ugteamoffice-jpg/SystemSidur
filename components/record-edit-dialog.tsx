@@ -17,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import type { WorkScheduleRecord, TableSchema } from "@/types/work-schedule"
-import { useTenantFields } from "@/lib/tenant-context"
+import { useTenantFields, useTenant } from "@/lib/tenant-context"
 
 interface RecordEditDialogProps {
   record: WorkScheduleRecord | null
@@ -29,6 +29,7 @@ interface RecordEditDialogProps {
 
 export function RecordEditDialog({ record, schema, open, onOpenChange, onSave }: RecordEditDialogProps) {
   const fields = useTenantFields()
+  const { tenantId } = useTenant()
   const [formData, setFormData] = useState<Record<string, any>>({})
   const [saving, setSaving] = useState(false)
   const [previousDriver, setPreviousDriver] = useState<any>(null)
@@ -63,7 +64,7 @@ export function RecordEditDialog({ record, schema, open, onOpenChange, onSave }:
         fieldsToSave[SENT_RESET] = false // Reset שלח
       }
 
-      const response = await fetch(`/api/work-schedule/${record.id}`, {
+      const response = await fetch(`/api/work-schedule/${record.id}?tenant=${tenantId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fields: fieldsToSave }),

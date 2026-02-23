@@ -21,7 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
-import { useTenantFields } from "@/lib/tenant-context"
+import { useTenantFields, useTenant } from "@/lib/tenant-context"
 
 interface ListItem { id: string; title: string }
 
@@ -53,6 +53,7 @@ function AutoComplete({ options, value, onChange, placeholder }: any) {
 
 export function SplitRideDialog({ open, onOpenChange, record, onSplit }: any) {
   const tenantFields = useTenantFields()
+  const { tenantId } = useTenant()
   const FIELDS = tenantFields?.workSchedule || {} as any
 
   const [loading, setLoading] = React.useState(false)
@@ -122,7 +123,7 @@ export function SplitRideDialog({ open, onOpenChange, record, onSplit }: any) {
             })) : [] 
         } catch { return [] }
       }
-      Promise.all([load('/api/customers'), load('/api/drivers'), load('/api/vehicles')])
+      Promise.all([load(`/api/customers?tenant=${tenantId}`), load(`/api/drivers?tenant=${tenantId}`), load(`/api/vehicles?tenant=${tenantId}`)])
         .then(([c, d, v]) => setLists({ customers: c, drivers: d, vehicles: v }))
     }
   }, [open])
@@ -284,20 +285,20 @@ export function SplitRideDialog({ open, onOpenChange, record, onSplit }: any) {
         [FIELDS.VEHICLE_TYPE]: findId(returnTrip.vehicleType, lists.vehicles),
       }
 
-      await fetch('/api/work-schedule', {
+      await fetch(`/api/work-schedule?tenant=${tenantId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fields: outboundPayload })
       })
 
-      await fetch('/api/work-schedule', {
+      await fetch(`/api/work-schedule?tenant=${tenantId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fields: returnPayload })
       })
 
       // Delete original
-      await fetch(`/api/work-schedule?id=${record.id}`, { method: 'DELETE' })
+      await fetch(`/api/work-schedule?tenant=${tenantId}&id=${record.id}`, { method: 'DELETE' })
 
       toast({ title: "הצלחה", description: "הנסיעה פוצלה בהצלחה להלוך וחזור" })
       onOpenChange(false)
