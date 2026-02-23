@@ -396,6 +396,27 @@ function DataGrid({ schema }: { schema?: any }) {
     } catch (error) { toast({ title: "שגיאה בעדכון", variant: "destructive" }); fetchData(); }
   }
 
+  // עדכון אופטימיסטי + מקבילי: מעדכן UI מיד, שולח הכל ברקע
+  const bulkUpdateField = (records: any[], fieldKey: string, value: any) => {
+    const ids = records.map(r => r.original.id)
+    // עדכון UI מיידי
+    setData(prev => prev.map(rec => ids.includes(rec.id) ? { ...rec, fields: { ...rec.fields, [fieldKey]: value } } : rec))
+    setRowSelection({})
+    // שרת ברקע במקביל
+    Promise.all(ids.map(id =>
+      fetch(`/api/work-schedule?tenant=${tenantId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ recordId: id, fields: { [fieldKey]: value } })
+      }).then(r => r.ok).catch(() => false)
+    )).then(results => {
+      const failCount = results.filter(ok => !ok).length
+      if (failCount > 0) {
+        toast({ title: `${failCount} רשומות נכשלו בעדכון`, variant: "destructive" })
+        fetchData()
+      }
+    })
+  }
+
   const handleDeleteSelected = async () => {
     const selectedRows = table.getFilteredSelectedRowModel().rows;
     if (selectedRows.length === 0) return;
@@ -407,12 +428,12 @@ function DataGrid({ schema }: { schema?: any }) {
     setShowDeleteDialog(false)
     
     let failCount = 0
-    for (const id of idsToDelete) {
+    await Promise.all(idsToDelete.map(async (id) => {
       try {
         const response = await fetch(`/api/work-schedule?tenant=${tenantId}&id=${id}`, { method: "DELETE" })
         if (!response.ok) failCount++
       } catch { failCount++ }
-    }
+    }))
     
     if (failCount > 0) {
       toast({ title: `${failCount} נסיעות נכשלו במחיקה`, variant: "destructive" })
@@ -477,8 +498,7 @@ function DataGrid({ schema }: { schema?: any }) {
       let firstNewRecord = null
       let totalCreated = 0
       const useDatesPerRecord = datesToDuplicate.length === 0
-      const totalOperations = recordsToDuplicate.length * (useDatesPerRecord ? count : datesToDuplicate.length * count)
-      setDuplicateProgress({ current: 0, total: totalOperations })
+      const allRequests: Promise<any>[] = []
       
       for (const record of recordsToDuplicate) {
         const dates = useDatesPerRecord 
@@ -497,26 +517,32 @@ function DataGrid({ schema }: { schema?: any }) {
               newFields[WS.DRIVER] = null
             }
             
-            const response = await fetch(`/api/work-schedule?tenant=${tenantId}`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ fields: newFields })
-            })
-            
-            if (!response.ok) throw new Error('Duplicate failed')
-            
-            const result = await response.json()
-            
-            if (totalCreated === 0) {
-              const rec = result.records?.[0] || result.record
-              if (rec) firstNewRecord = rec
-            }
-            
-            totalCreated++
-            setDuplicateProgress({ current: totalCreated, total: totalOperations })
+            allRequests.push(
+              fetch(`/api/work-schedule?tenant=${tenantId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fields: newFields })
+              }).then(r => {
+                if (!r.ok) throw new Error('Duplicate failed')
+                return r.json()
+              })
+            )
           }
         }
       }
+
+      const totalOperations = allRequests.length
+      setDuplicateProgress({ current: 0, total: totalOperations })
+      
+      const results = await Promise.all(allRequests)
+      totalCreated = results.length
+      
+      if (results.length > 0 && recordsToDuplicate.length === 1) {
+        const rec = results[0]?.records?.[0] || results[0]?.record
+        if (rec) firstNewRecord = rec
+      }
+      
+      setDuplicateProgress({ current: totalCreated, total: totalOperations })
       
       toast({ 
         title: "הצלחה", 
@@ -952,22 +978,22 @@ function DataGrid({ schema }: { schema?: any }) {
                         <>
                           <div className="h-px bg-border my-1" />
                           {!allSent && (
-                            <ContextMenuItem onSelect={async () => { for (const r of selectedRows) { await updateRecordField(r.original.id, WS.SENT, true); } setRowSelection({}); }} className="cursor-pointer text-right">
+                            <ContextMenuItem onSelect={() => { bulkUpdateField(selectedRows, WS.SENT, true); }} className="cursor-pointer text-right">
                               סמן שלח ל-{count} נסיעות
                             </ContextMenuItem>
                           )}
                           {!noneSent && (
-                            <ContextMenuItem onSelect={async () => { for (const r of selectedRows) { await updateRecordField(r.original.id, WS.SENT, false); } setRowSelection({}); }} className="cursor-pointer text-right">
+                            <ContextMenuItem onSelect={() => { bulkUpdateField(selectedRows, WS.SENT, false); }} className="cursor-pointer text-right">
                               בטל שלח ל-{count} נסיעות
                             </ContextMenuItem>
                           )}
                           {!allApproved && (
-                            <ContextMenuItem onSelect={async () => { for (const r of selectedRows) { await updateRecordField(r.original.id, WS.APPROVED, true); } setRowSelection({}); }} className="cursor-pointer text-right">
+                            <ContextMenuItem onSelect={() => { bulkUpdateField(selectedRows, WS.APPROVED, true); }} className="cursor-pointer text-right">
                               סמן מאושר ל-{count} נסיעות
                             </ContextMenuItem>
                           )}
                           {!noneApproved && (
-                            <ContextMenuItem onSelect={async () => { for (const r of selectedRows) { await updateRecordField(r.original.id, WS.APPROVED, false); } setRowSelection({}); }} className="cursor-pointer text-right">
+                            <ContextMenuItem onSelect={() => { bulkUpdateField(selectedRows, WS.APPROVED, false); }} className="cursor-pointer text-right">
                               בטל מאושר ל-{count} נסיעות
                             </ContextMenuItem>
                           )}
