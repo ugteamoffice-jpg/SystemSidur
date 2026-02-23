@@ -37,6 +37,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Failed', details: errText }, { status: response.status });
     }
     const data = await safeJsonParse(response);
+    const recordCount = data?.records?.length ?? 'N/A'
+    console.log(`[work-schedule GET] tenant=${ctx.tenantId}, table=${TABLE_ID}, records=${recordCount}, date=${dateParam || 'all'}`)
     return NextResponse.json(data || { records: [] }, {
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
@@ -68,9 +70,13 @@ export async function POST(request: Request) {
     });
     if (!response.ok) {
       const errorData = await safeJsonParse(response);
+      console.error(`[work-schedule POST] FAILED tenant=${ctx.tenantId}, status=${response.status}`, errorData);
       return NextResponse.json({ error: "Teable Error", details: errorData }, { status: response.status });
     }
-    return NextResponse.json(await safeJsonParse(response) || { success: true });
+    const postResult = await safeJsonParse(response);
+    const newId = postResult?.records?.[0]?.id || postResult?.id || 'unknown'
+    console.log(`[work-schedule POST] OK tenant=${ctx.tenantId}, table=${TABLE_ID}, newRecordId=${newId}`)
+    return NextResponse.json(postResult || { success: true });
   } catch (error) {
     console.error('POST Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

@@ -393,19 +393,19 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
         });
 
         if (!res.ok) {
+          console.error('[RideDialog] PATCH failed:', res.status);
           throw new Error("Server rejected the data");
         }
 
-        const result = await res.json();
-        if (result.success || result.id || (result.fields && result.id)) {
-          await uploadFileToRecord(initialData.id)
-          // saved successfully - no toast needed
-          
-          setOpen(false);
-          if (onRideSaved) onRideSaved();
-          return;
-        }
-        throw new Error("Server rejected the data");
+        // If response is OK, the record was saved successfully
+        let result = {}
+        try { result = await res.json(); } catch { /* empty response is OK */ }
+        console.log('[RideDialog] PATCH result:', JSON.stringify(result).slice(0, 200));
+        await uploadFileToRecord(initialData.id)
+        console.log('[RideDialog] Edit save OK, calling onRideSaved...')
+        setOpen(false);
+        if (onRideSaved) onRideSaved();
+        return;
       }
 
       const res = await fetch(`/api/work-schedule?tenant=${tenantId}`, {
@@ -414,18 +414,24 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
         body: JSON.stringify(body)
       })
 
+      console.log('[RideDialog] POST response status:', res.status, res.statusText)
+
       if (!res.ok) {
-        throw new Error(await res.text());
+        const errText = await res.text()
+        console.error('[RideDialog] POST failed:', errText)
+        throw new Error(errText);
       }
 
       // Get new record ID and upload file
       const result = await res.json()
+      console.log('[RideDialog] POST result:', JSON.stringify(result).slice(0, 300))
       const newRecordId = result?.records?.[0]?.id || result?.id
       if (newRecordId && orderFormFile) {
         await uploadFileToRecord(newRecordId)
       }
 
       // saved successfully - no toast needed
+      console.log('[RideDialog] Save OK, calling onRideSaved...')
       setOpen(false)
       if (onRideSaved) onRideSaved()
 

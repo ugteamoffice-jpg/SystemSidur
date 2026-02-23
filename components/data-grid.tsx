@@ -13,7 +13,7 @@ import {
   ColumnSizingState,
   ColumnOrderState,
 } from "@tanstack/react-table"
-import { Calendar as CalendarIcon, LayoutDashboard, AlertCircle, CheckCircle2, UserMinus, Trash2, Loader2, ChevronLeft, ChevronRight } from "lucide-react"
+import { Calendar as CalendarIcon, LayoutDashboard, AlertCircle, CheckCircle2, UserMinus, Trash2, Loader2, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react"
 import { format } from "date-fns"
 import { he } from "date-fns/locale"
 
@@ -278,6 +278,7 @@ function DataGrid({ schema }: { schema?: any }) {
   const [rowSelection, setRowSelection] = React.useState({})
   const [globalFilter, setGlobalFilter] = React.useState("")
   const [refreshKey, setRefreshKey] = React.useState(0)
+  const [isRefreshing, setIsRefreshing] = React.useState(false)
   const tableScrollRef = React.useRef<HTMLDivElement>(null)
   const [dateFilter, setDateFilter] = React.useState<Date>(new Date())
   const [currentMonth, setCurrentMonth] = React.useState<Date>(new Date())
@@ -365,16 +366,25 @@ function DataGrid({ schema }: { schema?: any }) {
 
   const fetchData = async () => {
     try {
-      const response = await fetch(`/api/work-schedule?tenant=${tenantId}&take=1000&_t=${Date.now()}`, {
+      const url = `/api/work-schedule?tenant=${tenantId}&take=5000&_t=${Date.now()}`
+      console.log('[fetchData] Fetching:', url)
+      const response = await fetch(url, {
         cache: 'no-store',
-        headers: { 'Cache-Control': 'no-cache' }
+        headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
       }) 
+      if (!response.ok) {
+        console.error('[fetchData] Response not OK:', response.status, response.statusText)
+        return
+      }
       const json = await response.json()
+      console.log('[fetchData] Got', json.records?.length ?? 0, 'records')
       if (json.records) {
         setData(json.records.map((record: any) => ({ ...record, fields: { ...record.fields } })))
         setRefreshKey(prev => prev + 1)
+      } else {
+        console.error('[fetchData] Unexpected response:', JSON.stringify(json).slice(0, 300))
       }
-    } catch (error) { console.error("Failed to fetch data:", error) }
+    } catch (error) { console.error("[fetchData] Exception:", error) }
   }
 
   const updateRecordField = async (recordId: string, fieldKey: string, value: any) => {
@@ -548,8 +558,15 @@ function DataGrid({ schema }: { schema?: any }) {
 
   // Delayed fetch to allow Teable to commit changes before re-reading
   const fetchDataAfterSave = React.useCallback(async () => {
-    await new Promise(r => setTimeout(r, 600))
+    console.log('[fetchDataAfterSave] Waiting 800ms for Teable commit...')
+    await new Promise(r => setTimeout(r, 800))
+    console.log('[fetchDataAfterSave] First fetch attempt...')
     await fetchData()
+    // Retry after 2 seconds in case of eventual consistency
+    setTimeout(() => {
+      console.log('[fetchDataAfterSave] Retry fetch...')
+      fetchData()
+    }, 2000)
   }, [])
 
   React.useEffect(() => { fetchData() }, [])
@@ -705,6 +722,21 @@ function DataGrid({ schema }: { schema?: any }) {
             title="מחק נסיעות מסומנות"
           >
             <Trash2 className="h-4 w-4" />
+          </Button>
+
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className="shrink-0"
+            onClick={async () => {
+              setIsRefreshing(true)
+              await fetchData()
+              setIsRefreshing(false)
+            }}
+            disabled={isRefreshing}
+            title="רענון נתונים"
+          >
+            <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
           </Button>
           
           <div className="w-[150px] shrink-0">
