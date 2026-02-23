@@ -19,16 +19,22 @@ export async function GET(request: Request) {
     const DATE_FIELD_ID = config.fields.workSchedule.DATE;
 
     const { searchParams } = new URL(request.url);
-    const take = searchParams.get('take') || '1000';
     const dateParam = searchParams.get('date');
 
-    let endpoint = `${API_URL}/api/table/${TABLE_ID}/record?take=${take}&fieldKeyType=id`;
+    let endpoint = `${API_URL}/api/table/${TABLE_ID}/record?take=1000&fieldKeyType=id`;
     if (dateParam) {
       const filterObj = {
         conjunction: "and",
         filterSet: [
-          { fieldId: DATE_FIELD_ID, operator: "isOnOrAfter", value: dateParam },
-          { fieldId: DATE_FIELD_ID, operator: "isOnOrBefore", value: dateParam }
+          {
+            fieldId: DATE_FIELD_ID,
+            operator: "is",
+            value: {
+              mode: "exactDate",
+              exactDate: `${dateParam}T00:00:00.000Z`,
+              timeZone: "Asia/Jerusalem"
+            }
+          }
         ]
       };
       endpoint += `&filter=${encodeURIComponent(JSON.stringify(filterObj))}`;
@@ -41,8 +47,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Failed', details: errText }, { status: response.status });
     }
     const data = await safeJsonParse(response);
-    const recordCount = data?.records?.length ?? 'N/A'
-    console.log(`[work-schedule GET] tenant=${ctx.tenantId}, table=${TABLE_ID}, records=${recordCount}, date=${dateParam || 'all'}`)
+    console.log(`[work-schedule GET] tenant=${ctx.tenantId}, records=${data?.records?.length ?? 'N/A'}, date=${dateParam || 'all'}`)
     return NextResponse.json(data || { records: [] }, {
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
