@@ -366,23 +366,19 @@ function DataGrid({ schema }: { schema?: any }) {
 
   const fetchData = async () => {
     try {
-      const url = `/api/work-schedule?tenant=${tenantId}&take=5000&_t=${Date.now()}`
+      const url = `/api/work-schedule?tenant=${tenantId}&take=1000&_t=${Date.now()}`
       console.log('[fetchData] Fetching:', url)
       const response = await fetch(url, {
         cache: 'no-store',
         headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
       }) 
-      if (!response.ok) {
-        console.error('[fetchData] Response not OK:', response.status, response.statusText)
-        return
-      }
       const json = await response.json()
-      console.log('[fetchData] Got', json.records?.length ?? 0, 'records')
+      console.log('[fetchData] status:', response.status, 'records:', json.records?.length ?? 'N/A')
       if (json.records) {
         setData(json.records.map((record: any) => ({ ...record, fields: { ...record.fields } })))
         setRefreshKey(prev => prev + 1)
       } else {
-        console.error('[fetchData] Unexpected response:', JSON.stringify(json).slice(0, 300))
+        console.error('[fetchData] No records in response:', JSON.stringify(json).slice(0, 300))
       }
     } catch (error) { console.error("[fetchData] Exception:", error) }
   }
