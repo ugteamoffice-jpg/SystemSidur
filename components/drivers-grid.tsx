@@ -234,7 +234,7 @@ export default function DriversGrid() {
 
   return (
     <div className="w-full h-[calc(100vh-2rem)] flex flex-col space-y-2 p-4 overflow-hidden" dir="rtl">
-      <div className="flex items-center gap-3 flex-none">
+      <div className="flex items-center gap-3 flex-none flex-wrap">
         <Select value={statusFilter} onValueChange={(value: "פעיל" | "לא פעיל") => setStatusFilter(value)}>
           <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
           <SelectContent><SelectItem value="פעיל">פעיל</SelectItem><SelectItem value="לא פעיל">לא פעיל</SelectItem></SelectContent>

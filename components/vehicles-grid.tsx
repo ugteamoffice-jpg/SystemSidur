@@ -222,7 +222,7 @@ export default function VehiclesGrid() {
 
   return (
     <div className="w-full h-full flex flex-col p-6 pt-4 space-y-4 overflow-hidden" dir="rtl">
-      <div className="flex items-center gap-4 flex-none">
+      <div className="flex items-center gap-4 flex-none flex-wrap">
         <Button onClick={() => setIsDialogOpen(true)}>
           <Plus className="h-4 w-4 ml-2" />
           סוג רכב חדש

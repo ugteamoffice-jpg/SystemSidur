@@ -102,6 +102,76 @@ export function ReportPage({ reportType }: ReportPageProps) {
   React.useEffect(() => {
     try { localStorage.setItem(REPORT_COL_KEY, JSON.stringify(colWidths)) } catch {}
   }, [colWidths, REPORT_COL_KEY])
+
+  // --- Visible table columns per report type ---
+  type TableColDef = {
+    id: string; label: string; width: number
+    render: (record: WorkScheduleRecord) => React.ReactNode
+    cls?: string
+  }
+  const tableColumns = React.useMemo((): TableColDef[] => {
+    const mkDate = (r: WorkScheduleRecord) => r.fields[WS.DATE] ? format(new Date(r.fields[WS.DATE]), "dd/MM/yyyy") : "-"
+    const mkPickup = (r: WorkScheduleRecord) => r.fields[WS.PICKUP_TIME] || "-"
+    const mkRoute = (r: WorkScheduleRecord) => r.fields[WS.DESCRIPTION] || "-"
+    const mkDropoff = (r: WorkScheduleRecord) => r.fields[WS.DROPOFF_TIME] || "-"
+    const mkVehicle = (r: WorkScheduleRecord) => renderLinkField(r.fields[WS.VEHICLE_TYPE])
+    const mkVehicleNum = (r: WorkScheduleRecord) => r.fields[WS.VEHICLE_NUM] || "-"
+    const mkCustomer = (r: WorkScheduleRecord) => renderLinkField(r.fields[WS.CUSTOMER])
+    const mkDriver = (r: WorkScheduleRecord) => renderLinkField(r.fields[WS.DRIVER])
+    const mkP1 = (r: WorkScheduleRecord) => (Number(r.fields[WS.PRICE_CLIENT_EXCL]) || 0).toLocaleString()
+    const mkP2 = (r: WorkScheduleRecord) => (Number(r.fields[WS.PRICE_CLIENT_INCL]) || 0).toLocaleString()
+    const mkP3 = (r: WorkScheduleRecord) => (Number(r.fields[WS.PRICE_DRIVER_EXCL]) || 0).toLocaleString()
+    const mkP4 = (r: WorkScheduleRecord) => (Number(r.fields[WS.PRICE_DRIVER_INCL]) || 0).toLocaleString()
+    const mkProfit = (r: WorkScheduleRecord) => (Number(r.fields[WS.PROFIT]) || 0).toLocaleString()
+    const mkInvoice = (r: WorkScheduleRecord) => r.fields[INVOICE_FIELD_ID] || "-"
+
+    if (reportType === "report-driver") {
+      return [
+        { id: "date", label: "תאריך", width: colWidths.date || 95, render: mkDate },
+        { id: "pickup", label: "הלוך", width: colWidths.pickup || 80, render: mkPickup },
+        { id: "route", label: "מסלול", width: colWidths.route || 200, render: mkRoute },
+        { id: "dropoff", label: "חזור", width: colWidths.dropoff || 80, render: mkDropoff },
+        { id: "vehicleType", label: "סוג רכב", width: colWidths.vehicleType || 100, render: mkVehicle },
+        { id: "vehicleNum", label: "מספר רכב", width: colWidths.vehicleNum || 85, render: mkVehicleNum },
+      ]
+    } else if (reportType === "report-customer") {
+      return [
+        { id: "date", label: "תאריך", width: colWidths.date || 95, render: mkDate },
+        { id: "pickup", label: "הלוך", width: colWidths.pickup || 80, render: mkPickup },
+        { id: "route", label: "מסלול", width: colWidths.route || 200, render: mkRoute },
+        { id: "vehicleType", label: "סוג רכב", width: colWidths.vehicleType || 100, render: mkVehicle },
+        { id: "p1", label: 'לקוח לפני מע"מ', width: colWidths.p1 || 110, render: mkP1 },
+        { id: "p2", label: 'לקוח כולל מע"מ', width: colWidths.p2 || 110, render: mkP2 },
+      ]
+    } else if (reportType === "report-invoices") {
+      return [
+        { id: "invoiceNum", label: "מס' חשבונית", width: colWidths.invoiceNum || 90, render: mkInvoice },
+        { id: "date", label: "תאריך", width: colWidths.date || 95, render: mkDate },
+        { id: "pickup", label: "הלוך", width: colWidths.pickup || 80, render: mkPickup },
+        { id: "route", label: "מסלול", width: colWidths.route || 200, render: mkRoute },
+        { id: "dropoff", label: "חזור", width: colWidths.dropoff || 80, render: mkDropoff },
+        { id: "vehicleType", label: "סוג רכב", width: colWidths.vehicleType || 100, render: mkVehicle },
+        { id: "p1", label: 'לקוח לפני מע"מ', width: colWidths.p1 || 110, render: mkP1 },
+        { id: "p2", label: 'לקוח כולל מע"מ', width: colWidths.p2 || 110, render: mkP2 },
+      ]
+    } else {
+      // report-profit
+      return [
+        { id: "customer", label: "שם לקוח", width: colWidths.customer || 130, render: mkCustomer },
+        { id: "date", label: "תאריך", width: colWidths.date || 95, render: mkDate },
+        { id: "pickup", label: "הלוך", width: colWidths.pickup || 80, render: mkPickup },
+        { id: "route", label: "מסלול", width: colWidths.route || 200, render: mkRoute },
+        { id: "dropoff", label: "חזור", width: colWidths.dropoff || 80, render: mkDropoff },
+        { id: "vehicleType", label: "סוג רכב", width: colWidths.vehicleType || 100, render: mkVehicle },
+        { id: "driver", label: "שם נהג", width: colWidths.driver || 110, render: mkDriver },
+        { id: "p1", label: 'לקוח לפני מע"מ', width: colWidths.p1 || 100, render: mkP1 },
+        { id: "p2", label: 'לקוח כולל מע"מ', width: colWidths.p2 || 110, render: mkP2 },
+        { id: "p3", label: 'נהג לפני מע"מ', width: colWidths.p3 || 100, render: mkP3 },
+        { id: "p4", label: 'נהג כולל מע"מ', width: colWidths.p4 || 100, render: mkP4 },
+        { id: "profit", label: "רווח", width: colWidths.profit || 80, render: mkProfit, cls: "text-green-600 dark:text-green-400 font-medium" },
+      ]
+    }
+  }, [reportType, WS, colWidths])
   
   const today = new Date()
   const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
@@ -800,22 +870,28 @@ export function ReportPage({ reportType }: ReportPageProps) {
             </div>
           )}
 
-          {hasSearched && filteredData.length > 0 && (
+          {hasSearched && filteredData.length > 0 && reportType !== "report-driver" && (
             <div className="flex flex-wrap gap-3 text-sm bg-muted/20 border rounded px-3 py-1.5 shadow-sm items-center shrink-0 mr-auto">
-              <div className="flex flex-col gap-0.5 whitespace-nowrap">
-                <span>לקוח+ מע"מ: <span className="font-bold">{totals.p1.toLocaleString()} ₪</span></span>
-                <span>לקוח כולל: <span className="font-bold">{totals.p2.toLocaleString()} ₪</span></span>
-              </div>
-              <div className="w-px bg-border self-stretch my-0.5"></div>
-              <div className="flex flex-col gap-0.5 whitespace-nowrap">
-                <span>נהג+ מע"מ: <span className="font-bold">{totals.p3.toLocaleString()} ₪</span></span>
-                <span>נהג כולל: <span className="font-bold">{totals.p4.toLocaleString()} ₪</span></span>
-              </div>
-              <div className="w-px bg-border self-stretch my-0.5"></div>
-              <div className="flex flex-col gap-0.5 text-green-600 dark:text-green-400 font-medium whitespace-nowrap">
-                <span>רווח: <span className="font-bold">{totals.p5.toLocaleString()} ₪</span></span>
-                <span>רווח כולל: <span className="font-bold">{totals.p6.toLocaleString()} ₪</span></span>
-              </div>
+              {(reportType === "report-customer" || reportType === "report-invoices" || reportType === "report-profit") && (
+                <div className="flex flex-col gap-0.5 whitespace-nowrap">
+                  <span>לקוח+ מע"מ: <span className="font-bold">{totals.p1.toLocaleString()} ₪</span></span>
+                  <span>לקוח כולל: <span className="font-bold">{totals.p2.toLocaleString()} ₪</span></span>
+                </div>
+              )}
+              {reportType === "report-profit" && (
+                <>
+                  <div className="w-px bg-border self-stretch my-0.5"></div>
+                  <div className="flex flex-col gap-0.5 whitespace-nowrap">
+                    <span>נהג+ מע"מ: <span className="font-bold">{totals.p3.toLocaleString()} ₪</span></span>
+                    <span>נהג כולל: <span className="font-bold">{totals.p4.toLocaleString()} ₪</span></span>
+                  </div>
+                  <div className="w-px bg-border self-stretch my-0.5"></div>
+                  <div className="flex flex-col gap-0.5 text-green-600 dark:text-green-400 font-medium whitespace-nowrap">
+                    <span>רווח: <span className="font-bold">{totals.p5.toLocaleString()} ₪</span></span>
+                    <span>רווח כולל: <span className="font-bold">{totals.p6.toLocaleString()} ₪</span></span>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -848,20 +924,11 @@ export function ReportPage({ reportType }: ReportPageProps) {
                       onCheckedChange={handleToggleAll} 
                     />
                   </TableHead>
-                  <TableHead className="text-right border-l" style={{ width: colWidths.invoiceNum }}>מס' חשבונית</TableHead>
-                  <TableHead className="text-right border-l" style={{ width: colWidths.date }}>תאריך</TableHead>
-                  <TableHead className="text-right border-l" style={{ width: colWidths.customer }}>שם לקוח</TableHead>
-                  <TableHead className="text-right border-l" style={{ width: colWidths.pickup }}>התייצבות</TableHead>
-                  <TableHead className="text-right border-l" style={{ width: colWidths.route }}>מסלול</TableHead>
-                  <TableHead className="text-right border-l" style={{ width: colWidths.dropoff }}>חזור</TableHead>
-                  <TableHead className="text-right border-l" style={{ width: colWidths.vehicleType }}>סוג רכב</TableHead>
-                  <TableHead className="text-right border-l" style={{ width: colWidths.driver }}>שם נהג</TableHead>
-                  <TableHead className="text-right border-l" style={{ width: colWidths.vehicleNum }}>מספר רכב</TableHead>
-                  <TableHead className="text-right border-l" style={{ width: colWidths.p1 }}>לקוח+ מע״מ</TableHead>
-                  <TableHead className="text-right border-l" style={{ width: colWidths.p2 }}>לקוח כולל מע״מ</TableHead>
-                  <TableHead className="text-right border-l" style={{ width: colWidths.p3 }}>נהג+ מע״מ</TableHead>
-                  <TableHead className="text-right border-l" style={{ width: colWidths.p4 }}>נהג כולל מע״מ</TableHead>
-                  <TableHead className="text-right border-l" style={{ width: colWidths.profit }}>רווח</TableHead>
+                  {tableColumns.map(col => (
+                    <TableHead key={col.id} className="text-right border-l" style={{ width: col.width }}>
+                      {col.label}
+                    </TableHead>
+                  ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -878,20 +945,11 @@ export function ReportPage({ reportType }: ReportPageProps) {
                             onCheckedChange={() => handleToggleRow(record.id)} 
                           />
                         </TableCell>
-                        <TableCell className="text-right border-l truncate">{record.fields[INVOICE_FIELD_ID] || "-"}</TableCell>
-                        <TableCell className="text-right border-l truncate">{record.fields[WS.DATE] ? format(new Date(record.fields[WS.DATE]), "dd/MM/yyyy") : "-"}</TableCell>
-                        <TableCell className="text-right border-l truncate">{renderLinkField(record.fields[WS.CUSTOMER])}</TableCell>
-                        <TableCell className="text-right border-l truncate">{record.fields[WS.PICKUP_TIME] || "-"}</TableCell>
-                        <TableCell className="text-right border-l truncate" title={record.fields[WS.DESCRIPTION]}>{record.fields[WS.DESCRIPTION] || "-"}</TableCell>
-                        <TableCell className="text-right border-l truncate">{record.fields[WS.DROPOFF_TIME] || "-"}</TableCell>
-                        <TableCell className="text-right border-l truncate">{renderLinkField(record.fields[WS.VEHICLE_TYPE])}</TableCell>
-                        <TableCell className="text-right border-l truncate">{renderLinkField(record.fields[WS.DRIVER])}</TableCell>
-                        <TableCell className="text-right border-l truncate">{record.fields[WS.VEHICLE_NUM] || "-"}</TableCell>
-                        <TableCell className="text-right border-l">{(Number(record.fields[WS.PRICE_CLIENT_EXCL]) || 0).toLocaleString()}</TableCell>
-                        <TableCell className="text-right border-l">{(Number(record.fields[WS.PRICE_CLIENT_INCL]) || 0).toLocaleString()}</TableCell>
-                        <TableCell className="text-right border-l">{(Number(record.fields[WS.PRICE_DRIVER_EXCL]) || 0).toLocaleString()}</TableCell>
-                        <TableCell className="text-right border-l">{(Number(record.fields[WS.PRICE_DRIVER_INCL]) || 0).toLocaleString()}</TableCell>
-                        <TableCell className="text-right border-l text-green-600 dark:text-green-400 font-medium">{(Number(record.fields[WS.PROFIT]) || 0).toLocaleString()}</TableCell>
+                        {tableColumns.map(col => (
+                          <TableCell key={col.id} className={`text-right border-l truncate ${col.cls || ""}`}>
+                            {col.render(record)}
+                          </TableCell>
+                        ))}
                       </TableRow>
                     </ContextMenuTrigger>
                     <ContextMenuContent dir="rtl" className="w-48">
