@@ -653,9 +653,9 @@ function DataGrid({ schema }: { schema?: any }) {
         <div className="flex items-center gap-2 flex-wrap">
           <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
             <PopoverTrigger asChild>
-              <Button variant={"outline"} className="w-[200px] justify-start text-right font-normal shrink-0">
+              <Button variant={"outline"} className="w-[260px] justify-start text-right font-normal shrink-0">
                 <CalendarIcon className="ml-2 h-4 w-4" />
-                {format(dateFilter, "PPP", { locale: he })}
+                {format(dateFilter, "EEEE '|' PPP", { locale: he })}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="end" side="bottom">
