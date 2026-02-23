@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { getTenantFromRequest, isTenantError } from '@/lib/api-tenant-helper';
 
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
 async function safeJsonParse(response: Response) {
   const text = await response.text();

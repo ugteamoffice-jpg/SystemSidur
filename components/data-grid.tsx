@@ -281,6 +281,7 @@ function DataGrid({ schema }: { schema?: any }) {
   const [isRefreshing, setIsRefreshing] = React.useState(false)
   const tableScrollRef = React.useRef<HTMLDivElement>(null)
   const [dateFilter, setDateFilter] = React.useState<Date>(new Date())
+  const dateFilterRef = React.useRef<Date>(new Date())
   const [currentMonth, setCurrentMonth] = React.useState<Date>(new Date())
   
   // טעינת רוחב עמודות מ-localStorage
@@ -366,7 +367,8 @@ function DataGrid({ schema }: { schema?: any }) {
 
   const fetchData = async () => {
     try {
-      const url = `/api/work-schedule?tenant=${tenantId}&take=1000&_t=${Date.now()}`
+      const dateStr = format(dateFilterRef.current, "yyyy-MM-dd")
+      const url = `/api/work-schedule?tenant=${tenantId}&date=${dateStr}&take=1000&_t=${Date.now()}`
       console.log('[fetchData] Fetching:', url)
       const response = await fetch(url, {
         cache: 'no-store',
@@ -565,7 +567,7 @@ function DataGrid({ schema }: { schema?: any }) {
     }, 2000)
   }, [])
 
-  React.useEffect(() => { fetchData() }, [])
+  // initial fetch handled by dateFilter effect below
 
   // Auto-refresh every 30 seconds so all users see the latest data
   React.useEffect(() => {
@@ -577,6 +579,7 @@ function DataGrid({ schema }: { schema?: any }) {
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
+      dateFilterRef.current = date
       setDateFilter(date)
       setCurrentMonth(date)
       setIsCalendarOpen(false)
@@ -585,10 +588,17 @@ function DataGrid({ schema }: { schema?: any }) {
 
   const handleTodayClick = () => {
     const today = new Date()
+    dateFilterRef.current = today
     setDateFilter(today)
     setCurrentMonth(today)
     setIsCalendarOpen(false)
   }
+
+  // Refetch when date changes
+  React.useEffect(() => {
+    dateFilterRef.current = dateFilter
+    fetchData()
+  }, [dateFilter])
 
   const filteredData = React.useMemo(() => {
     let filtered = data
