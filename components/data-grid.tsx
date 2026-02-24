@@ -685,7 +685,7 @@ function DataGrid({ schema }: { schema?: any }) {
         <div className="flex items-center gap-1 md:gap-2 flex-nowrap overflow-hidden">
           <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
             <PopoverTrigger asChild>
-              <Button variant={"outline"} className="justify-start text-right font-normal shrink-0 text-[11px] md:text-sm h-8 md:h-9 px-2 md:px-3">
+              <Button variant={"outline"} className="w-[240px] justify-start text-right font-normal shrink-0 text-[11px] md:text-sm h-8 md:h-9 px-2 md:px-3">
                 <CalendarIcon className="ml-1 md:ml-2 h-3.5 w-3.5 md:h-4 md:w-4" />
                 {format(dateFilter, "EEEE '|' PPP", { locale: he })}
               </Button>
@@ -776,7 +776,7 @@ function DataGrid({ schema }: { schema?: any }) {
                   </div>
                   <div className="flex items-center gap-1 lg:gap-2 text-green-600 dark:text-green-400">
                       <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span className="text-[10px] lg:text-xs font-medium">מאושרות: <span className="font-bold text-xs lg:text-sm">{totals.approved}</span></span>
+                      <span className="text-[10px] lg:text-xs font-medium">נסיעות מאושרות: <span className="font-bold text-xs lg:text-sm">{totals.approved}</span></span>
                   </div>
               </div>
 
