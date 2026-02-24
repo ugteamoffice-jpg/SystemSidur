@@ -333,7 +333,7 @@ export function SplitRideDialog({ open, onOpenChange, record, onSplit }: any) {
             })}
           >
             <CalendarIcon className="ml-2 h-4 w-4" />
-            {trip.date ? format(trip.date, "PPP", { locale: he }) : "בחר תאריך"}
+            {trip.date ? format(trip.date, "EEEE '|' PPP", { locale: he }) : "בחר תאריך"}
           </Button>
         </div>
 

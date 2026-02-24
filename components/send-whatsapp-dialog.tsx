@@ -343,7 +343,7 @@ export function SendWhatsappDialog({
                 <PopoverTrigger asChild>
                   <Button variant={"outline"} className="w-full justify-start text-right">
                     <CalendarIcon className="ml-2 h-4 w-4" />
-                    {startDate ? format(startDate, "PPP", { locale: he }) : "בחר תאריך"}
+                    {startDate ? format(startDate, "EEEE '|' PPP", { locale: he }) : "בחר תאריך"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start" side="bottom">
@@ -370,7 +370,7 @@ export function SendWhatsappDialog({
                 <PopoverTrigger asChild>
                   <Button variant={"outline"} className="w-full justify-start text-right">
                     <CalendarIcon className="ml-2 h-4 w-4" />
-                    {endDate ? format(endDate, "PPP", { locale: he }) : "בחר תאריך"}
+                    {endDate ? format(endDate, "EEEE '|' PPP", { locale: he }) : "בחר תאריך"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start" side="bottom">

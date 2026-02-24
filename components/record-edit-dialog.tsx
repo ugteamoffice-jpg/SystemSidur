@@ -155,7 +155,7 @@ export function RecordEditDialog({ record, schema, open, onOpenChange, onSave }:
                 className={cn("w-full justify-start text-right font-normal", !dateValue && "text-muted-foreground")}
               >
                 <CalendarIcon className="ml-2 h-4 w-4" />
-                {dateValue ? format(dateValue, "PPP", { locale: he }) : ""}
+                {dateValue ? format(dateValue, "EEEE '|' PPP", { locale: he }) : ""}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">

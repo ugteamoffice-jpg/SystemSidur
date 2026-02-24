@@ -504,7 +504,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                       type="button"
                     >
                       <CalendarIcon className="ml-1 h-3.5 w-3.5" />
-                      {date ? format(date, "PPP", { locale: he }) : "בחר תאריך"}
+                      {date ? format(date, "EEEE '|' PPP", { locale: he }) : "בחר תאריך"}
                     </Button>
                   </div>
                   <div>

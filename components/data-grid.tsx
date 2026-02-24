@@ -1134,7 +1134,7 @@ function DataGrid({ schema }: { schema?: any }) {
                       })}
                     >
                       <CalendarIcon className="ml-2 h-4 w-4" />
-                      {newDate ? format(newDate, "PPP", { locale: he }) : "בחר תאריך"}
+                      {newDate ? format(newDate, "EEEE '|' PPP", { locale: he }) : "בחר תאריך"}
                     </Button>
                   </div>
                 )}
@@ -1191,7 +1191,7 @@ function DataGrid({ schema }: { schema?: any }) {
                       })}
                     >
                       <CalendarIcon className="ml-2 h-4 w-4" />
-                      {startDate ? format(startDate, "PPP", { locale: he }) : "בחר תאריך"}
+                      {startDate ? format(startDate, "EEEE '|' PPP", { locale: he }) : "בחר תאריך"}
                     </Button>
                   </div>
 
@@ -1209,7 +1209,7 @@ function DataGrid({ schema }: { schema?: any }) {
                       })}
                     >
                       <CalendarIcon className="ml-2 h-4 w-4" />
-                      {endDate ? format(endDate, "PPP", { locale: he }) : "בחר תאריך"}
+                      {endDate ? format(endDate, "EEEE '|' PPP", { locale: he }) : "בחר תאריך"}
                     </Button>
                   </div>
                 </div>
