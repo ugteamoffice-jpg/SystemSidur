@@ -1043,8 +1043,21 @@ function DataGrid({ schema }: { schema?: any }) {
                       const allApproved = selectedRows.every(r => r.original.fields[WS.APPROVED]);
                       const noneSent = selectedRows.every(r => !r.original.fields[WS.SENT]);
                       const noneApproved = selectedRows.every(r => !r.original.fields[WS.APPROVED]);
+                      const someHaveDriver = selectedRows.some(r => {
+                        const d = r.original.fields[WS.DRIVER];
+                        return d && (!Array.isArray(d) || d.length > 0);
+                      });
                       return (
                         <>
+                          <div className="h-px bg-border my-1" />
+                          <ContextMenuItem onSelect={() => { fetchDriversList(); setShowDriverAssignDialog(true); }} className="cursor-pointer text-right">
+                            שיבוץ נהג ל-{count} נסיעות
+                          </ContextMenuItem>
+                          {someHaveDriver && (
+                            <ContextMenuItem onSelect={() => { bulkUpdateField(selectedRows, WS.DRIVER, null); }} className="cursor-pointer text-right text-red-500">
+                              מחק נהג מ-{count} נסיעות
+                            </ContextMenuItem>
+                          )}
                           <div className="h-px bg-border my-1" />
                           {!allSent && (
                             <ContextMenuItem onSelect={() => { bulkUpdateField(selectedRows, WS.SENT, true); }} className="cursor-pointer text-right">
@@ -1066,10 +1079,6 @@ function DataGrid({ schema }: { schema?: any }) {
                               בטל מאושר ל-{count} נסיעות
                             </ContextMenuItem>
                           )}
-                          <div className="h-px bg-border my-1" />
-                          <ContextMenuItem onSelect={() => { fetchDriversList(); setShowDriverAssignDialog(true); }} className="cursor-pointer text-right">
-                            שיבוץ נהג ל-{count} נסיעות
-                          </ContextMenuItem>
                         </>
                       );
                     })()}
