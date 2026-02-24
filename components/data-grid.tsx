@@ -326,6 +326,10 @@ function DataGrid({ schema }: { schema?: any }) {
   const [isCalendarOpen, setIsCalendarOpen] = React.useState(false)
   const [isResizing, setIsResizing] = React.useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false)
+  const [showDriverAssignDialog, setShowDriverAssignDialog] = React.useState(false)
+  const [driversList, setDriversList] = React.useState<{id: string, title: string}[]>([])
+  const [selectedDriverId, setSelectedDriverId] = React.useState("")
+  const [driverSearch, setDriverSearch] = React.useState("")
   
   // Context Menu states
   const [contextRecord, setContextRecord] = React.useState<WorkScheduleRecord | null>(null)
@@ -443,6 +447,54 @@ function DataGrid({ schema }: { schema?: any }) {
       if (failCount > 0) {
         toast({ title: `${failCount} רשומות נכשלו בעדכון`, variant: "destructive" })
         fetchData()
+      }
+    })
+  }
+
+  const handleDeleteSelected = async () => {
+
+  const fetchDriversList = async () => {
+    try {
+      const DRV = fields?.drivers
+      const res = await fetch(`/api/drivers?tenant=${tenantId}`)
+      const json = await res.json()
+      if (!json.records) return
+      const items = json.records.map((x: any) => {
+        const first = x.fields?.[DRV?.FIRST_NAME || ""] || ""
+        const last = x.fields?.[DRV?.LAST_NAME || ""] || ""
+        return { id: x.id, title: `${first} ${last}`.trim() }
+      }).filter((d: any) => d.title)
+      setDriversList(items)
+    } catch {}
+  }
+
+  const handleBulkAssignDriver = () => {
+    if (!selectedDriverId) return
+    const driver = driversList.find(d => d.id === selectedDriverId)
+    if (!driver) return
+    const selectedRows = table.getFilteredSelectedRowModel().rows
+    const ids = selectedRows.map(r => r.original.id)
+    // עדכון UI מיידי
+    setData(prev => prev.map(rec => ids.includes(rec.id) ? { ...rec, fields: { ...rec.fields, [WS.DRIVER]: [{ id: driver.id, title: driver.title }] } } : rec))
+    setRowSelection({})
+    setShowDriverAssignDialog(false)
+    setSelectedDriverId("")
+    setDriverSearch("")
+    // שרת ברקע
+    Promise.all(ids.map(id =>
+      requestQueue.add(() =>
+        fetch(`/api/work-schedule?tenant=${tenantId}`, {
+          method: "PATCH",
+          body: JSON.stringify({ recordId: id, fields: { [WS.DRIVER]: [driver.id] } })
+        }).then(r => r.ok).catch(() => false)
+      )
+    )).then(results => {
+      const failCount = results.filter(ok => !ok).length
+      if (failCount > 0) {
+        toast({ title: `${failCount} נסיעות נכשלו בשיבוץ נהג`, variant: "destructive" })
+        fetchData()
+      } else {
+        toast({ title: "הצלחה", description: `נהג ${driver.title} שובץ ל-${ids.length} נסיעות` })
       }
     })
   }
@@ -1016,6 +1068,10 @@ function DataGrid({ schema }: { schema?: any }) {
                               בטל מאושר ל-{count} נסיעות
                             </ContextMenuItem>
                           )}
+                          <div className="h-px bg-border my-1" />
+                          <ContextMenuItem onSelect={() => { fetchDriversList(); setShowDriverAssignDialog(true); }} className="cursor-pointer text-right">
+                            שיבוץ נהג ל-{count} נסיעות
+                          </ContextMenuItem>
                         </>
                       );
                     })()}
@@ -1050,6 +1106,46 @@ function DataGrid({ schema }: { schema?: any }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialog לשיבוץ נהג */}
+      <Dialog open={showDriverAssignDialog} onOpenChange={(open) => { setShowDriverAssignDialog(open); if (!open) { setSelectedDriverId(""); setDriverSearch(""); } }}>
+        <DialogContent className="sm:max-w-[400px]" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right">שיבוץ נהג ל-{selectedCount} נסיעות</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              placeholder="חיפוש נהג..."
+              value={driverSearch}
+              onChange={(e) => setDriverSearch(e.target.value)}
+              className="mb-2 text-right"
+            />
+            <div className="max-h-[250px] overflow-auto border rounded-md">
+              {driversList
+                .filter(d => d.title.includes(driverSearch))
+                .map(d => (
+                  <button
+                    key={d.id}
+                    className={cn(
+                      "w-full text-right px-3 py-2 text-sm hover:bg-accent transition-colors",
+                      selectedDriverId === d.id && "bg-accent font-bold"
+                    )}
+                    onClick={() => setSelectedDriverId(d.id)}
+                  >
+                    {d.title}
+                  </button>
+                ))}
+              {driversList.filter(d => d.title.includes(driverSearch)).length === 0 && (
+                <div className="text-center text-sm text-muted-foreground py-4">לא נמצאו נהגים</div>
+              )}
+            </div>
+          </div>
+          <DialogFooter className="flex-row-reverse gap-2">
+            <Button variant="outline" onClick={() => setShowDriverAssignDialog(false)}>ביטול</Button>
+            <Button onClick={handleBulkAssignDriver} disabled={!selectedDriverId}>שבץ נהג</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Dialog לשכפול */}
       <Dialog open={showDuplicateDialog} onOpenChange={(open) => { setShowDuplicateDialog(open); if (!open) setBulkDuplicateRecords([]); }}>
