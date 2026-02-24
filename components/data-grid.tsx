@@ -12,6 +12,7 @@ import {
   useReactTable,
   ColumnSizingState,
   ColumnOrderState,
+  VisibilityState,
 } from "@tanstack/react-table"
 import { Calendar as CalendarIcon, LayoutDashboard, AlertCircle, CheckCircle2, UserMinus, Trash2, Loader2, ChevronLeft, ChevronRight } from "lucide-react"
 import { format } from "date-fns"
@@ -273,6 +274,7 @@ function DataGrid({ schema }: { schema?: any }) {
   const { tenantId } = useTenant()
   const COLUMN_SIZING_KEY = `workScheduleColumnSizing_${tenantId}`
   const COLUMN_ORDER_KEY  = `workScheduleColumnOrder_${tenantId}`
+  const COLUMN_VISIBILITY_KEY = `workScheduleColumnVisibility_${tenantId}`
   const WS = fields?.workSchedule || {} as any
   const columns = React.useMemo(() => createColumns(WS), [WS])
   const [data, setData] = React.useState<WorkScheduleRecord[]>([])
@@ -307,6 +309,15 @@ function DataGrid({ schema }: { schema?: any }) {
       } catch {}
     }
     return []
+  })
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem(COLUMN_VISIBILITY_KEY)
+        if (saved) return JSON.parse(saved)
+      } catch {}
+    }
+    return {}
   })
   const [draggingColId, setDraggingColId] = React.useState<string | null>(null)
   
@@ -364,6 +375,23 @@ function DataGrid({ schema }: { schema?: any }) {
       try { localStorage.setItem(COLUMN_ORDER_KEY, JSON.stringify(columnOrder)) } catch {}
     }
   }, [columnOrder])
+
+  // שמירת נראות עמודות ב-localStorage
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && Object.keys(columnVisibility).length > 0) {
+      try { localStorage.setItem(COLUMN_VISIBILITY_KEY, JSON.stringify(columnVisibility)) } catch {}
+    }
+  }, [columnVisibility])
+
+  // סנכרון נראות עמודות מהכותרת
+  React.useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail
+      setColumnVisibility(detail || {})
+    }
+    window.addEventListener("columnVisibilityChange", handler)
+    return () => window.removeEventListener("columnVisibilityChange", handler)
+  }, [])
 
   const fetchData = async () => {
     try {
@@ -650,9 +678,9 @@ function DataGrid({ schema }: { schema?: any }) {
   const table = useReactTable({
     data: filteredData, columns, columnResizeMode: "onChange", getCoreRowModel: getCoreRowModel(), getSortedRowModel: getSortedRowModel(), getFilteredRowModel: getFilteredRowModel(),
     onRowSelectionChange: setRowSelection, onColumnSizingChange: setColumnSizing, onSortingChange: setSorting,
-    onColumnOrderChange: setColumnOrder,
+    onColumnOrderChange: setColumnOrder, onColumnVisibilityChange: setColumnVisibility,
     enableSortingRemoval: false,
-    meta: { updateRecordField }, state: { rowSelection, columnSizing, sorting, columnOrder },
+    meta: { updateRecordField }, state: { rowSelection, columnSizing, sorting, columnOrder, columnVisibility },
   })
 
   const totals = React.useMemo(() => {

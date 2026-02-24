@@ -1,16 +1,23 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Database, Moon, Sun, Settings, ChevronDown } from "lucide-react"
+import { Database, Moon, Sun, Settings, ChevronDown, Eye } from "lucide-react"
 import { useTheme } from "next-themes"
 import dynamic from "next/dynamic"
 import { ReportSettingsDialog } from "@/components/report-settings-dialog"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useTenant } from "@/lib/tenant-context"
 
 const UserButton = dynamic(() => import("@clerk/nextjs").then(mod => mod.UserButton), { ssr: false })
 
@@ -26,6 +33,48 @@ interface AppHeaderProps {
 export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
   const { theme, setTheme } = useTheme()
   const [showReportSettings, setShowReportSettings] = useState(false)
+  const { tenantId } = useTenant()
+
+  const COLUMN_VISIBILITY_KEY = `workScheduleColumnVisibility_${tenantId}`
+
+  const toggleableColumns = [
+    { id: "sent", label: "שלח" },
+    { id: "approved", label: "מאושר" },
+    { id: "customer", label: "שם לקוח" },
+    { id: "pickup", label: "התייצבות" },
+    { id: "route", label: "מסלול" },
+    { id: "destination", label: "חזור" },
+    { id: "vehicleType", label: "סוג רכב" },
+    { id: "driver", label: "שם נהג" },
+    { id: "vehicleNumber", label: "מספר רכב" },
+    { id: "price1", label: "מחיר לקוח+ מע״מ" },
+    { id: "price2", label: "מחיר לקוח כולל מע״מ" },
+    { id: "price3", label: "מחיר נהג+ מע״מ" },
+    { id: "price4", label: "מחיר נהג כולל מע״מ" },
+  ]
+
+  const [colVisibility, setColVisibility] = useState<Record<string, boolean>>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem(COLUMN_VISIBILITY_KEY)
+        if (saved) return JSON.parse(saved)
+      } catch {}
+    }
+    return {}
+  })
+
+  const updateVisibility = (colId: string, visible: boolean) => {
+    const updated = { ...colVisibility, [colId]: visible }
+    setColVisibility(updated)
+    localStorage.setItem(COLUMN_VISIBILITY_KEY, JSON.stringify(updated))
+    window.dispatchEvent(new CustomEvent("columnVisibilityChange", { detail: updated }))
+  }
+
+  const resetVisibility = () => {
+    setColVisibility({})
+    localStorage.removeItem(COLUMN_VISIBILITY_KEY)
+    window.dispatchEvent(new CustomEvent("columnVisibilityChange", { detail: {} }))
+  }
   
   const navItems = [
     { id: "work-schedule" as PageType, label: "סידור עבודה" },
@@ -89,6 +138,33 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
             </div>
             
             <div className="flex items-center gap-1 md:gap-2 shrink-0">
+              {activePage === "work-schedule" && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="icon" className="h-8 w-8" title="הצג/הסתר עמודות">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[220px] p-2" align="end" side="bottom" dir="rtl">
+                    <div className="text-sm font-medium mb-2">עמודות</div>
+                    <div className="flex flex-col gap-1">
+                      {toggleableColumns.map(col => (
+                        <label key={col.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-accent rounded px-2 py-1">
+                          <Checkbox
+                            checked={colVisibility[col.id] !== false}
+                            onCheckedChange={(checked) => updateVisibility(col.id, !!checked)}
+                            className="h-4 w-4"
+                          />
+                          {col.label}
+                        </label>
+                      ))}
+                    </div>
+                    <Button variant="ghost" size="sm" className="w-full mt-2 text-xs" onClick={resetVisibility}>
+                      איפוס ברירת מחדל
+                    </Button>
+                  </PopoverContent>
+                </Popover>
+              )}
               <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setShowReportSettings(true)} title="הגדרות ייצוא דוח">
                 <Settings className="h-4 w-4" />
               </Button>
