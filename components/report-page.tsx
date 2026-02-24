@@ -823,10 +823,10 @@ export function ReportPage({ reportType }: ReportPageProps) {
         </DialogContent>
       </Dialog>
 
-      <div className="w-full h-[calc(100vh-2rem)] flex flex-col p-4 overflow-hidden" dir="rtl">
-        <div className="flex items-center gap-3 pb-3 flex-none flex-wrap">
-          <Button variant="outline" size="sm" onClick={openFilterDialog} className="shrink-0">
-            <SlidersHorizontal className="h-4 w-4 ml-2" />
+      <div className="w-full h-[calc(100vh-2rem)] flex flex-col p-2 md:p-4 overflow-hidden" dir="rtl">
+        <div className="flex items-center gap-1.5 md:gap-3 pb-2 md:pb-3 flex-none flex-nowrap overflow-hidden">
+          <Button variant="outline" size="sm" onClick={openFilterDialog} className="shrink-0 text-xs md:text-sm h-8 md:h-9 px-2 md:px-3">
+            <SlidersHorizontal className="h-3.5 w-3.5 md:h-4 md:w-4 ml-1 md:ml-2" />
             שינוי סינון
           </Button>
 
@@ -834,7 +834,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
           <Button 
             variant={selectedRowIds.size > 0 ? "default" : "outline"} 
             size="sm" 
-            className={`shrink-0 transition-colors ${selectedRowIds.size > 0 ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'opacity-50 cursor-not-allowed'}`}
+            className={`shrink-0 transition-colors text-xs md:text-sm h-8 md:h-9 px-2 md:px-3 ${selectedRowIds.size > 0 ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'opacity-50 cursor-not-allowed'}`}
             onClick={() => setShowInvoiceDialog(true)}
             disabled={selectedRowIds.size === 0}
           >
@@ -845,8 +845,8 @@ export function ReportPage({ reportType }: ReportPageProps) {
           {hasSearched && filteredData.length > 0 && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="shrink-0">
-                  <Download className="h-4 w-4 ml-2" />
+                <Button variant="outline" size="sm" className="shrink-0 text-xs md:text-sm h-8 md:h-9 px-2 md:px-3">
+                  <Download className="h-3.5 w-3.5 md:h-4 md:w-4 ml-1 md:ml-2" />
                   ייצוא דוח
                 </Button>
               </DropdownMenuTrigger>
@@ -864,24 +864,24 @@ export function ReportPage({ reportType }: ReportPageProps) {
           )}
 
           {hasSearched && (
-            <div className="text-xs text-muted-foreground border rounded px-3 py-1.5 bg-muted/30 shrink-0">
+            <div className="text-[10px] md:text-xs text-muted-foreground border rounded px-2 md:px-3 py-1 md:py-1.5 bg-muted/30 shrink-0">
               {filterSummary}
             </div>
           )}
 
           {hasSearched && (
-            <Input placeholder="חיפוש חופשי..." value={globalFilter} onChange={(e) => setGlobalFilter(e.target.value)} className="w-[200px] h-9 shrink-0" />
+            <Input placeholder="חיפוש חופשי..." value={globalFilter} onChange={(e) => setGlobalFilter(e.target.value)} className="w-[120px] md:w-[200px] h-8 md:h-9 text-xs md:text-sm shrink-0" />
           )}
 
           {hasSearched && (
-            <div className="flex items-center gap-2 bg-card border rounded px-3 py-1.5 shadow-sm shrink-0">
-              <LayoutDashboard className="w-4 h-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">סה"כ שורות: <span className="font-bold text-foreground text-sm">{totals.totalRows}</span></span>
+            <div className="flex items-center gap-1 md:gap-2 bg-card border rounded px-2 md:px-3 py-1 md:py-1.5 shadow-sm shrink-0">
+              <LayoutDashboard className="w-3.5 h-3.5 md:w-4 md:h-4 text-muted-foreground" />
+              <span className="text-[10px] md:text-xs text-muted-foreground">סה"כ שורות: <span className="font-bold text-foreground text-xs md:text-sm">{totals.totalRows}</span></span>
             </div>
           )}
 
           {hasSearched && filteredData.length > 0 && (
-            <div className="flex flex-wrap gap-3 text-sm bg-muted/20 border rounded px-3 py-1.5 shadow-sm items-center shrink-0 mr-auto">
+            <div className="hidden md:flex gap-2 lg:gap-3 text-[10px] lg:text-sm bg-muted/20 border rounded px-2 lg:px-3 py-1 lg:py-1.5 shadow-sm items-center shrink-0 mr-auto">
               {(reportType === "report-customer" || reportType === "report-invoices" || reportType === "report-profit") && (
                 <div className="flex flex-col gap-0.5 whitespace-nowrap">
                   <span>לקוח לפני מע"מ: <span className="font-bold">{totals.p1.toLocaleString()} ₪</span></span>

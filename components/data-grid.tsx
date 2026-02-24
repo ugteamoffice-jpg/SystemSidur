@@ -13,7 +13,7 @@ import {
   ColumnSizingState,
   ColumnOrderState,
 } from "@tanstack/react-table"
-import { Calendar as CalendarIcon, LayoutDashboard, AlertCircle, CheckCircle2, UserMinus, Trash2, Loader2, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react"
+import { Calendar as CalendarIcon, LayoutDashboard, AlertCircle, CheckCircle2, UserMinus, Trash2, Loader2, ChevronLeft, ChevronRight } from "lucide-react"
 import { format } from "date-fns"
 import { he } from "date-fns/locale"
 import { requestQueue } from "@/lib/request-queue"
@@ -279,7 +279,6 @@ function DataGrid({ schema }: { schema?: any }) {
   const [rowSelection, setRowSelection] = React.useState({})
   const [globalFilter, setGlobalFilter] = React.useState("")
   const [refreshKey, setRefreshKey] = React.useState(0)
-  const [isRefreshing, setIsRefreshing] = React.useState(false)
   const tableScrollRef = React.useRef<HTMLDivElement>(null)
   const [dateFilter, setDateFilter] = React.useState<Date>(new Date())
   const dateFilterRef = React.useRef<Date>(new Date())
@@ -680,14 +679,14 @@ function DataGrid({ schema }: { schema?: any }) {
   const selectedCount = table.getFilteredSelectedRowModel().rows.length;
 
   return (
-    <div className="w-full h-[calc(100vh-2rem)] flex flex-col space-y-2 p-2 md:p-4 overflow-hidden" dir="rtl">
-      <div className="flex flex-col gap-2 flex-none">
+    <div className="w-full h-[calc(100vh-2rem)] flex flex-col space-y-1 md:space-y-2 p-1.5 md:p-4 overflow-hidden" dir="rtl">
+      <div className="flex flex-col gap-1 md:gap-2 flex-none">
         {/* שורה אחת - הכל */}
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-1 md:gap-2 flex-nowrap overflow-hidden">
           <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
             <PopoverTrigger asChild>
-              <Button variant={"outline"} className="w-[260px] justify-start text-right font-normal shrink-0">
-                <CalendarIcon className="ml-2 h-4 w-4" />
+              <Button variant={"outline"} className="justify-start text-right font-normal shrink-0 text-[11px] md:text-sm h-8 md:h-9 px-2 md:px-3">
+                <CalendarIcon className="ml-1 md:ml-2 h-3.5 w-3.5 md:h-4 md:w-4" />
                 {format(dateFilter, "EEEE '|' PPP", { locale: he })}
               </Button>
             </PopoverTrigger>
@@ -713,7 +712,7 @@ function DataGrid({ schema }: { schema?: any }) {
           <Button
             variant="outline"
             size="icon"
-            className="shrink-0 h-9 w-9"
+            className="shrink-0 h-8 w-8 md:h-9 md:w-9"
             title="יום קודם"
             onClick={() => {
               const prev = new Date(dateFilter)
@@ -722,12 +721,12 @@ function DataGrid({ schema }: { schema?: any }) {
               setCurrentMonth(prev)
             }}
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-3.5 w-3.5 md:h-4 md:w-4" />
           </Button>
           <Button
             variant="outline"
             size="icon"
-            className="shrink-0 h-9 w-9"
+            className="shrink-0 h-8 w-8 md:h-9 md:w-9"
             title="יום הבא"
             onClick={() => {
               const next = new Date(dateFilter)
@@ -736,7 +735,7 @@ function DataGrid({ schema }: { schema?: any }) {
               setCurrentMonth(next)
             }}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-3.5 w-3.5 md:h-4 md:w-4" />
           </Button>
 
           <RideDialog 
@@ -749,69 +748,54 @@ function DataGrid({ schema }: { schema?: any }) {
             variant="outline" 
             size="icon" 
             className={cn(
-                "shrink-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950 transition-colors",
+                "shrink-0 h-8 w-8 md:h-9 md:w-9 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950 transition-colors",
                 selectedCount === 0 && "opacity-50"
             )}
             onClick={() => setShowDeleteDialog(true)}
             disabled={selectedCount === 0}
             title="מחק נסיעות מסומנות"
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-3.5 w-3.5 md:h-4 md:w-4" />
           </Button>
 
-          <Button 
-            variant="outline" 
-            size="icon" 
-            className="shrink-0"
-            onClick={async () => {
-              setIsRefreshing(true)
-              await fetchData()
-              setIsRefreshing(false)
-            }}
-            disabled={isRefreshing}
-            title="רענון נתונים"
-          >
-            <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
-          </Button>
-          
-          <div className="w-[150px] shrink-0">
+          <div className="w-[100px] md:w-[150px] shrink-0">
             <Input 
                 placeholder="חיפוש..." 
                 value={globalFilter} 
                 onChange={(e) => setGlobalFilter(e.target.value)} 
-                className="w-full h-9" 
+                className="w-full h-8 md:h-9 text-xs md:text-sm" 
             />
           </div>
 
           {/* חלון סיכום סה"כ שורות */}
-          <div className="hidden md:flex bg-card p-2 px-4 rounded-md border shadow-sm items-center gap-6 whitespace-nowrap">
-              <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
-                      <LayoutDashboard className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-muted-foreground text-xs font-medium">סה"כ שורות: <span className="font-bold text-foreground text-sm">{totals.totalRows}</span></span>
+          <div className="hidden md:flex bg-card p-1.5 lg:p-2 px-2 lg:px-4 rounded-md border shadow-sm items-center gap-2 lg:gap-4 whitespace-nowrap">
+              <div className="flex flex-col gap-0.5">
+                  <div className="flex items-center gap-1 lg:gap-2">
+                      <LayoutDashboard className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span className="text-muted-foreground text-[10px] lg:text-xs font-medium">סה"כ שורות: <span className="font-bold text-foreground text-xs lg:text-sm">{totals.totalRows}</span></span>
                   </div>
-                  <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span className="text-xs font-medium">נסיעות מאושרות: <span className="font-bold text-sm">{totals.approved}</span></span>
+                  <div className="flex items-center gap-1 lg:gap-2 text-green-600 dark:text-green-400">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span className="text-[10px] lg:text-xs font-medium">מאושרות: <span className="font-bold text-xs lg:text-sm">{totals.approved}</span></span>
                   </div>
               </div>
 
               <div className="w-px bg-border self-stretch my-1"></div>
 
-              <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
-                      <UserMinus className="w-4 h-4" />
-                      <span className="text-xs font-medium">נסיעות ללא נהג: <span className="font-bold text-sm">{totals.noDriver}</span></span>
+              <div className="flex flex-col gap-0.5">
+                  <div className="flex items-center gap-1 lg:gap-2 text-red-600 dark:text-red-400">
+                      <UserMinus className="w-3.5 h-3.5" />
+                      <span className="text-[10px] lg:text-xs font-medium">ללא נהג: <span className="font-bold text-xs lg:text-sm">{totals.noDriver}</span></span>
                   </div>
-                  <div className="flex items-center gap-2 text-orange-500 dark:text-orange-400">
-                      <AlertCircle className="w-4 w-4" />
-                      <span className="text-xs font-medium">לא נשלחו: <span className="font-bold text-sm">{totals.notSent}</span></span>
+                  <div className="flex items-center gap-1 lg:gap-2 text-orange-500 dark:text-orange-400">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      <span className="text-[10px] lg:text-xs font-medium">לא נשלחו: <span className="font-bold text-xs lg:text-sm">{totals.notSent}</span></span>
                   </div>
               </div>
           </div>
 
           {/* חלון סיכום מחירים */}
-          <div className="hidden lg:flex flex-wrap gap-3 text-sm bg-muted/20 p-2 px-4 rounded-md border shadow-sm items-center">
+          <div className="hidden lg:flex gap-2 xl:gap-3 text-[10px] xl:text-sm bg-muted/20 p-1.5 xl:p-2 px-2 xl:px-4 rounded-md border shadow-sm items-center">
              <div className="flex flex-col gap-0.5 items-start justify-center whitespace-nowrap">
                <span>לקוח+ מע"מ: <span className="font-bold">{totals.p1.toLocaleString()} ₪</span></span>
                <span>לקוח כולל: <span className="font-bold">{totals.p2.toLocaleString()} ₪</span></span>
