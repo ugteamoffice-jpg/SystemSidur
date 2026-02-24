@@ -139,12 +139,12 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
   })
 
   const [status, setStatus] = React.useState({ sent: false, approved: false })
-  const [orderFormFile, setOrderFormFile] = React.useState<File | null>(null)
-  const [newFileName, setNewFileName] = React.useState("")
+  const [orderFormFiles, setOrderFormFiles] = React.useState<{file: File, name: string}[]>([])
   const [existingAttachment, setExistingAttachment] = React.useState<any[]>([])
   const [attachmentDate, setAttachmentDate] = React.useState<string>("")
   const [isUploading, setIsUploading] = React.useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
+  const [editingFileName, setEditingFileName] = React.useState<number | null>(null)
 
   React.useEffect(() => {
     if (open && lists.customers.length === 0) {
@@ -244,8 +244,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
         setStatus({ sent: !!f[FIELDS.SENT], approved: !!f[FIELDS.APPROVED] })
         setExistingAttachment(Array.isArray(f[FIELDS.ORDER_FORM]) ? f[FIELDS.ORDER_FORM] : [])
         setAttachmentDate(f[FIELDS.ORDER_FORM_DATE] || "")
-        setOrderFormFile(null)
-        setNewFileName("")
+        setOrderFormFiles([])
 
         // שמירת "תמונת המצב" המקורית
         initialSnapshotRef.current = {
@@ -269,8 +268,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
         setStatus({ sent: false, approved: false })
         setExistingAttachment([])
         setAttachmentDate("")
-        setOrderFormFile(null)
-        setNewFileName("")
+        setOrderFormFiles([])
         
         const d = defaultDate ? new Date(defaultDate) : new Date();
         setDate(d);
@@ -366,21 +364,22 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
 
       Object.keys(body.fields).forEach(k => body.fields[k] === undefined && delete body.fields[k])
 
-      // Helper: upload file to record
-      const uploadFileToRecord = async (recordId: string) => {
-        if (!orderFormFile) return
+      // Helper: upload files to record
+      const uploadFilesToRecord = async (recordId: string) => {
+        if (orderFormFiles.length === 0) return
         setIsUploading(true)
-        const fd = new FormData()
-        const fileName = newFileName || orderFormFile.name
-        const renamedFile = new File([orderFormFile], fileName, { type: orderFormFile.type })
-        fd.append('file', renamedFile)
-        fd.append('tableId', WS_TABLE_ID)
-        fd.append('recordId', recordId)
-        fd.append('fieldId', FIELDS.ORDER_FORM)
-        const uploadRes = await fetch(`/api/upload-to-record?tenant=${tenantId}`, { method: 'POST', body: fd })
-        if (!uploadRes.ok) {
-          console.error('File upload failed:', await uploadRes.text())
-          toast({ title: "הנסיעה נשמרה אבל העלאת הקובץ נכשלה", variant: "destructive" })
+        for (const entry of orderFormFiles) {
+          const fd = new FormData()
+          const renamedFile = new File([entry.file], entry.name, { type: entry.file.type })
+          fd.append('file', renamedFile)
+          fd.append('tableId', WS_TABLE_ID)
+          fd.append('recordId', recordId)
+          fd.append('fieldId', FIELDS.ORDER_FORM)
+          const uploadRes = await fetch(`/api/upload-to-record?tenant=${tenantId}`, { method: 'POST', body: fd })
+          if (!uploadRes.ok) {
+            console.error('File upload failed:', await uploadRes.text())
+            toast({ title: "הנסיעה נשמרה אבל העלאת קובץ נכשלה", variant: "destructive" })
+          }
         }
         setIsUploading(false)
       }
@@ -401,7 +400,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
         let result = {}
         try { result = await res.json(); } catch { /* empty response is OK */ }
         console.log('[RideDialog] PATCH result:', JSON.stringify(result).slice(0, 200));
-        await uploadFileToRecord(initialData.id)
+        await uploadFilesToRecord(initialData.id)
         console.log('[RideDialog] Edit save OK, calling onRideSaved...')
         setOpen(false);
         if (onRideSaved) onRideSaved();
@@ -426,8 +425,8 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
       const result = await res.json()
       console.log('[RideDialog] POST result:', JSON.stringify(result).slice(0, 300))
       const newRecordId = result?.records?.[0]?.id || result?.id
-      if (newRecordId && orderFormFile) {
-        await uploadFileToRecord(newRecordId)
+      if (newRecordId && orderFormFiles.length > 0) {
+        await uploadFilesToRecord(newRecordId)
       }
 
       // saved successfully - no toast needed
@@ -590,15 +589,15 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                     <Input value={form.vehicleNum} onChange={e => setForm(p => ({ ...p, vehicleNum: e.target.value }))} className="text-right h-8" />
                   </div>
                   <div>
-                    <Label className="text-sm block mb-px"><Upload className="w-3 h-3 inline ml-1" />קובץ</Label>
-                    <div className="flex items-center gap-1">
-                      {existingAttachment.length > 0 ? (
-                        <div className="flex items-center gap-1 flex-1 h-8 px-2 border rounded bg-green-50 text-sm">
+                    <Label className="text-sm block mb-px"><Upload className="w-3 h-3 inline ml-1" />קבצים</Label>
+                    <div className="flex flex-col gap-1">
+                      {/* קבצים קיימים */}
+                      {existingAttachment.map((att, idx) => (
+                        <div key={`existing-${idx}`} className="flex items-center gap-1 h-8 px-2 border rounded bg-green-50 text-sm">
                           <FileText className="w-3 h-3 text-green-600 shrink-0" />
-                          <span className="truncate flex-1">{existingAttachment[0]?.name || 'קובץ'}</span>
-                          {existingAttachment[0]?.token && (
+                          <span className="truncate flex-1">{att?.name || 'קובץ'}</span>
+                          {att?.token && (
                             <Button type="button" variant="ghost" size="sm" className="h-5 px-1 text-blue-600 shrink-0" onClick={() => {
-                              const att = existingAttachment[0]
                               const tenant = window.location.pathname.split('/')[1] || 'UrbanTours'
                               const params = new URLSearchParams({ tenant })
                               if (att.presignedUrl || att.url) params.set('url', att.presignedUrl || att.url)
@@ -609,24 +608,39 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                           )}
                           {isEdit && (
                             <Button type="button" variant="ghost" size="sm" className="h-5 w-5 p-0 text-red-500 shrink-0" onClick={async () => {
-                              setExistingAttachment([])
-                              try { await fetch(`/api/work-schedule/${initialData.id}?tenant=${tenantId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { [FIELDS.ORDER_FORM]: null } }) }) } catch {}
+                              const updated = existingAttachment.filter((_, i) => i !== idx)
+                              setExistingAttachment(updated)
+                              try { await fetch(`/api/work-schedule/${initialData.id}?tenant=${tenantId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { [FIELDS.ORDER_FORM]: updated.length > 0 ? updated : null } }) }) } catch {}
                             }}><X className="w-3 h-3" /></Button>
                           )}
                         </div>
-                      ) : orderFormFile ? (
-                        <div className="flex items-center gap-1 flex-1 h-8 px-2 border rounded bg-blue-50 text-sm">
+                      ))}
+                      {/* קבצים חדשים */}
+                      {orderFormFiles.map((entry, idx) => (
+                        <div key={`new-${idx}`} className="flex items-center gap-1 h-8 px-2 border rounded bg-blue-50 text-sm">
                           <FileText className="w-3 h-3 text-blue-600 shrink-0" />
-                          <span className="truncate flex-1">{newFileName}</span>
-                          <Button type="button" variant="ghost" size="sm" className="h-5 w-5 p-0 text-red-500" onClick={() => { setOrderFormFile(null); setNewFileName(''); if (fileInputRef.current) fileInputRef.current.value = '' }}><X className="w-3 h-3" /></Button>
+                          {editingFileName === idx ? (
+                            <Input 
+                              value={entry.name} 
+                              onChange={(e) => setOrderFormFiles(prev => prev.map((f, i) => i === idx ? { ...f, name: e.target.value } : f))} 
+                              onBlur={() => setEditingFileName(null)}
+                              onKeyDown={(e) => { if (e.key === 'Enter') setEditingFileName(null) }}
+                              className="h-6 text-xs flex-1 px-1"
+                              autoFocus
+                            />
+                          ) : (
+                            <span className="truncate flex-1 cursor-pointer" onClick={() => setEditingFileName(idx)}>{entry.name}</span>
+                          )}
+                          <Button type="button" variant="ghost" size="sm" className="h-5 w-5 p-0 text-muted-foreground shrink-0" onClick={() => setEditingFileName(idx)} title="שנה שם"><Pencil className="w-2.5 h-2.5" /></Button>
+                          <Button type="button" variant="ghost" size="sm" className="h-5 w-5 p-0 text-red-500 shrink-0" onClick={() => { setOrderFormFiles(prev => prev.filter((_, i) => i !== idx)); if (fileInputRef.current) fileInputRef.current.value = '' }}><X className="w-3 h-3" /></Button>
                         </div>
-                      ) : (
-                        <Button type="button" variant="outline" size="sm" className="w-full h-8 text-sm" onClick={() => fileInputRef.current?.click()}>
-                          <Upload className="w-3 h-3 ml-1" /> בחר קובץ
-                        </Button>
-                      )}
+                      ))}
+                      {/* כפתור הוספה */}
+                      <Button type="button" variant="outline" size="sm" className="w-full h-8 text-sm" onClick={() => fileInputRef.current?.click()}>
+                        <Plus className="w-3 h-3 ml-1" /> {existingAttachment.length > 0 || orderFormFiles.length > 0 ? 'הוסף קובץ' : 'בחר קובץ'}
+                      </Button>
                     </div>
-                    <input ref={fileInputRef} type="file" className="hidden" onChange={(e) => { if (e.target.files?.[0]) { setOrderFormFile(e.target.files[0]); setNewFileName(e.target.files[0].name) } }} />
+                    <input ref={fileInputRef} type="file" className="hidden" onChange={(e) => { if (e.target.files?.[0]) { const f = e.target.files[0]; setOrderFormFiles(prev => [...prev, { file: f, name: f.name }]); if (fileInputRef.current) fileInputRef.current.value = '' } }} />
                   </div>
                 </div>
 
