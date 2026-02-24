@@ -171,7 +171,7 @@ export function SendWhatsappDialog({
     const isContractor = driverInfo.type === "קבלן"
 
     const companyPart = settings.companyName ? ` מחברת ${settings.companyName}` : ""
-    let message = `מצ"ב סידור עבודה${companyPart}\n`
+    let message = `לכבוד : ${initialDriverName} , מצ"ב סידור עבודה${companyPart}\n`
 
     let totalBeforeVat = 0
     let totalWithVat = 0
