@@ -451,8 +451,6 @@ function DataGrid({ schema }: { schema?: any }) {
     })
   }
 
-  const handleDeleteSelected = async () => {
-
   const fetchDriversList = async () => {
     try {
       const DRV = fields?.drivers
