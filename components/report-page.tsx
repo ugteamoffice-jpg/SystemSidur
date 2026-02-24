@@ -3,6 +3,7 @@
 import * as React from "react"
 import { format } from "date-fns"
 import { he } from "date-fns/locale"
+import { requestQueue } from "@/lib/request-queue"
 import { Calendar as CalendarIcon, Loader2, Search, X, LayoutDashboard, SlidersHorizontal, Download, FileSpreadsheet, Printer, Receipt } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -392,18 +393,15 @@ export function ReportPage({ reportType }: ReportPageProps) {
     const valueToSave = bulkInvoiceNum.trim() === "" ? null : bulkInvoiceNum
     const ids = Array.from(selectedRowIds)
 
-    const results = await Promise.all(ids.map(async (id) => {
-      try {
-        const res = await fetch(`/api/work-schedule/${id}?tenant=${tenantId}`, {
+    const results = await Promise.all(ids.map((id) =>
+      requestQueue.add(() =>
+        fetch(`/api/work-schedule/${id}?tenant=${tenantId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ fields: { [INVOICE_FIELD_ID]: valueToSave } })
-        })
-        return res.ok
-      } catch {
-        return false
-      }
-    }))
+        }).then(r => r.ok).catch(() => false)
+      )
+    ))
     const errorCount = results.filter(ok => !ok).length
 
     await applyFilters()

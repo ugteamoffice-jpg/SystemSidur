@@ -16,6 +16,7 @@ import {
 import { Calendar as CalendarIcon, LayoutDashboard, AlertCircle, CheckCircle2, UserMinus, Trash2, Loader2, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react"
 import { format } from "date-fns"
 import { he } from "date-fns/locale"
+import { requestQueue } from "@/lib/request-queue"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -396,18 +397,20 @@ function DataGrid({ schema }: { schema?: any }) {
     } catch (error) { toast({ title: "שגיאה בעדכון", variant: "destructive" }); fetchData(); }
   }
 
-  // עדכון אופטימיסטי + מקבילי: מעדכן UI מיד, שולח הכל ברקע
+  // עדכון אופטימיסטי + תור: מעדכן UI מיד, שולח דרך התור ברקע
   const bulkUpdateField = (records: any[], fieldKey: string, value: any) => {
     const ids = records.map(r => r.original.id)
     // עדכון UI מיידי
     setData(prev => prev.map(rec => ids.includes(rec.id) ? { ...rec, fields: { ...rec.fields, [fieldKey]: value } } : rec))
     setRowSelection({})
-    // שרת ברקע במקביל
+    // שרת ברקע דרך התור
     Promise.all(ids.map(id =>
-      fetch(`/api/work-schedule?tenant=${tenantId}`, {
-        method: "PATCH",
-        body: JSON.stringify({ recordId: id, fields: { [fieldKey]: value } })
-      }).then(r => r.ok).catch(() => false)
+      requestQueue.add(() =>
+        fetch(`/api/work-schedule?tenant=${tenantId}`, {
+          method: "PATCH",
+          body: JSON.stringify({ recordId: id, fields: { [fieldKey]: value } })
+        }).then(r => r.ok).catch(() => false)
+      )
     )).then(results => {
       const failCount = results.filter(ok => !ok).length
       if (failCount > 0) {
@@ -430,8 +433,10 @@ function DataGrid({ schema }: { schema?: any }) {
     let failCount = 0
     await Promise.all(idsToDelete.map(async (id) => {
       try {
-        const response = await fetch(`/api/work-schedule?tenant=${tenantId}&id=${id}`, { method: "DELETE" })
-        if (!response.ok) failCount++
+        const ok = await requestQueue.add(() =>
+          fetch(`/api/work-schedule?tenant=${tenantId}&id=${id}`, { method: "DELETE" }).then(r => r.ok)
+        )
+        if (!ok) failCount++
       } catch { failCount++ }
     }))
     
@@ -518,14 +523,16 @@ function DataGrid({ schema }: { schema?: any }) {
             }
             
             allRequests.push(
-              fetch(`/api/work-schedule?tenant=${tenantId}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fields: newFields })
-              }).then(r => {
-                if (!r.ok) throw new Error('Duplicate failed')
-                return r.json()
-              })
+              requestQueue.add(() =>
+                fetch(`/api/work-schedule?tenant=${tenantId}`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ fields: newFields })
+                }).then(r => {
+                  if (!r.ok) throw new Error('Duplicate failed')
+                  return r.json()
+                })
+              )
             )
           }
         }
