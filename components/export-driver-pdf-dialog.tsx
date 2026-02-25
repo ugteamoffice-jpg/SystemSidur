@@ -158,7 +158,6 @@ export function ExportDriverPdfDialog({
     // --- בניית חלקי ה-HTML ---
 
     // Header: לוגו + שם חברה (אם קיימים)
-    const hasCompanyInfo = settings.companyName || settings.logoBase64
     const logoHtml = settings.logoBase64
       ? `<img src="${settings.logoBase64}" class="logo" alt="לוגו"/>`
       : ""
@@ -166,18 +165,17 @@ export function ExportDriverPdfDialog({
       ? `<div class="company-name">${escapeHtml(settings.companyName)}</div>`
       : ""
 
-    const headerSection = hasCompanyInfo
-      ? `<div class="company-header">
-          ${logoHtml}
-          ${companyNameHtml}
-        </div>`
-      : ""
-
     // Footer: פרטי חברה + טקסט חופשי
     const footerParts: string[] = []
     if (settings.address) footerParts.push(escapeHtml(settings.address))
     if (settings.phone) footerParts.push(`טלפון: ${escapeHtml(settings.phone)}`)
     if (settings.email) footerParts.push(escapeHtml(settings.email))
+
+    const headerSection = `<div class="company-header">
+          ${logoHtml}
+          ${companyNameHtml}
+          ${footerParts.length > 0 ? `<div class="company-details">${footerParts.join("  |  ")}</div>` : ""}
+        </div>`
     
     const footerLine1 = footerParts.length > 0
       ? `<div class="footer-info">${footerParts.join("  |  ")}</div>`
@@ -209,9 +207,7 @@ export function ExportDriverPdfDialog({
 
     /* --- חברה --- */
     .company-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
+      text-align: center;
       margin-bottom: 8px;
     }
     .logo {
@@ -219,19 +215,27 @@ export function ExportDriverPdfDialog({
       width: auto;
       max-width: 160px;
       object-fit: contain;
+      margin: 0 auto 5px;
+      display: block;
     }
     .company-name {
-      font-size: 16px;
-      font-weight: 600;
-      color: #333;
+      font-size: 20px;
+      font-weight: 800;
+      color: #1a1a1a;
+      margin-bottom: 2px;
+    }
+    .company-details {
+      font-size: 11px;
+      color: #666;
+      margin-bottom: 5px;
     }
 
     /* --- כותרת דוח --- */
     h1 {
       text-align: center;
-      font-size: 24px;
+      font-size: 18px;
       font-weight: 700;
-      margin: 10px 0 4px 0;
+      margin: 6px 0 4px 0;
     }
     .info-line {
       text-align: center;
@@ -309,10 +313,11 @@ export function ExportDriverPdfDialog({
 
   ${headerSection}
 
-  <h1>דוח עבודה לנהג ${escapeHtml(initialDriverName)}</h1>
+  <h1>דוח נסיעות עבור נהג ${escapeHtml(initialDriverName)}</h1>
 
   <div class="info-line">
     <span>תקופה: ${format(startDate, "d.M.yyyy")} — ${format(endDate, "d.M.yyyy")}</span>
+    <span>תאריך הפקה: ${format(new Date(), "d.M.yyyy")}</span>
     <span>סה"כ נסיעות: ${filteredRecords.length}</span>
   </div>
 

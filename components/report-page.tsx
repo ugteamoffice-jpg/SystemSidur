@@ -578,21 +578,26 @@ export function ReportPage({ reportType }: ReportPageProps) {
     }).join("")
 
     const logoHtml = settings.logoBase64 ? `<img src="${settings.logoBase64}" class="logo" alt="\u05dc\u05d5\u05d2\u05d5 \u05d7\u05d1\u05e8\u05d4"/>` : ""
-    const companyNameHtml = settings.companyName ? `<h2>${escapeHtml(settings.companyName)}</h2>` : ""
     const footerParts: string[] = []
     if (settings.address) footerParts.push(escapeHtml(settings.address))
     if (settings.phone) footerParts.push(`\u05d8\u05dc\u05e4\u05d5\u05df: ${escapeHtml(settings.phone)}`)
     if (settings.email) footerParts.push(escapeHtml(settings.email))
     const companyDetailsHtml = footerParts.length > 0
-      ? `<div class="company-details">${footerParts.join(" | ")}</div>` : ""
+      ? `<div class="cd">${footerParts.join(" | ")}</div>` : ""
     const footerLine2 = settings.footerText
-      ? `<div class="footer-custom">${escapeHtml(settings.footerText)}</div>` : ""
-    const entityNameHtml = entityName
-      ? `<div class="meta-entity"><strong>${entityLabel}:</strong> ${escapeHtml(entityName)}</div>` : ""
+      ? `<div class="fc">${escapeHtml(settings.footerText)}</div>` : ""
 
     const reportTitle = reportTitles[reportType]
     const genDate = format(new Date(), "dd/MM/yyyy")
     const totalRec = filteredData.length
+    
+    // Compute date range for header
+    const reportDates = filteredData.map(r => r.fields[WS.DATE]).filter(Boolean).map((d: string) => new Date(d))
+    const dateRangeStr = reportDates.length > 0 
+      ? (filters.startDate && filters.endDate 
+          ? `${format(filters.startDate, "dd/MM/yyyy")} - ${format(filters.endDate, "dd/MM/yyyy")}`
+          : format(reportDates[0], "MMMM yyyy", { locale: he }))
+      : ""
 
     const html = `<!DOCTYPE html>
 <html dir="rtl" lang="he">
@@ -603,16 +608,14 @@ export function ReportPage({ reportType }: ReportPageProps) {
     @page { size: A4 landscape; margin: 12mm; }
     * { box-sizing: border-box; }
     body { font-family: system-ui,-apple-system,sans-serif; direction: rtl; padding: 10px 20px; font-size: 11px; color: #1e293b; line-height: 1.4; background: #fff; }
-    .hdr { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; border-bottom:2px solid #e2e8f0; padding-bottom:15px; }
-    .ci { display:flex; align-items:center; gap:15px; }
-    .logo { max-height:65px; max-width:180px; object-fit:contain; }
-    .ct h2 { margin:0 0 4px 0; font-size:20px; color:#0f172a; font-weight:700; }
-    .cd { font-size:11px; color:#64748b; }
-    .rm { text-align:left; }
-    .rm h1 { margin:0 0 5px 0; font-size:22px; color:#0f172a; font-weight:800; }
-    .me { font-size:15px; color:#1e40af; font-weight:700; margin-bottom:5px; }
+    .hdr { text-align:center; margin-bottom:20px; border-bottom:2px solid #e2e8f0; padding-bottom:15px; }
+    .logo { max-height:65px; max-width:180px; object-fit:contain; margin:0 auto 8px; display:block; }
+    .company-name { margin:0 0 4px 0; font-size:22px; color:#0f172a; font-weight:800; }
+    .cd { font-size:11px; color:#64748b; margin-bottom:8px; }
+    .report-title { margin:8px 0 4px 0; font-size:18px; color:#0f172a; font-weight:700; }
+    .me { font-size:14px; color:#1e40af; font-weight:700; margin-bottom:4px; }
     .mi { font-size:11px; color:#475569; margin-bottom:3px; }
-    .mf { font-size:10px; color:#64748b; max-width:300px; line-height:1.3; margin-top:4px; }
+    .mf { font-size:10px; color:#64748b; max-width:400px; line-height:1.3; margin:4px auto 0; }
     table { width:100%; border-collapse:collapse; margin-bottom:20px; }
     th { background:#f8fafc; color:#334155; font-weight:600; padding:10px 6px; text-align:right; border-bottom:2px solid #cbd5e1; white-space:nowrap; }
     td { padding:8px 6px; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
@@ -629,14 +632,12 @@ export function ReportPage({ reportType }: ReportPageProps) {
 </head>
 <body>
   <div class="hdr">
-    <div class="ci">${logoHtml}<div class="ct">${companyNameHtml}${companyDetailsHtml}</div></div>
-    <div class="rm">
-      <h1>${reportTitle}</h1>
-      ${entityNameHtml}
-      <div class="mi"><strong>\u05ea\u05d0\u05e8\u05d9\u05da \u05d4\u05e4\u05e7\u05d4:</strong> ${genDate}</div>
-      <div class="mi"><strong>\u05e1\u05d4"\u05db \u05e8\u05e9\u05d5\u05de\u05d5\u05ea:</strong> ${totalRec}</div>
-      <div class="mf">${escapeHtml(filterSummary)}</div>
-    </div>
+    ${logoHtml}
+    ${settings.companyName ? `<div class="company-name">${escapeHtml(settings.companyName)}</div>` : ""}
+    ${companyDetailsHtml}
+    <div class="report-title">${reportTitle}${entityName ? ` עבור ${entityLabel} ${escapeHtml(entityName)}` : ""}</div>
+    ${dateRangeStr ? `<div class="mi">${dateRangeStr}</div>` : ""}
+    <div class="mi">תאריך הפקה: ${genDate} | סה"כ רשומות: ${totalRec}</div>
   </div>
   <table>
     <thead><tr>${theadCells}</tr></thead>
@@ -728,7 +729,6 @@ export function ReportPage({ reportType }: ReportPageProps) {
     const totalPrice = routes.reduce((s, rd) => s + rd.totalPrice, 0)
 
     const logoHtml = settings.logoBase64 ? `<img src="${settings.logoBase64}" class="logo" alt="לוגו חברה"/>` : ""
-    const companyNameHtml = settings.companyName ? `<h2>${escapeHtml(settings.companyName)}</h2>` : ""
     const footerParts: string[] = []
     if (settings.address) footerParts.push(escapeHtml(settings.address))
     if (settings.phone) footerParts.push(`טלפון: ${escapeHtml(settings.phone)}`)
@@ -745,20 +745,17 @@ export function ReportPage({ reportType }: ReportPageProps) {
     @page { size: A4 landscape; margin: 8mm; }
     * { box-sizing: border-box; }
     body { font-family: system-ui,-apple-system,sans-serif; direction: rtl; padding: 5px 10px; font-size: 9px; color: #1e293b; line-height: 1.2; background: #fff; }
-    .hdr { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; border-bottom:2px solid #e2e8f0; padding-bottom:8px; }
-    .ci { display:flex; align-items:center; gap:10px; }
-    .logo { max-height:50px; max-width:140px; object-fit:contain; }
-    h2 { margin:0 0 2px 0; font-size:16px; color:#0f172a; font-weight:700; }
-    .cd { font-size:9px; color:#64748b; }
-    .rm { text-align:left; }
-    .rm h1 { margin:0 0 3px 0; font-size:18px; color:#0f172a; font-weight:800; }
-    .me { font-size:13px; color:#1e40af; font-weight:700; margin-bottom:3px; }
+    .hdr { text-align:center; margin-bottom:10px; border-bottom:2px solid #e2e8f0; padding-bottom:8px; }
+    .logo { max-height:50px; max-width:140px; object-fit:contain; margin:0 auto 5px; display:block; }
+    .company-name { margin:0 0 2px 0; font-size:18px; color:#0f172a; font-weight:800; }
+    .cd { font-size:9px; color:#64748b; margin-bottom:5px; }
+    .report-title { margin:5px 0 3px 0; font-size:14px; color:#0f172a; font-weight:700; }
     .mi { font-size:9px; color:#475569; margin-bottom:2px; }
     table { width:100%; border-collapse:collapse; margin-bottom:10px; }
     th, td { border: 1px solid #cbd5e1; padding: 3px 2px; text-align: center; vertical-align: middle; }
     th { background:#f1f5f9; color:#334155; font-weight:700; font-size:8px; white-space:nowrap; }
     .day-col { width: 22px; min-width: 22px; max-width: 22px; font-size: 9px; }
-    .x-mark { background: #dbeafe; font-weight: 800; color: #1e40af; font-size: 10px; }
+    .x-mark { font-weight: 800; color: #000000; font-size: 10px; }
     .route-name { text-align: right; padding: 3px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; font-size: 9px; font-weight: 500; }
     .idx { width: 22px; color: #94a3b8; font-size: 8px; }
     .summary-col { font-weight: 600; font-size: 9px; background: #f8fafc; min-width: 55px; }
@@ -772,13 +769,12 @@ export function ReportPage({ reportType }: ReportPageProps) {
 </head>
 <body>
   <div class="hdr">
-    <div class="ci">${logoHtml}<div>${companyNameHtml}${companyDetailsHtml}</div></div>
-    <div class="rm">
-      <h1>פירוט הסעות</h1>
-      ${customerName ? `<div class="me">לקוח: ${escapeHtml(customerName)}</div>` : ""}
-      <div class="mi"><strong>חודש:</strong> ${monthName}</div>
-      <div class="mi"><strong>תאריך הפקה:</strong> ${format(new Date(), "dd/MM/yyyy")}</div>
-    </div>
+    ${logoHtml}
+    ${settings.companyName ? `<div class="company-name">${escapeHtml(settings.companyName)}</div>` : ""}
+    ${companyDetailsHtml}
+    <div class="report-title">דוח נסיעות עבור לקוח ${escapeHtml(customerName)}</div>
+    <div class="mi">${monthName}</div>
+    <div class="mi">תאריך הפקה: ${format(new Date(), "dd/MM/yyyy")}</div>
   </div>
   <table>
     <thead>
