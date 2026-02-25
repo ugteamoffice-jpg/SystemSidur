@@ -592,7 +592,9 @@ function DataGrid({ schema }: { schema?: any }) {
       let firstNewRecord = null
       let totalCreated = 0
       const useDatesPerRecord = datesToDuplicate.length === 0
-      const allRequests: Promise<any>[] = []
+      
+      // שלב 1: אוסף את כל הפיילודים קודם
+      const allPayloads: any[] = []
       
       for (const record of recordsToDuplicate) {
         const dates = useDatesPerRecord 
@@ -611,24 +613,31 @@ function DataGrid({ schema }: { schema?: any }) {
               newFields[WS.DRIVER] = null
             }
             
-            allRequests.push(
-              requestQueue.add(() =>
-                fetch(`/api/work-schedule?tenant=${tenantId}`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ fields: newFields })
-                }).then(r => {
-                  if (!r.ok) throw new Error('Duplicate failed')
-                  return r.json()
-                })
-              )
-            )
+            allPayloads.push(newFields)
           }
         }
       }
 
-      const totalOperations = allRequests.length
+      // שלב 2: מגדיר את הסה"כ לפני ההרצה
+      const totalOperations = allPayloads.length
       setDuplicateProgress({ current: 0, total: totalOperations })
+
+      // שלב 3: מריץ את הבקשות עם מעקב אחוזים
+      const allRequests = allPayloads.map(fields =>
+        requestQueue.add(() =>
+          fetch(`/api/work-schedule?tenant=${tenantId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fields })
+          }).then(r => {
+            if (!r.ok) throw new Error('Duplicate failed')
+            return r.json()
+          }).then(res => {
+            setDuplicateProgress(prev => ({ ...prev, current: prev.current + 1 }))
+            return res
+          })
+        )
+      )
       
       const results = await Promise.all(allRequests)
       totalCreated = results.length
