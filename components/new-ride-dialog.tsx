@@ -546,7 +546,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                <div className="grid grid-cols-3 gap-x-3 gap-y-2">
                   <div>
                     <Label className="text-sm block mb-px">סוג רכב</Label>
                     <AutoComplete
@@ -579,73 +579,69 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                       placeholder=""
                     />
                   </div>
-                </div>
-
-                {/* --- כאן היו הצ'קבוקסים - מחקתי אותם! --- */}
-
-                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                   <div>
                     <Label className="text-sm block mb-px">מס' רכב</Label>
                     <Input value={form.vehicleNum} onChange={e => setForm(p => ({ ...p, vehicleNum: e.target.value }))} className="text-right h-8" />
                   </div>
-                  <div>
-                    <Label className="text-sm block mb-px"><Upload className="w-3 h-3 inline ml-1" />קבצים</Label>
-                    <div className="flex flex-col gap-1">
-                      {/* קבצים קיימים */}
-                      {existingAttachment.map((att, idx) => (
-                        <div key={`existing-${idx}`} className="flex items-center gap-1 h-8 px-2 border rounded bg-green-50 text-sm">
-                          <FileText className="w-3 h-3 text-green-600 shrink-0" />
-                          <span className="truncate flex-1">{att?.name || 'קובץ'}</span>
-                          {att?.token && (
-                            <Button type="button" variant="ghost" size="sm" className="h-5 px-1 text-blue-600 shrink-0" onClick={() => {
-                              const tenant = window.location.pathname.split('/')[1] || 'UrbanTours'
-                              const params = new URLSearchParams({ tenant })
-                              if (att.presignedUrl || att.url) params.set('url', att.presignedUrl || att.url)
-                              else params.set('token', att.token)
-                              if (att.name) params.set('name', att.name)
-                              window.open(`/api/view-file?${params.toString()}`, '_blank')
-                            }}><Eye className="w-3 h-3" /></Button>
-                          )}
-                          {isEdit && (
-                            <Button type="button" variant="ghost" size="sm" className="h-5 w-5 p-0 text-red-500 shrink-0" onClick={async () => {
-                              const updated = existingAttachment.filter((_, i) => i !== idx)
-                              setExistingAttachment(updated)
-                              try { await fetch(`/api/work-schedule/${initialData.id}?tenant=${tenantId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { [FIELDS.ORDER_FORM]: updated.length > 0 ? updated : null } }) }) } catch {}
-                            }}><X className="w-3 h-3" /></Button>
-                          )}
-                        </div>
-                      ))}
-                      {/* קבצים חדשים */}
-                      {orderFormFiles.map((entry, idx) => (
-                        <div key={`new-${idx}`} className="flex items-center gap-1 h-8 px-2 border rounded bg-blue-50 text-sm">
-                          <FileText className="w-3 h-3 text-blue-600 shrink-0" />
-                          {editingFileName === idx ? (
-                            <Input 
-                              value={entry.name} 
-                              onChange={(e) => setOrderFormFiles(prev => prev.map((f, i) => i === idx ? { ...f, name: e.target.value } : f))} 
-                              onBlur={() => setEditingFileName(null)}
-                              onKeyDown={(e) => { if (e.key === 'Enter') setEditingFileName(null) }}
-                              className="h-6 text-xs flex-1 px-1"
-                              autoFocus
-                            />
-                          ) : (
-                            <span className="truncate flex-1 cursor-pointer" onClick={() => setEditingFileName(idx)}>{entry.name}</span>
-                          )}
-                          <Button type="button" variant="ghost" size="sm" className="h-5 w-5 p-0 text-muted-foreground shrink-0" onClick={() => setEditingFileName(idx)} title="שנה שם"><Pencil className="w-2.5 h-2.5" /></Button>
+                </div>
+
+                <div>
+                  <Label className="text-sm block mb-px"><Upload className="w-3 h-3 inline ml-1" />קבצים</Label>
+                  <div className="flex flex-col gap-1">
+                    {/* קבצים קיימים */}
+                    {existingAttachment.map((att, idx) => (
+                      <div key={`existing-${idx}`} className="flex items-center gap-1 h-8 px-2 border rounded bg-green-50 text-sm">
+                        <FileText className="w-3 h-3 text-green-600 shrink-0" />
+                        <span className="truncate flex-1">{att?.name || 'קובץ'}</span>
+                        {att?.token && (
                           <Button type="button" variant="ghost" size="sm" className="h-5 px-1 text-blue-600 shrink-0" onClick={() => {
-                            const url = URL.createObjectURL(entry.file)
-                            window.open(url, '_blank')
-                          }} title="צפה בקובץ"><Eye className="w-3 h-3" /></Button>
-                          <Button type="button" variant="ghost" size="sm" className="h-5 w-5 p-0 text-red-500 shrink-0" onClick={() => { setOrderFormFiles(prev => prev.filter((_, i) => i !== idx)); if (fileInputRef.current) fileInputRef.current.value = '' }}><X className="w-3 h-3" /></Button>
-                        </div>
-                      ))}
-                      {/* כפתור הוספה */}
-                      <Button type="button" variant="outline" size="sm" className="w-full h-8 text-sm" onClick={() => fileInputRef.current?.click()}>
-                        <Plus className="w-3 h-3 ml-1" /> {existingAttachment.length > 0 || orderFormFiles.length > 0 ? 'הוסף קובץ' : 'בחר קובץ'}
-                      </Button>
-                    </div>
-                    <input ref={fileInputRef} type="file" className="hidden" onChange={(e) => { if (e.target.files?.[0]) { const f = e.target.files[0]; setOrderFormFiles(prev => [...prev, { file: f, name: f.name }]); if (fileInputRef.current) fileInputRef.current.value = '' } }} />
+                            const tenant = window.location.pathname.split('/')[1] || 'UrbanTours'
+                            const params = new URLSearchParams({ tenant })
+                            if (att.presignedUrl || att.url) params.set('url', att.presignedUrl || att.url)
+                            else params.set('token', att.token)
+                            if (att.name) params.set('name', att.name)
+                            window.open(`/api/view-file?${params.toString()}`, '_blank')
+                          }}><Eye className="w-3 h-3" /></Button>
+                        )}
+                        {isEdit && (
+                          <Button type="button" variant="ghost" size="sm" className="h-5 w-5 p-0 text-red-500 shrink-0" onClick={async () => {
+                            const updated = existingAttachment.filter((_, i) => i !== idx)
+                            setExistingAttachment(updated)
+                            try { await fetch(`/api/work-schedule/${initialData.id}?tenant=${tenantId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { [FIELDS.ORDER_FORM]: updated.length > 0 ? updated : null } }) }) } catch {}
+                          }}><X className="w-3 h-3" /></Button>
+                        )}
+                      </div>
+                    ))}
+                    {/* קבצים חדשים */}
+                    {orderFormFiles.map((entry, idx) => (
+                      <div key={`new-${idx}`} className="flex items-center gap-1 h-8 px-2 border rounded bg-blue-50 text-sm">
+                        <FileText className="w-3 h-3 text-blue-600 shrink-0" />
+                        {editingFileName === idx ? (
+                          <Input 
+                            value={entry.name} 
+                            onChange={(e) => setOrderFormFiles(prev => prev.map((f, i) => i === idx ? { ...f, name: e.target.value } : f))} 
+                            onBlur={() => setEditingFileName(null)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') setEditingFileName(null) }}
+                            className="h-6 text-xs flex-1 px-1"
+                            autoFocus
+                          />
+                        ) : (
+                          <span className="truncate flex-1 cursor-pointer" onClick={() => setEditingFileName(idx)}>{entry.name}</span>
+                        )}
+                        <Button type="button" variant="ghost" size="sm" className="h-5 w-5 p-0 text-muted-foreground shrink-0" onClick={() => setEditingFileName(idx)} title="שנה שם"><Pencil className="w-2.5 h-2.5" /></Button>
+                        <Button type="button" variant="ghost" size="sm" className="h-5 px-1 text-blue-600 shrink-0" onClick={() => {
+                          const url = URL.createObjectURL(entry.file)
+                          window.open(url, '_blank')
+                        }} title="צפה בקובץ"><Eye className="w-3 h-3" /></Button>
+                        <Button type="button" variant="ghost" size="sm" className="h-5 w-5 p-0 text-red-500 shrink-0" onClick={() => { setOrderFormFiles(prev => prev.filter((_, i) => i !== idx)); if (fileInputRef.current) fileInputRef.current.value = '' }}><X className="w-3 h-3" /></Button>
+                      </div>
+                    ))}
+                    {/* כפתור הוספה */}
+                    <Button type="button" variant="outline" size="sm" className="w-full h-8 text-sm" onClick={() => fileInputRef.current?.click()}>
+                      <Plus className="w-3 h-3 ml-1" /> {existingAttachment.length > 0 || orderFormFiles.length > 0 ? 'הוסף קובץ' : 'בחר קובץ'}
+                    </Button>
                   </div>
+                  <input ref={fileInputRef} type="file" className="hidden" onChange={(e) => { if (e.target.files?.[0]) { const f = e.target.files[0]; setOrderFormFiles(prev => [...prev, { file: f, name: f.name }]); if (fileInputRef.current) fileInputRef.current.value = '' } }} />
                 </div>
 
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2">
