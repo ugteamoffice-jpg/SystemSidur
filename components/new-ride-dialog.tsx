@@ -632,6 +632,10 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                             <span className="truncate flex-1 cursor-pointer" onClick={() => setEditingFileName(idx)}>{entry.name}</span>
                           )}
                           <Button type="button" variant="ghost" size="sm" className="h-5 w-5 p-0 text-muted-foreground shrink-0" onClick={() => setEditingFileName(idx)} title="שנה שם"><Pencil className="w-2.5 h-2.5" /></Button>
+                          <Button type="button" variant="ghost" size="sm" className="h-5 px-1 text-blue-600 shrink-0" onClick={() => {
+                            const url = URL.createObjectURL(entry.file)
+                            window.open(url, '_blank')
+                          }} title="צפה בקובץ"><Eye className="w-3 h-3" /></Button>
                           <Button type="button" variant="ghost" size="sm" className="h-5 w-5 p-0 text-red-500 shrink-0" onClick={() => { setOrderFormFiles(prev => prev.filter((_, i) => i !== idx)); if (fileInputRef.current) fileInputRef.current.value = '' }}><X className="w-3 h-3" /></Button>
                         </div>
                       ))}
