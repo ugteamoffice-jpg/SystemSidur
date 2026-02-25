@@ -716,6 +716,7 @@ function DataGrid({ schema }: { schema?: any }) {
       const lowerFilter = globalFilter.toLowerCase()
       filtered = filtered.filter((item) => Object.values(item.fields).some((val) => {
            if (val == null) return false
+           if (Array.isArray(val)) return val.some((v: any) => v?.title && String(v.title).toLowerCase().includes(lowerFilter))
            if (typeof val === 'object' && val.title) return String(val.title).toLowerCase().includes(lowerFilter)
            return String(val).toLowerCase().includes(lowerFilter)
       }))
@@ -846,7 +847,7 @@ function DataGrid({ schema }: { schema?: any }) {
           </div>
 
           {/* חלון סיכום סה"כ שורות */}
-          <div className="hidden md:flex bg-card p-1.5 lg:p-2 px-2 lg:px-4 rounded-md border shadow-sm items-center gap-2 lg:gap-4 whitespace-nowrap">
+          <div className="hidden md:flex bg-card p-1.5 lg:p-2 px-2 lg:px-4 rounded-md border shadow-sm items-center gap-2 lg:gap-4 whitespace-nowrap min-w-[200px]">
               <div className="flex flex-col gap-0.5">
                   <div className="flex items-center gap-1 lg:gap-2">
                       <LayoutDashboard className="w-3.5 h-3.5 text-muted-foreground" />

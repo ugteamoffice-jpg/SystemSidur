@@ -20,8 +20,10 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const dateParam = searchParams.get('date');
+    const take = searchParams.get('take') || '1000';
+    const skip = searchParams.get('skip') || '0';
 
-    let endpoint = `${API_URL}/api/table/${TABLE_ID}/record?take=1000&fieldKeyType=id`;
+    let endpoint = `${API_URL}/api/table/${TABLE_ID}/record?take=${take}&skip=${skip}&fieldKeyType=id`;
     if (dateParam) {
       const filterObj = {
         conjunction: "and",

@@ -264,10 +264,20 @@ export function ReportPage({ reportType }: ReportPageProps) {
     
     try {
       setIsLoading(true)
-      const response = await fetch(`/api/work-schedule?tenant=${tenantId}&take=1000&_t=${Date.now()}`)
-      if (!response.ok) throw new Error("Failed to fetch")
-      const json = await response.json()
-      setAllData(json.records || [])
+      // Fetch all records with pagination
+      let allRecords: WorkScheduleRecord[] = []
+      let skip = 0
+      const take = 1000
+      while (true) {
+        const response = await fetch(`/api/work-schedule?tenant=${tenantId}&take=${take}&skip=${skip}&_t=${Date.now()}`)
+        if (!response.ok) throw new Error("Failed to fetch")
+        const json = await response.json()
+        const records = json.records || []
+        allRecords = allRecords.concat(records)
+        if (records.length < take) break
+        skip += take
+      }
+      setAllData(allRecords)
       setHasSearched(true)
     } catch (error) {
       console.error("Error fetching report data:", error)
