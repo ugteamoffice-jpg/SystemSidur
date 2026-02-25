@@ -190,6 +190,7 @@ export function ExportDriverPdfDialog({
 <head>
   <meta charset="UTF-8"/>
   <title>דוח עבודה - ${escapeHtml(initialDriverName)}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Varela+Round&display=swap" rel="stylesheet"/>
   <style>
     @page {
       size: A4 landscape;
@@ -197,7 +198,7 @@ export function ExportDriverPdfDialog({
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      font-family: "Varela Round", system-ui, sans-serif;
       direction: rtl;
       color: #1a1a1a;
       padding: 20px;

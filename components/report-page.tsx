@@ -604,10 +604,11 @@ export function ReportPage({ reportType }: ReportPageProps) {
 <head>
   <meta charset="UTF-8"/>
   <title>${reportTitle}${entityName ? ` - ${entityName}` : ""}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Varela+Round&display=swap" rel="stylesheet"/>
   <style>
     @page { size: A4 landscape; margin: 12mm; }
     * { box-sizing: border-box; }
-    body { font-family: system-ui,-apple-system,sans-serif; direction: rtl; padding: 10px 20px; font-size: 11px; color: #1e293b; line-height: 1.4; background: #fff; }
+    body { font-family: "Varela Round", system-ui, sans-serif; direction: rtl; padding: 10px 20px; font-size: 11px; color: #1e293b; line-height: 1.4; background: #fff; }
     .hdr { text-align:center; margin-bottom:20px; border-bottom:2px solid #e2e8f0; padding-bottom:15px; }
     .logo { max-height:65px; max-width:180px; object-fit:contain; margin:0 auto 8px; display:block; }
     .company-name { margin:0 0 4px 0; font-size:22px; color:#0f172a; font-weight:800; }
@@ -741,10 +742,11 @@ export function ReportPage({ reportType }: ReportPageProps) {
 <head>
   <meta charset="UTF-8"/>
   <title>פירוט הסעות - ${customerName}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Varela+Round&display=swap" rel="stylesheet"/>
   <style>
     @page { size: A4 landscape; margin: 8mm; }
     * { box-sizing: border-box; }
-    body { font-family: system-ui,-apple-system,sans-serif; direction: rtl; padding: 5px 10px; font-size: 9px; color: #1e293b; line-height: 1.2; background: #fff; }
+    body { font-family: "Varela Round", system-ui, sans-serif; direction: rtl; padding: 5px 10px; font-size: 9px; color: #1e293b; line-height: 1.2; background: #fff; }
     .hdr { text-align:center; margin-bottom:10px; border-bottom:2px solid #e2e8f0; padding-bottom:8px; }
     .logo { max-height:50px; max-width:140px; object-fit:contain; margin:0 auto 5px; display:block; }
     .company-name { margin:0 0 2px 0; font-size:18px; color:#0f172a; font-weight:800; }
@@ -783,8 +785,8 @@ export function ReportPage({ reportType }: ReportPageProps) {
         <th style="min-width:120px;text-align:right;">מסלול</th>
         ${dayHeaders}
         <th class="summary-col">סה"כ<br/>נסיעות</th>
-        <th class="summary-col">מחיר<br/>לנסיעה</th>
-        <th class="summary-col">סה"כ<br/>מחיר</th>
+        <th class="summary-col">מחיר לפני<br/>מע"מ</th>
+        <th class="summary-col">סה"כ לפני<br/>מע"מ</th>
       </tr>
     </thead>
     <tbody>
