@@ -404,13 +404,15 @@ export function ReportPage({ reportType }: ReportPageProps) {
     const ids = Array.from(selectedRowIds)
 
     const results = await Promise.all(ids.map((id) =>
-      requestQueue.add(() =>
-        fetch(`/api/work-schedule/${id}?tenant=${tenantId}`, {
+      requestQueue.add(async () => {
+        const res = await fetch(`/api/work-schedule/${id}?tenant=${tenantId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ fields: { [INVOICE_FIELD_ID]: valueToSave } })
-        }).then(r => r.ok).catch(() => false)
-      )
+        })
+        if (!res.ok) throw new Error(`PATCH failed: ${res.status}`)
+        return true
+      }).catch(() => false)
     ))
     const errorCount = results.filter(ok => !ok).length
 

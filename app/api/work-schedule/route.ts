@@ -131,11 +131,11 @@ export async function DELETE(request: Request) {
     const API_URL = config.apiUrl;
 
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
-    if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
+    const ids = searchParams.getAll('id');
+    if (ids.length === 0) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
 
     const teableUrl = new URL(`${API_URL}/api/table/${TABLE_ID}/record`);
-    teableUrl.searchParams.append('recordIds[]', id);
+    ids.forEach(id => teableUrl.searchParams.append('recordIds[]', id));
 
     const response = await fetch(teableUrl.toString(), {
       method: 'DELETE', headers: { 'Authorization': `Bearer ${apiKey}` }, cache: 'no-store'
@@ -144,7 +144,7 @@ export async function DELETE(request: Request) {
       const errorText = await response.text();
       return NextResponse.json({ error: "Delete Failed", details: errorText }, { status: response.status });
     }
-    return NextResponse.json(await safeJsonParse(response) || { success: true, deletedId: id });
+    return NextResponse.json(await safeJsonParse(response) || { success: true, deletedIds: ids });
   } catch (error) {
     console.error("DELETE Exception:", error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

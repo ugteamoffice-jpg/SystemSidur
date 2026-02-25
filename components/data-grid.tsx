@@ -436,12 +436,14 @@ function DataGrid({ schema }: { schema?: any }) {
     setRowSelection({})
     // שרת ברקע דרך התור
     Promise.all(ids.map(id =>
-      requestQueue.add(() =>
-        fetch(`/api/work-schedule?tenant=${tenantId}`, {
+      requestQueue.add(async () => {
+        const res = await fetch(`/api/work-schedule?tenant=${tenantId}`, {
           method: "PATCH",
           body: JSON.stringify({ recordId: id, fields: { [fieldKey]: value } })
-        }).then(r => r.ok).catch(() => false)
-      )
+        })
+        if (!res.ok) throw new Error(`PATCH failed: ${res.status}`)
+        return true
+      }).catch(() => false)
     )).then(results => {
       const failCount = results.filter(ok => !ok).length
       if (failCount > 0) {
@@ -480,12 +482,14 @@ function DataGrid({ schema }: { schema?: any }) {
     setDriverSearch("")
     // שרת ברקע
     Promise.all(ids.map(id =>
-      requestQueue.add(() =>
-        fetch(`/api/work-schedule?tenant=${tenantId}`, {
+      requestQueue.add(async () => {
+        const res = await fetch(`/api/work-schedule?tenant=${tenantId}`, {
           method: "PATCH",
           body: JSON.stringify({ recordId: id, fields: { [WS.DRIVER]: [driver.id] } })
-        }).then(r => r.ok).catch(() => false)
-      )
+        })
+        if (!res.ok) throw new Error(`PATCH failed: ${res.status}`)
+        return true
+      }).catch(() => false)
     )).then(results => {
       const failCount = results.filter(ok => !ok).length
       if (failCount > 0) {
@@ -507,15 +511,23 @@ function DataGrid({ schema }: { schema?: any }) {
     setRowSelection({})
     setShowDeleteDialog(false)
     
+    // מחיקה בקבוצות של 10 (batch delete)
+    const chunkSize = 10
     let failCount = 0
-    await Promise.all(idsToDelete.map(async (id) => {
+    for (let i = 0; i < idsToDelete.length; i += chunkSize) {
+      const chunk = idsToDelete.slice(i, i + chunkSize)
       try {
-        const ok = await requestQueue.add(() =>
-          fetch(`/api/work-schedule?tenant=${tenantId}&id=${id}`, { method: "DELETE" }).then(r => r.ok)
-        )
-        if (!ok) failCount++
-      } catch { failCount++ }
-    }))
+        const ok = await requestQueue.add(async () => {
+          const params = new URLSearchParams()
+          params.set('tenant', tenantId)
+          chunk.forEach(id => params.append('id', id))
+          const res = await fetch(`/api/work-schedule?${params.toString()}`, { method: "DELETE" })
+          if (!res.ok) throw new Error(`Delete failed: ${res.status}`)
+          return true
+        })
+        if (!ok) failCount += chunk.length
+      } catch { failCount += chunk.length }
+    }
     
     if (failCount > 0) {
       toast({ title: `${failCount} נסיעות נכשלו במחיקה`, variant: "destructive" })
