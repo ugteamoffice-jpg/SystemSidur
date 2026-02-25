@@ -774,8 +774,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
     ${logoHtml}
     ${settings.companyName ? `<div class="company-name">${escapeHtml(settings.companyName)}</div>` : ""}
     ${companyDetailsHtml}
-    <div class="report-title">דוח נסיעות עבור לקוח ${escapeHtml(customerName)}</div>
-    <div class="mi">${monthName}</div>
+    <div class="report-title">דוח נסיעות עבור : ${escapeHtml(customerName)} | ${format(minDate, "dd/MM/yyyy")} עד ${format(maxDate, "dd/MM/yyyy")}</div>
     <div class="mi">תאריך הפקה: ${format(new Date(), "dd/MM/yyyy")}</div>
   </div>
   <table>
