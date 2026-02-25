@@ -134,6 +134,14 @@ export function SplitRideDialog({ open, onOpenChange, record, onSplit }: any) {
       return typeof v === 'object' ? v.title : String(v);
   }
 
+  // נרמול שעה לפורמט HH:MM שנדרש ל-input type="time"
+  const normalizeTime = (t: string): string => {
+    if (!t) return ""
+    const match = t.match(/^(\d{1,2}):(\d{2})/)
+    if (match) return `${match[1].padStart(2, '0')}:${match[2]}`
+    return t
+  }
+
   React.useEffect(() => {
     if (open && record) {
       const f = record.fields
@@ -164,7 +172,7 @@ export function SplitRideDialog({ open, onOpenChange, record, onSplit }: any) {
       setOutbound({
         ...baseData,
         description: f[FIELDS.DESCRIPTION] || "",
-        pickup: f[FIELDS.PICKUP_TIME] || "",
+        pickup: normalizeTime(f[FIELDS.PICKUP_TIME] || ""),
         driver: "",
         notes: "",
       })
@@ -173,7 +181,7 @@ export function SplitRideDialog({ open, onOpenChange, record, onSplit }: any) {
       setReturnTrip({
         ...baseData,
         description: f[FIELDS.DESCRIPTION] || "",
-        pickup: f[FIELDS.DROPOFF_TIME] || "",
+        pickup: normalizeTime(f[FIELDS.DROPOFF_TIME] || ""),
         driver: "",
         notes: "",
       })
