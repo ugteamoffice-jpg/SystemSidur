@@ -4,7 +4,7 @@ import * as React from "react"
 import { format } from "date-fns"
 import { he } from "date-fns/locale"
 import { requestQueue } from "@/lib/request-queue"
-import { Calendar as CalendarIcon, Loader2, Search, X, LayoutDashboard, SlidersHorizontal, Download, FileSpreadsheet, Printer, Receipt } from "lucide-react"
+import { Calendar as CalendarIcon, Loader2, Search, X, LayoutDashboard, SlidersHorizontal, Download, FileSpreadsheet, Printer, Receipt, LayoutGrid } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu"
 import { useTenantFields, useTenant } from "@/lib/tenant-context"
 import { useToast } from "@/hooks/use-toast"
@@ -656,6 +656,166 @@ export function ReportPage({ reportType }: ReportPageProps) {
     }
   }
 
+  // --- ייצוא דוח איקסים (X report) ל-PDF ---
+  const exportXReportPdf = () => {
+    if (filteredData.length === 0) return
+
+    const settings = loadReportSettings(tenantId)
+    const customerName = filters.customerName || ""
+
+    // Determine the month range from data
+    const dates = filteredData.map(r => r.fields[WS.DATE]).filter(Boolean).map((d: string) => new Date(d))
+    if (dates.length === 0) return
+    
+    const minDate = new Date(Math.min(...dates.map(d => d.getTime())))
+    const maxDate = new Date(Math.max(...dates.map(d => d.getTime())))
+    const daysInMonth = new Date(minDate.getFullYear(), minDate.getMonth() + 1, 0).getDate()
+    const monthName = format(minDate, "MMMM yyyy", { locale: he })
+
+    // Group by route description
+    interface RouteData {
+      route: string
+      days: Set<number>
+      totalPrice: number
+      rideCount: number
+    }
+    const routeMap = new Map<string, RouteData>()
+
+    for (const record of filteredData) {
+      const f = record.fields
+      const route = escapeHtml(f[WS.DESCRIPTION] || "-")
+      const dateStr = f[WS.DATE]
+      if (!dateStr) continue
+      const day = new Date(dateStr).getDate()
+      const price = Number(f[WS.PRICE_CLIENT_EXCL]) || 0
+
+      if (!routeMap.has(route)) {
+        routeMap.set(route, { route, days: new Set(), totalPrice: 0, rideCount: 0 })
+      }
+      const rd = routeMap.get(route)!
+      rd.days.add(day)
+      rd.totalPrice += price
+      rd.rideCount += 1
+    }
+
+    const routes = Array.from(routeMap.values())
+
+    // Build table rows
+    const dayHeaders = Array.from({ length: daysInMonth }, (_, i) => `<th class="day-col">${i + 1}</th>`).join("")
+    const tableRows = routes.map((rd, idx) => {
+      const dayCells = Array.from({ length: daysInMonth }, (_, i) => {
+        const hasRide = rd.days.has(i + 1)
+        return `<td class="day-col${hasRide ? " x-mark" : ""}">${hasRide ? "X" : ""}</td>`
+      }).join("")
+      const pricePerRide = rd.rideCount > 0 ? Math.round(rd.totalPrice / rd.rideCount) : 0
+      return `<tr>
+        <td class="c idx">${idx + 1}</td>
+        <td class="route-name">${rd.route}</td>
+        ${dayCells}
+        <td class="summary-col">${rd.rideCount}</td>
+        <td class="summary-col">${pricePerRide.toLocaleString("he-IL")}</td>
+        <td class="summary-col total-col">${rd.totalPrice.toLocaleString("he-IL")}</td>
+      </tr>`
+    }).join("")
+
+    // Totals row
+    const dayTotals = Array.from({ length: daysInMonth }, (_, i) => {
+      const dayNum = i + 1
+      const count = routes.reduce((sum, rd) => sum + (rd.days.has(dayNum) ? 1 : 0), 0)
+      return `<td class="day-col total-day">${count || ""}</td>`
+    }).join("")
+    const totalRides = routes.reduce((s, rd) => s + rd.rideCount, 0)
+    const totalPrice = routes.reduce((s, rd) => s + rd.totalPrice, 0)
+
+    const logoHtml = settings.logoBase64 ? `<img src="${settings.logoBase64}" class="logo" alt="לוגו חברה"/>` : ""
+    const companyNameHtml = settings.companyName ? `<h2>${escapeHtml(settings.companyName)}</h2>` : ""
+    const footerParts: string[] = []
+    if (settings.address) footerParts.push(escapeHtml(settings.address))
+    if (settings.phone) footerParts.push(`טלפון: ${escapeHtml(settings.phone)}`)
+    if (settings.email) footerParts.push(escapeHtml(settings.email))
+    const companyDetailsHtml = footerParts.length > 0 ? `<div class="cd">${footerParts.join(" | ")}</div>` : ""
+    const footerLine2 = settings.footerText ? `<div class="fc">${escapeHtml(settings.footerText)}</div>` : ""
+
+    const html = `<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+  <meta charset="UTF-8"/>
+  <title>פירוט הסעות - ${customerName}</title>
+  <style>
+    @page { size: A4 landscape; margin: 8mm; }
+    * { box-sizing: border-box; }
+    body { font-family: system-ui,-apple-system,sans-serif; direction: rtl; padding: 5px 10px; font-size: 9px; color: #1e293b; line-height: 1.2; background: #fff; }
+    .hdr { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; border-bottom:2px solid #e2e8f0; padding-bottom:8px; }
+    .ci { display:flex; align-items:center; gap:10px; }
+    .logo { max-height:50px; max-width:140px; object-fit:contain; }
+    h2 { margin:0 0 2px 0; font-size:16px; color:#0f172a; font-weight:700; }
+    .cd { font-size:9px; color:#64748b; }
+    .rm { text-align:left; }
+    .rm h1 { margin:0 0 3px 0; font-size:18px; color:#0f172a; font-weight:800; }
+    .me { font-size:13px; color:#1e40af; font-weight:700; margin-bottom:3px; }
+    .mi { font-size:9px; color:#475569; margin-bottom:2px; }
+    table { width:100%; border-collapse:collapse; margin-bottom:10px; }
+    th, td { border: 1px solid #cbd5e1; padding: 3px 2px; text-align: center; vertical-align: middle; }
+    th { background:#f1f5f9; color:#334155; font-weight:700; font-size:8px; white-space:nowrap; }
+    .day-col { width: 22px; min-width: 22px; max-width: 22px; font-size: 9px; }
+    .x-mark { background: #dbeafe; font-weight: 800; color: #1e40af; font-size: 10px; }
+    .route-name { text-align: right; padding: 3px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; font-size: 9px; font-weight: 500; }
+    .idx { width: 22px; color: #94a3b8; font-size: 8px; }
+    .summary-col { font-weight: 600; font-size: 9px; background: #f8fafc; min-width: 55px; }
+    .total-col { color: #0f172a; }
+    tr.totals-row td { background: #e2e8f0; font-weight: 800; border-top: 2px solid #94a3b8; font-size: 9px; }
+    .total-day { font-size: 8px; color: #475569; }
+    .ftr { margin-top:15px; text-align:center; font-size:8px; color:#94a3b8; border-top:1px solid #e2e8f0; padding-top:8px; }
+    .fc { margin-top:3px; color:#64748b; }
+    @media print { body { padding:0; } }
+  </style>
+</head>
+<body>
+  <div class="hdr">
+    <div class="ci">${logoHtml}<div>${companyNameHtml}${companyDetailsHtml}</div></div>
+    <div class="rm">
+      <h1>פירוט הסעות</h1>
+      ${customerName ? `<div class="me">לקוח: ${escapeHtml(customerName)}</div>` : ""}
+      <div class="mi"><strong>חודש:</strong> ${monthName}</div>
+      <div class="mi"><strong>תאריך הפקה:</strong> ${format(new Date(), "dd/MM/yyyy")}</div>
+    </div>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th class="idx">#</th>
+        <th style="min-width:120px;text-align:right;">מסלול</th>
+        ${dayHeaders}
+        <th class="summary-col">סה"כ<br/>נסיעות</th>
+        <th class="summary-col">מחיר<br/>לנסיעה</th>
+        <th class="summary-col">סה"כ<br/>מחיר</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${tableRows}
+      <tr class="totals-row">
+        <td colspan="2" style="text-align:right;font-weight:800;">סה"כ</td>
+        ${dayTotals}
+        <td class="summary-col">${totalRides}</td>
+        <td class="summary-col"></td>
+        <td class="summary-col total-col">${totalPrice.toLocaleString("he-IL")} ₪</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="ftr">${footerLine2}<div>הופק באמצעות מערכת סידור עבודה</div></div>
+  <script>window.onload=function(){setTimeout(function(){window.print();},500);}</script>
+</body>
+</html>`
+
+    const printWindow = window.open("", "_blank")
+    if (printWindow) {
+      printWindow.document.write(html)
+      printWindow.document.close()
+    } else {
+      toast({ title: "שגיאה", description: "הדפדפן חסם פתיחת חלון חדש. אנא אשר חלונות קופצים לאתר זה.", variant: "destructive" })
+    }
+  }
+
   return (
     <>
       <Dialog open={showFilterDialog} onOpenChange={setShowFilterDialog}>
@@ -857,8 +1017,17 @@ export function ReportPage({ reportType }: ReportPageProps) {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={exportToPdf} className="cursor-pointer">
                   <Printer className="h-4 w-4 ml-2 text-blue-600" />
-                  הדפסה / PDF
+                  {reportType === "report-customer" ? "דוח רגיל / PDF" : "הדפסה / PDF"}
                 </DropdownMenuItem>
+                {reportType === "report-customer" && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={exportXReportPdf} className="cursor-pointer">
+                      <LayoutGrid className="h-4 w-4 ml-2 text-purple-600" />
+                      דוח איקסים / PDF
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           )}
