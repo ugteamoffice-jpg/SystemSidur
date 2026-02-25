@@ -50,6 +50,7 @@ interface FilterState {
   endDate: Date | undefined
   customerName: string
   driverName: string
+  description: string
   withClientPrice: boolean
   withoutClientPrice: boolean
   withDriverPrice: boolean
@@ -188,6 +189,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
     endDate: today,
     customerName: "",
     driverName: "",
+    description: "",
     withClientPrice: true,
     withoutClientPrice: true,
     withDriverPrice: true,
@@ -309,6 +311,11 @@ export function ReportPage({ reportType }: ReportPageProps) {
       filtered = filtered.filter((r) => renderLinkField(r.fields[WS.DRIVER]).toLowerCase().includes(search))
     }
 
+    if (filters.description.trim()) {
+      const search = filters.description.trim().toLowerCase()
+      filtered = filtered.filter((r) => (r.fields[WS.DESCRIPTION] || "").toLowerCase().includes(search))
+    }
+
     // Invoice filters
     if (!filters.withInvoice) {
       filtered = filtered.filter((r) => !r.fields[INVOICE_FIELD_ID])
@@ -370,6 +377,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
     if (filters.startDate && filters.endDate) parts.push(`${format(filters.startDate, "dd/MM/yyyy")} - ${format(filters.endDate, "dd/MM/yyyy")}`)
     if (filters.customerName) parts.push(`לקוח: ${filters.customerName}`)
     if (filters.driverName) parts.push(`נהג: ${filters.driverName}`)
+    if (filters.description) parts.push(`מסלול: ${filters.description}`)
     if (!filters.withInvoice) parts.push("ללא מס' חשבונית")
     if (!filters.withoutInvoice) parts.push("מס' חשבונית קיים")
     if (!filters.withClientPrice) parts.push("ללא מחיר לקוח")
@@ -914,6 +922,21 @@ export function ReportPage({ reportType }: ReportPageProps) {
                       </button>
                     ))}
                   </div>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="font-bold">תיאור מסלול</Label>
+              <div className="relative">
+                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="חפש מסלול..." value={tempFilters.description}
+                  onChange={(e) => setTempFilters(p => ({ ...p, description: e.target.value }))}
+                  className="pr-9 h-10" />
+                {tempFilters.description && (
+                  <button className="absolute left-3 top-1/2 transform -translate-y-1/2" onClick={() => setTempFilters(p => ({ ...p, description: "" }))}>
+                    <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                  </button>
                 )}
               </div>
             </div>
