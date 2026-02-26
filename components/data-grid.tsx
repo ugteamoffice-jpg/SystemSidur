@@ -1422,7 +1422,7 @@ function DataGrid({ schema }: { schema?: any }) {
 
       <RideDialog 
         open={!!editingRecord} 
-        onOpenChange={(isOpen: boolean) => !isOpen && setEditingRecord(null)} 
+        onOpenChange={(isOpen: boolean) => { if (!isOpen) { setEditingRecord(null); fetchDataAfterSave(); } }}
         initialData={editingRecord} 
         onRideSaved={() => { 
           setEditingRecord(null); 

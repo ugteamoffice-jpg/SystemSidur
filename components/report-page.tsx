@@ -1212,7 +1212,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
 
       <RideDialog 
         open={!!editingRecord} 
-        onOpenChange={(isOpen: boolean) => !isOpen && setEditingRecord(null)} 
+        onOpenChange={(isOpen: boolean) => { if (!isOpen) { setEditingRecord(null); applyFilters(); } }}
         initialData={editingRecord} 
         onRideSaved={() => { setEditingRecord(null); applyFilters(); }} 
         triggerChild={<span />}

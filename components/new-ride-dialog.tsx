@@ -439,12 +439,11 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
     }
   }
 
-  // Navigate with auto-save
+  // Navigate with auto-save (save silently, don't close dialog)
   const handleNavigate = async (targetRecord: any) => {
     const saved = await saveRecord()
     if (saved) {
       setOrderFormFiles([])
-      if (onRideSaved) onRideSaved()
       onNavigate(targetRecord)
     }
   }
