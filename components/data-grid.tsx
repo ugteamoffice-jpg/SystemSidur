@@ -280,7 +280,6 @@ function DataGrid({ schema }: { schema?: any }) {
   const [data, setData] = React.useState<WorkScheduleRecord[]>([])
   const [rowSelection, setRowSelection] = React.useState({})
   const [globalFilter, setGlobalFilter] = React.useState("")
-  const [refreshKey, setRefreshKey] = React.useState(0)
   const tableScrollRef = React.useRef<HTMLDivElement>(null)
   const [dateFilter, setDateFilter] = React.useState<Date>(new Date())
   const dateFilterRef = React.useRef<Date>(new Date())
@@ -410,7 +409,6 @@ function DataGrid({ schema }: { schema?: any }) {
       console.log('[fetchData] status:', response.status, 'records:', json.records?.length ?? 'N/A')
       if (json.records) {
         setData(json.records.map((record: any) => ({ ...record, fields: { ...record.fields } })))
-        setRefreshKey(prev => prev + 1)
       } else {
         console.error('[fetchData] No records in response:', JSON.stringify(json).slice(0, 300))
       }
@@ -687,14 +685,17 @@ function DataGrid({ schema }: { schema?: any }) {
 
   // Delayed fetch to allow Teable to commit changes before re-reading
   const fetchDataAfterSave = React.useCallback(async () => {
+    const scrollTop = tableScrollRef.current?.scrollTop || 0
     console.log('[fetchDataAfterSave] Waiting 800ms for Teable commit...')
     await new Promise(r => setTimeout(r, 800))
     console.log('[fetchDataAfterSave] First fetch attempt...')
     await fetchData()
+    requestAnimationFrame(() => { if (tableScrollRef.current) tableScrollRef.current.scrollTop = scrollTop })
     // Retry after 2 seconds in case of eventual consistency
-    setTimeout(() => {
+    setTimeout(async () => {
       console.log('[fetchDataAfterSave] Retry fetch...')
-      fetchData()
+      await fetchData()
+      requestAnimationFrame(() => { if (tableScrollRef.current) tableScrollRef.current.scrollTop = scrollTop })
     }, 2000)
   }, [])
 
@@ -914,7 +915,7 @@ function DataGrid({ schema }: { schema?: any }) {
         </div>
       </div>
       
-      <div className="rounded-md border flex-1 overflow-auto min-h-0" key={refreshKey} ref={tableScrollRef}>
+      <div className="rounded-md border flex-1 overflow-auto min-h-0" ref={tableScrollRef}>
         <Table className="relative w-full" style={{ tableLayout: 'fixed' }}>
           <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -1403,11 +1404,8 @@ function DataGrid({ schema }: { schema?: any }) {
         onOpenChange={(isOpen: boolean) => !isOpen && setEditingRecord(null)} 
         initialData={editingRecord} 
         onRideSaved={() => { 
-          const scrollTop = tableScrollRef.current?.scrollTop || 0;
           setEditingRecord(null); 
-          fetchDataAfterSave().then(() => { 
-            requestAnimationFrame(() => { if (tableScrollRef.current) tableScrollRef.current.scrollTop = scrollTop; });
-          }); 
+          fetchDataAfterSave(); 
         }} 
         triggerChild={<span />}
         defaultDate={format(dateFilter, "yyyy-MM-dd")}
