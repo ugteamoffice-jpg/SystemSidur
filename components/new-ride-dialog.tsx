@@ -279,6 +279,17 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
     }
   }, [open, initialData, defaultDate])
 
+  // Resolve driver full name from drivers list (link field only has first name)
+  React.useEffect(() => {
+    if (isEdit && lists.drivers.length > 0 && selectedIds.driverId) {
+      const match = lists.drivers.find(d => d.id === selectedIds.driverId)
+      if (match && match.title !== form.driver) {
+        setForm(p => ({ ...p, driver: match.title }))
+        initialSnapshotRef.current.driver = match.title
+      }
+    }
+  }, [lists.drivers, selectedIds.driverId])
+
   // --- המנגנון שמאפס צ'קבוקסים (רץ ברקע) ---
   React.useEffect(() => {
     if (isEdit && isReady && initialSnapshotRef.current) {

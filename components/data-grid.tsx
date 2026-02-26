@@ -91,7 +91,7 @@ const renderLinkField = (value: any) => {
 }
 
 // הגדרת העמודות - מקבל fields mapping מ-tenant config
-function createColumns(WS: any): ColumnDef<WorkScheduleRecord>[] {
+function createColumns(WS: any, driverNamesMap: Map<string, string>): ColumnDef<WorkScheduleRecord>[] {
   return [
   {
     id: "select",
@@ -219,10 +219,18 @@ function createColumns(WS: any): ColumnDef<WorkScheduleRecord>[] {
     minSize: 100,
   },
   {
-    accessorFn: (row: any) => renderLinkField(row.fields[WS.DRIVER]),
+    accessorFn: (row: any) => {
+      const v = row.fields[WS.DRIVER]
+      if (Array.isArray(v) && v[0]?.id && driverNamesMap.has(v[0].id)) return driverNamesMap.get(v[0].id)
+      return renderLinkField(v)
+    },
     id: "driver",
     header: "שם נהג",
-    cell: ({ row }) => <div className="text-right truncate px-2">{renderLinkField(row.original.fields[WS.DRIVER])}</div>,
+    cell: ({ row }) => {
+      const v = row.original.fields[WS.DRIVER]
+      const name = Array.isArray(v) && v[0]?.id && driverNamesMap.has(v[0].id) ? driverNamesMap.get(v[0].id) : renderLinkField(v)
+      return <div className="text-right truncate px-2">{name}</div>
+    },
     size: 120,
     minSize: 100,
   },
@@ -276,7 +284,7 @@ function DataGrid({ schema }: { schema?: any }) {
   const COLUMN_ORDER_KEY  = `workScheduleColumnOrder_${tenantId}`
   const COLUMN_VISIBILITY_KEY = `workScheduleColumnVisibility_${tenantId}`
   const WS = fields?.workSchedule || {} as any
-  const columns = React.useMemo(() => createColumns(WS), [WS])
+  const columns = React.useMemo(() => createColumns(WS, driverNamesMap), [WS, driverNamesMap])
   const [data, setData] = React.useState<WorkScheduleRecord[]>([])
   const [rowSelection, setRowSelection] = React.useState({})
   const [globalFilter, setGlobalFilter] = React.useState("")
@@ -327,6 +335,7 @@ function DataGrid({ schema }: { schema?: any }) {
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false)
   const [showDriverAssignDialog, setShowDriverAssignDialog] = React.useState(false)
   const [driversList, setDriversList] = React.useState<{id: string, title: string}[]>([])
+  const [driverNamesMap, setDriverNamesMap] = React.useState<Map<string, string>>(new Map())
   const [selectedDriverId, setSelectedDriverId] = React.useState("")
   const [driverSearch, setDriverSearch] = React.useState("")
   
@@ -463,6 +472,9 @@ function DataGrid({ schema }: { schema?: any }) {
         return { id: x.id, title: `${first} ${last}`.trim() }
       }).filter((d: any) => d.title)
       setDriversList(items)
+      const map = new Map<string, string>()
+      items.forEach((d: any) => map.set(d.id, d.title))
+      setDriverNamesMap(map)
     } catch {}
   }
 
@@ -705,6 +717,11 @@ function DataGrid({ schema }: { schema?: any }) {
     fetchData()
   }, [dateFilter])
 
+  // Fetch drivers list on mount for full name display
+  React.useEffect(() => {
+    if (fields?.drivers) fetchDriversList()
+  }, [fields?.drivers])
+
   // Auto-refresh every 30 seconds so all users see the latest data
   React.useEffect(() => {
     const interval = setInterval(() => {
@@ -736,9 +753,15 @@ function DataGrid({ schema }: { schema?: any }) {
     }
     if (globalFilter) {
       const lowerFilter = globalFilter.toLowerCase()
-      filtered = filtered.filter((item) => Object.values(item.fields).some((val) => {
+      filtered = filtered.filter((item) => Object.entries(item.fields).some(([key, val]) => {
            if (val == null) return false
-           if (Array.isArray(val)) return val.some((v: any) => v?.title && String(v.title).toLowerCase().includes(lowerFilter))
+           if (Array.isArray(val)) {
+             // For driver field, also check full name from map
+             if (key === WS.DRIVER && val[0]?.id && driverNamesMap.has(val[0].id)) {
+               if (driverNamesMap.get(val[0].id)!.toLowerCase().includes(lowerFilter)) return true
+             }
+             return val.some((v: any) => v?.title && String(v.title).toLowerCase().includes(lowerFilter))
+           }
            if (typeof val === 'object' && val.title) return String(val.title).toLowerCase().includes(lowerFilter)
            return String(val).toLowerCase().includes(lowerFilter)
       }))

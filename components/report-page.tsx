@@ -74,6 +74,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
   const { toast } = useToast()
 
   const [allData, setAllData] = React.useState<WorkScheduleRecord[]>([])
+  const [driverNamesMap, setDriverNamesMap] = React.useState<Map<string, string>>(new Map())
   const [isLoading, setIsLoading] = React.useState(false)
   const [showFilterDialog, setShowFilterDialog] = React.useState(true)
   const [hasSearched, setHasSearched] = React.useState(false)
@@ -120,7 +121,11 @@ export function ReportPage({ reportType }: ReportPageProps) {
     const mkVehicle = (r: WorkScheduleRecord) => renderLinkField(r.fields[WS.VEHICLE_TYPE])
     const mkVehicleNum = (r: WorkScheduleRecord) => r.fields[WS.VEHICLE_NUM] || "-"
     const mkCustomer = (r: WorkScheduleRecord) => renderLinkField(r.fields[WS.CUSTOMER])
-    const mkDriver = (r: WorkScheduleRecord) => renderLinkField(r.fields[WS.DRIVER])
+    const mkDriver = (r: WorkScheduleRecord) => {
+      const v = r.fields[WS.DRIVER]
+      if (Array.isArray(v) && v[0]?.id && driverNamesMap.has(v[0].id)) return driverNamesMap.get(v[0].id)!
+      return renderLinkField(v)
+    }
     const mkP1 = (r: WorkScheduleRecord) => (Number(r.fields[WS.PRICE_CLIENT_EXCL]) || 0).toLocaleString()
     const mkP2 = (r: WorkScheduleRecord) => (Number(r.fields[WS.PRICE_CLIENT_INCL]) || 0).toLocaleString()
     const mkP3 = (r: WorkScheduleRecord) => (Number(r.fields[WS.PRICE_DRIVER_EXCL]) || 0).toLocaleString()
@@ -179,7 +184,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
         { id: "profit", label: "רווח", width: colWidths.profit || 80, render: mkProfit, cls: "text-green-600 dark:text-green-400 font-medium" },
       ]
     }
-  }, [reportType, WS, colWidths])
+  }, [reportType, WS, colWidths, driverNamesMap])
   
   const today = new Date()
   const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
@@ -232,12 +237,16 @@ export function ReportPage({ reportType }: ReportPageProps) {
         }
         if (drvRes.ok) {
           const data = await drvRes.json()
+          const map = new Map<string, string>()
           const names = (data.records || []).map((r: any) => {
             const first = r.fields?.[tenantFields?.drivers?.FIRST_NAME] || ""
             const last = r.fields?.[tenantFields?.drivers?.LAST_NAME] || ""
-            return `${first} ${last}`.trim()
+            const full = `${first} ${last}`.trim()
+            if (r.id && full) map.set(r.id, full)
+            return full
           }).filter(Boolean)
           setDriverOptions([...new Set(names)] as string[])
+          setDriverNamesMap(map)
         }
       } catch (e) { console.error("Error fetching names:", e) }
     }
@@ -308,7 +317,11 @@ export function ReportPage({ reportType }: ReportPageProps) {
 
     if (filters.driverName.trim()) {
       const search = filters.driverName.trim().toLowerCase()
-      filtered = filtered.filter((r) => renderLinkField(r.fields[WS.DRIVER]).toLowerCase().includes(search))
+      filtered = filtered.filter((r) => {
+        const v = r.fields[WS.DRIVER]
+        const name = Array.isArray(v) && v[0]?.id && driverNamesMap.has(v[0].id) ? driverNamesMap.get(v[0].id)! : renderLinkField(v)
+        return name.toLowerCase().includes(search)
+      })
     }
 
     if (filters.description.trim()) {
@@ -355,7 +368,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
     })
 
     return filtered
-  }, [allData, filters, globalFilter, WS])
+  }, [allData, filters, globalFilter, WS, driverNamesMap])
 
   React.useEffect(() => {
     // מנקה את הבחירה כשמבצעים סינון פנימי חדש (Global Filter)
@@ -438,6 +451,12 @@ export function ReportPage({ reportType }: ReportPageProps) {
   }
 
   // --- ייצוא לאקסל (CSV) ---
+  // Helper: resolve driver full name from map
+  const getDriverFullName = (driverField: any): string => {
+    if (Array.isArray(driverField) && driverField[0]?.id && driverNamesMap.has(driverField[0].id)) return driverNamesMap.get(driverField[0].id)!
+    return renderLinkField(driverField)
+  }
+
   const exportToCsv = () => {
     if (filteredData.length === 0) return
 
@@ -458,7 +477,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
           `"${(f[WS.DESCRIPTION] || "").replace(/"/g, '""')}"`,
           `"${f[WS.DROPOFF_TIME] || ""}"`,
           `"${renderLinkField(f[WS.VEHICLE_TYPE]).replace(/"/g, '""')}"`,
-          `"${renderLinkField(f[WS.DRIVER]).replace(/"/g, '""')}"`,
+          `"${getDriverFullName(f[WS.DRIVER]).replace(/"/g, '""')}"`,
           `"${f[WS.VEHICLE_NUM] || ""}"`,
           Number(f[WS.PRICE_CLIENT_EXCL]) || 0,
           Number(f[WS.PRICE_CLIENT_INCL]) || 0,
@@ -503,7 +522,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
     const mkVT   = (f: any) => escapeHtml(renderLinkField(f[WS.VEHICLE_TYPE]))
     const mkVN   = (f: any) => escapeHtml(f[WS.VEHICLE_NUM] || "-")
     const mkCust = (f: any) => escapeHtml(renderLinkField(f[WS.CUSTOMER]))
-    const mkDrv  = (f: any) => escapeHtml(renderLinkField(f[WS.DRIVER]))
+    const mkDrv  = (f: any) => escapeHtml(getDriverFullName(f[WS.DRIVER]))
     const mkP1   = (f: any) => (Number(f[WS.PRICE_CLIENT_EXCL]) || 0).toLocaleString("he-IL")
     const mkP2   = (f: any) => (Number(f[WS.PRICE_CLIENT_INCL]) || 0).toLocaleString("he-IL")
     const mkP3   = (f: any) => (Number(f[WS.PRICE_DRIVER_EXCL]) || 0).toLocaleString("he-IL")
