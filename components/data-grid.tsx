@@ -1160,18 +1160,18 @@ function DataGrid({ schema }: { schema?: any }) {
 
       {/* Dialog לשיבוץ נהג */}
       <Dialog open={showDriverAssignDialog} onOpenChange={(open) => { setShowDriverAssignDialog(open); if (!open) { setSelectedDriverId(""); setDriverSearch(""); } }}>
-        <DialogContent className="sm:max-w-[400px]" dir="rtl">
+        <DialogContent className="sm:max-w-[400px] sm:w-[400px] h-[420px] flex flex-col" dir="rtl">
           <DialogHeader>
             <DialogTitle className="text-right">שיבוץ נהג ל-{selectedCount} נסיעות</DialogTitle>
           </DialogHeader>
-          <div className="py-4">
+          <div className="flex-1 flex flex-col min-h-0 py-2">
             <Input
               placeholder="חיפוש נהג..."
               value={driverSearch}
               onChange={(e) => setDriverSearch(e.target.value)}
-              className="mb-2 text-right"
+              className="mb-2 text-right flex-none"
             />
-            <div className="max-h-[250px] overflow-auto border rounded-md">
+            <div className="flex-1 overflow-auto border rounded-md min-h-0">
               {driversList
                 .filter(d => d.title.includes(driverSearch))
                 .map(d => (
