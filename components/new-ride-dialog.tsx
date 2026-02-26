@@ -317,12 +317,12 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  // Core save logic - returns true if saved successfully
+  const saveRecord = async (): Promise<boolean> => {
     if (!date || !form.customer || !form.description || !form.pickup) {
       setShowErrors(true);
       toast({ title: "שגיאה", description: "אנא מלא את כל השדות החובה", variant: "destructive" })
-      return
+      return false
     }
 
     setLoading(true)
@@ -396,15 +396,11 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
           throw new Error("Server rejected the data");
         }
 
-        // If response is OK, the record was saved successfully
         let result = {}
         try { result = await res.json(); } catch { /* empty response is OK */ }
         console.log('[RideDialog] PATCH result:', JSON.stringify(result).slice(0, 200));
         await uploadFilesToRecord(initialData.id)
-        console.log('[RideDialog] Edit save OK, calling onRideSaved...')
-        setOpen(false);
-        if (onRideSaved) onRideSaved();
-        return;
+        return true
       }
 
       const res = await fetch(`/api/work-schedule?tenant=${tenantId}`, {
@@ -413,33 +409,44 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
         body: JSON.stringify(body)
       })
 
-      console.log('[RideDialog] POST response status:', res.status, res.statusText)
-
       if (!res.ok) {
         const errText = await res.text()
         console.error('[RideDialog] POST failed:', errText)
         throw new Error(errText);
       }
 
-      // Get new record ID and upload file
       const result = await res.json()
-      console.log('[RideDialog] POST result:', JSON.stringify(result).slice(0, 300))
       const newRecordId = result?.records?.[0]?.id || result?.id
       if (newRecordId && orderFormFiles.length > 0) {
         await uploadFilesToRecord(newRecordId)
       }
 
-      // saved successfully - no toast needed
-      console.log('[RideDialog] Save OK, calling onRideSaved...')
-      setOpen(false)
-      if (onRideSaved) onRideSaved()
-
+      return true
     } catch (err) {
       console.error(err);
       toast({ title: "שגיאה בשמירה", description: "אירעה שגיאה בעת השמירה", variant: "destructive" })
+      return false
     } finally {
       setLoading(false)
-      setIsUploading(false)
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const saved = await saveRecord()
+    if (saved) {
+      setOpen(false)
+      if (onRideSaved) onRideSaved()
+    }
+  }
+
+  // Navigate with auto-save
+  const handleNavigate = async (targetRecord: any) => {
+    const saved = await saveRecord()
+    if (saved) {
+      setOrderFormFiles([])
+      if (onRideSaved) onRideSaved()
+      onNavigate(targetRecord)
     }
   }
 
@@ -466,10 +473,10 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
               return (
                 <div className="flex items-center gap-1">
                   <span className="text-xs text-muted-foreground">{idx + 1}/{allRides.length}</span>
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" disabled={!hasPrev} onClick={() => onNavigate(allRides[idx - 1])} title="נסיעה קודמת">
+                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" disabled={!hasPrev || loading} onClick={() => handleNavigate(allRides[idx - 1])} title="נסיעה קודמת">
                     <ChevronUp className="h-4 w-4" />
                   </Button>
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" disabled={!hasNext} onClick={() => onNavigate(allRides[idx + 1])} title="נסיעה הבאה">
+                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" disabled={!hasNext || loading} onClick={() => handleNavigate(allRides[idx + 1])} title="נסיעה הבאה">
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </div>
