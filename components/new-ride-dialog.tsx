@@ -285,7 +285,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
       const match = lists.drivers.find(d => d.id === selectedIds.driverId)
       if (match && match.title !== form.driver) {
         setForm(p => ({ ...p, driver: match.title }))
-        initialSnapshotRef.current.driver = match.title
+        if (initialSnapshotRef.current) initialSnapshotRef.current.driver = match.title
       }
     }
   }, [lists.drivers, selectedIds.driverId])

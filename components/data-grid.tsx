@@ -284,6 +284,7 @@ function DataGrid({ schema }: { schema?: any }) {
   const COLUMN_ORDER_KEY  = `workScheduleColumnOrder_${tenantId}`
   const COLUMN_VISIBILITY_KEY = `workScheduleColumnVisibility_${tenantId}`
   const WS = fields?.workSchedule || {} as any
+  const [driverNamesMap, setDriverNamesMap] = React.useState<Map<string, string>>(new Map())
   const columns = React.useMemo(() => createColumns(WS, driverNamesMap), [WS, driverNamesMap])
   const [data, setData] = React.useState<WorkScheduleRecord[]>([])
   const [rowSelection, setRowSelection] = React.useState({})
@@ -335,7 +336,6 @@ function DataGrid({ schema }: { schema?: any }) {
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false)
   const [showDriverAssignDialog, setShowDriverAssignDialog] = React.useState(false)
   const [driversList, setDriversList] = React.useState<{id: string, title: string}[]>([])
-  const [driverNamesMap, setDriverNamesMap] = React.useState<Map<string, string>>(new Map())
   const [selectedDriverId, setSelectedDriverId] = React.useState("")
   const [driverSearch, setDriverSearch] = React.useState("")
   
