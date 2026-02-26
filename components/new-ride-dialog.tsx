@@ -91,6 +91,9 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
 
   const isEdit = !!initialData
 
+  // Cache of locally-saved changes during arrow navigation (survives between records)
+  const localSavedCache = React.useRef<Map<string, Record<string, any>>>(new Map())
+
   const [date, setDate] = React.useState<Date | undefined>(() => {
     if (defaultDate) {
       const parsed = new Date(defaultDate);
@@ -216,6 +219,29 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
       setIsReady(false);
       
       if (initialData) {
+        // Check if we have locally-cached form state from arrow navigation
+        const cached = localSavedCache.current.get(initialData.id)
+        if (cached) {
+          // Restore exact form state that was saved before navigation
+          setDate(cached.date)
+          setForm(cached.form)
+          setSelectedIds(cached.selectedIds)
+          setPrices(cached.prices)
+          setStatus(cached.status)
+          setExistingAttachment(Array.isArray(initialData.fields[FIELDS.ORDER_FORM]) ? initialData.fields[FIELDS.ORDER_FORM] : [])
+          setAttachmentDate(initialData.fields[FIELDS.ORDER_FORM_DATE] || "")
+          setOrderFormFiles([])
+          initialSnapshotRef.current = {
+            dateStr: cached.date ? format(cached.date, "yyyy-MM-dd") : "",
+            driver: cached.form.driver,
+            description: cached.form.description,
+            pickup: cached.form.pickup,
+            dropoff: cached.form.dropoff,
+            vehicleType: cached.form.vehicleType,
+            notes: cached.form.notes
+          }
+          setTimeout(() => setIsReady(true), 300)
+        } else {
         const f = initialData.fields
         
         let initialDate: Date | undefined = undefined;
@@ -270,6 +296,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
         };
 
         setTimeout(() => setIsReady(true), 300)
+        } // end of else (no cache) block
       } else {
         // מצב "נסיעה חדשה" (Reset)
         setForm({
@@ -290,6 +317,11 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
       }
     }
   }, [open, initialData, defaultDate])
+
+  // Clear navigation cache when dialog closes
+  React.useEffect(() => {
+    if (!open) localSavedCache.current.clear()
+  }, [open])
 
   // --- המנגנון שמאפס צ'קבוקסים (רץ ברקע) ---
   React.useEffect(() => {
@@ -459,10 +491,23 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
     }
   }
 
+  // Build current form state as API fields (for updating parent data)
   // Navigate with auto-save (save silently, don't close dialog)
   const handleNavigate = async (targetRecord: any) => {
+    // Capture current form state BEFORE saving (refs have latest values)
+    const snapshot = {
+      form: { ...formRef.current },
+      prices: { ...pricesRef.current },
+      status: { ...statusRef.current },
+      date: dateRef.current,
+      selectedIds: { ...selectedIdsRef.current },
+    }
     const saved = await saveRecord()
     if (saved) {
+      // Cache form state locally so navigating back shows updated data
+      if (initialData?.id) {
+        localSavedCache.current.set(initialData.id, snapshot)
+      }
       setOrderFormFiles([])
       onNavigate(targetRecord)
     }

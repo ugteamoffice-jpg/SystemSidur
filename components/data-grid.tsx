@@ -1431,7 +1431,7 @@ function DataGrid({ schema }: { schema?: any }) {
         triggerChild={<span />}
         defaultDate={format(dateFilter, "yyyy-MM-dd")}
         allRides={table.getRowModel().rows.map(r => r.original)}
-        onNavigate={(record) => setEditingRecord(record)}
+        onNavigate={(record: any) => setEditingRecord(record)}
       />
       
       <SplitRideDialog 
