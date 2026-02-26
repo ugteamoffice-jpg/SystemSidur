@@ -143,6 +143,19 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
   const [existingAttachment, setExistingAttachment] = React.useState<any[]>([])
   const [attachmentDate, setAttachmentDate] = React.useState<string>("")
   const [isUploading, setIsUploading] = React.useState(false)
+
+  // Refs that always hold the latest state values (for save-on-navigate)
+  const formRef = React.useRef(form)
+  const pricesRef = React.useRef(prices)
+  const statusRef = React.useRef(status)
+  const dateRef = React.useRef(date)
+  const selectedIdsRef = React.useRef(selectedIds)
+  // useLayoutEffect ensures refs update BEFORE any subsequent event handlers
+  React.useLayoutEffect(() => { formRef.current = form }, [form])
+  React.useLayoutEffect(() => { pricesRef.current = prices }, [prices])
+  React.useLayoutEffect(() => { statusRef.current = status }, [status])
+  React.useLayoutEffect(() => { dateRef.current = date }, [date])
+  React.useLayoutEffect(() => { selectedIdsRef.current = selectedIds }, [selectedIds])
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const [editingFileName, setEditingFileName] = React.useState<number | null>(null)
 
@@ -318,7 +331,14 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
 
   // Core save logic - returns true if saved successfully
   const saveRecord = async (): Promise<boolean> => {
-    if (!date || !form.customer || !form.description || !form.pickup) {
+    // Read latest values from refs (not stale closure state)
+    const _form = formRef.current
+    const _prices = pricesRef.current
+    const _status = statusRef.current
+    const _date = dateRef.current
+    const _selectedIds = selectedIdsRef.current
+
+    if (!_date || !_form.customer || !_form.description || !_form.pickup) {
       setShowErrors(true);
       toast({ title: "שגיאה", description: "אנא מלא את כל השדות החובה", variant: "destructive" })
       return false
@@ -333,31 +353,31 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
         return list.find(i => i.title.trim() === cleanText)?.id;
       };
 
-      const customerId = findId(lists.customers, form.customer, selectedIds.customerId)
-      const driverId = findId(lists.drivers, form.driver, selectedIds.driverId)
-      const vehicleTypeId = findId(lists.vehicles, form.vehicleType, selectedIds.vehicleTypeId)
+      const customerId = findId(lists.customers, _form.customer, _selectedIds.customerId)
+      const driverId = findId(lists.drivers, _form.driver, _selectedIds.driverId)
+      const vehicleTypeId = findId(lists.vehicles, _form.vehicleType, _selectedIds.vehicleTypeId)
 
       const body: any = {
         fields: {
-          [FIELDS.DATE]: format(date, "yyyy-MM-dd"),
+          [FIELDS.DATE]: format(_date, "yyyy-MM-dd"),
           [FIELDS.CUSTOMER]: customerId ? [customerId] : null,
           [FIELDS.VEHICLE_TYPE]: vehicleTypeId ? [vehicleTypeId] : null,
           [FIELDS.DRIVER]: driverId ? [driverId] : null,
-          [FIELDS.DESCRIPTION]: form.description,
-          [FIELDS.PICKUP_TIME]: form.pickup,
-          [FIELDS.DROPOFF_TIME]: form.dropoff || null,
-          [FIELDS.VEHICLE_NUM]: form.vehicleNum || null,
-          [FIELDS.MANAGER_NOTES]: form.managerNotes || null,
-          [FIELDS.DRIVER_NOTES]: form.notes || null,
-          [FIELDS.PRICE_CLIENT_EXCL]: prices.ce ? parseFloat(prices.ce) : null,
-          [FIELDS.PRICE_CLIENT_INCL]: prices.ci ? parseFloat(prices.ci) : null,
-          [FIELDS.PRICE_DRIVER_EXCL]: prices.de ? parseFloat(prices.de) : null,
-          [FIELDS.PRICE_DRIVER_INCL]: prices.di ? parseFloat(prices.di) : null,
-          [FIELDS.ORDER_NAME]: form.orderName || null,
-          [FIELDS.MOBILE]: form.mobile || null,
-          [FIELDS.ID_NUM]: form.idNum ? Number(form.idNum) : null,
-          [FIELDS.SENT]: status.sent,
-          [FIELDS.APPROVED]: status.approved,
+          [FIELDS.DESCRIPTION]: _form.description,
+          [FIELDS.PICKUP_TIME]: _form.pickup,
+          [FIELDS.DROPOFF_TIME]: _form.dropoff || null,
+          [FIELDS.VEHICLE_NUM]: _form.vehicleNum || null,
+          [FIELDS.MANAGER_NOTES]: _form.managerNotes || null,
+          [FIELDS.DRIVER_NOTES]: _form.notes || null,
+          [FIELDS.PRICE_CLIENT_EXCL]: _prices.ce ? parseFloat(_prices.ce) : null,
+          [FIELDS.PRICE_CLIENT_INCL]: _prices.ci ? parseFloat(_prices.ci) : null,
+          [FIELDS.PRICE_DRIVER_EXCL]: _prices.de ? parseFloat(_prices.de) : null,
+          [FIELDS.PRICE_DRIVER_INCL]: _prices.di ? parseFloat(_prices.di) : null,
+          [FIELDS.ORDER_NAME]: _form.orderName || null,
+          [FIELDS.MOBILE]: _form.mobile || null,
+          [FIELDS.ID_NUM]: _form.idNum ? Number(_form.idNum) : null,
+          [FIELDS.SENT]: _status.sent,
+          [FIELDS.APPROVED]: _status.approved,
         }
       }
 
