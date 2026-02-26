@@ -24,7 +24,6 @@ export default function DriversGrid() {
   const { tenantId } = useTenant()
   const STATUS_FIELD_ID = tenantFields?.drivers.STATUS || ""
   const FIRST_NAME_ID = tenantFields?.drivers.FIRST_NAME || ""
-  const LAST_NAME_ID = tenantFields?.drivers.LAST_NAME || ""
   const PHONE_ID = tenantFields?.drivers.PHONE || ""
   const DRIVER_TYPE_ID = tenantFields?.drivers.DRIVER_TYPE || ""
   const CAR_NUMBER_ID = tenantFields?.drivers.CAR_NUMBER || ""
@@ -48,8 +47,7 @@ export default function DriversGrid() {
 
   const DRIVERS_COL_SIZING_KEY = `driversColumnSizing_${tenantId}`
   const driverColumns = [
-    { key: 'firstName', header: 'שם פרטי', defaultWidth: 150, minWidth: 80 },
-    { key: 'lastName', header: 'שם משפחה', defaultWidth: 150, minWidth: 80 },
+    { key: 'firstName', header: 'שם מלא / שם חברה', defaultWidth: 200, minWidth: 100 },
     { key: 'phone', header: 'טלפון נייד', defaultWidth: 140, minWidth: 80 },
     { key: 'type', header: 'סוג נהג', defaultWidth: 120, minWidth: 80 },
     { key: 'carNumber', header: 'מספר רכב', defaultWidth: 140, minWidth: 80 },
@@ -156,7 +154,6 @@ export default function DriversGrid() {
     setEditingDriverId(driver.id); 
     setNewDriver({ 
       [FIRST_NAME_ID]: driver.fields[FIRST_NAME_ID] || "",
-      [LAST_NAME_ID]: driver.fields[LAST_NAME_ID] || "",
       [PHONE_ID]: driver.fields[PHONE_ID] || "",
       [DRIVER_TYPE_ID]: driver.fields[DRIVER_TYPE_ID] || "",
       [CAR_NUMBER_ID]: driver.fields[CAR_NUMBER_ID] || "",
@@ -168,7 +165,6 @@ export default function DriversGrid() {
   const resetForm = () => { 
     setNewDriver({ 
       [FIRST_NAME_ID]: "",
-      [LAST_NAME_ID]: "",
       [PHONE_ID]: "",
       [DRIVER_TYPE_ID]: "",
       [CAR_NUMBER_ID]: ""
@@ -179,7 +175,6 @@ export default function DriversGrid() {
 
   const [newDriver, setNewDriver] = useState<any>({ 
     [FIRST_NAME_ID]: "",
-    [LAST_NAME_ID]: "",
     [PHONE_ID]: "",
     [DRIVER_TYPE_ID]: "",
     [CAR_NUMBER_ID]: ""
@@ -267,23 +262,22 @@ export default function DriversGrid() {
           </TableHeader>
           <TableBody>
             {isLoading && filteredDrivers.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="text-center py-8"><div className="flex items-center justify-center gap-2"><Loader2 className="h-5 w-5 animate-spin" /><span>טוען נתונים...</span></div></TableCell></TableRow>
+              <TableRow><TableCell colSpan={5} className="text-center py-8"><div className="flex items-center justify-center gap-2"><Loader2 className="h-5 w-5 animate-spin" /><span>טוען נתונים...</span></div></TableCell></TableRow>
             ) : filteredDrivers.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">לא נמצאו נהגים</TableCell></TableRow>
+              <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">לא נמצאו נהגים</TableCell></TableRow>
             ) : (
               <>
-                {startIndex > 0 && <tr style={{ height: `${offsetY}px` }}><td colSpan={6} /></tr>}
+                {startIndex > 0 && <tr style={{ height: `${offsetY}px` }}><td colSpan={5} /></tr>}
                 {visibleDrivers.map((driver) => (
                   <TableRow key={driver.id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleRowClick(driver)} style={{ height: `${ROW_HEIGHT}px` }}>
                     <TableCell className="font-medium truncate">{driver.fields[FIRST_NAME_ID] || "-"}</TableCell>
-                    <TableCell className="truncate">{driver.fields[LAST_NAME_ID] || "-"}</TableCell>
                     <TableCell className="truncate">{driver.fields[PHONE_ID] || "-"}</TableCell>
                     <TableCell className="truncate">{driver.fields[DRIVER_TYPE_ID] || "-"}</TableCell>
                     <TableCell className="truncate">{driver.fields[CAR_NUMBER_ID] || "-"}</TableCell>
                     <TableCell><span className={`px-2 py-1 rounded-full text-xs ${getDriverStatus(driver) === 'פעיל' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{getDriverStatus(driver)}</span></TableCell>
                   </TableRow>
                 ))}
-                {endIndex < filteredDrivers.length && <tr style={{ height: `${totalHeight - endIndex * ROW_HEIGHT}px` }}><td colSpan={6} /></tr>}
+                {endIndex < filteredDrivers.length && <tr style={{ height: `${totalHeight - endIndex * ROW_HEIGHT}px` }}><td colSpan={5} /></tr>}
               </>
             )}
           </TableBody>
@@ -294,13 +288,9 @@ export default function DriversGrid() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
             <DialogHeader><DialogTitle>{isEditMode ? "עריכת נהג" : "נהג חדש"}</DialogTitle></DialogHeader>
             <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>שם פרטי {!isEditMode && <span className="text-red-500">*</span>}</Label>
+                <div className="space-y-2 col-span-2">
+                  <Label>שם מלא / שם חברה {!isEditMode && <span className="text-red-500">*</span>}</Label>
                   <Input value={newDriver[FIRST_NAME_ID]} onChange={(e) => setNewDriver({...newDriver, [FIRST_NAME_ID]: e.target.value})} />
-                </div>
-                <div className="space-y-2">
-                  <Label>שם משפחה</Label>
-                  <Input value={newDriver[LAST_NAME_ID] || ""} onChange={(e) => setNewDriver({...newDriver, [LAST_NAME_ID]: e.target.value})} />
                 </div>
                 <div className="space-y-2">
                   <Label>טלפון נייד</Label>

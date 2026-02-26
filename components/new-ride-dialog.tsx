@@ -159,9 +159,8 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
           const items = d.records ? d.records.map((x: any) => {
             let title = "";
             if (isDrivers && tenantFields?.drivers) {
-              const first = x.fields?.[tenantFields.drivers.FIRST_NAME] || ""
-              const last = x.fields?.[tenantFields.drivers.LAST_NAME] || ""
-              title = `${first} ${last}`.trim()
+              const name = x.fields?.[tenantFields.drivers.FIRST_NAME] || ""
+              title = name.trim()
             } else {
               const firstVal = x.fields && Object.values(x.fields)[0];
               if (Array.isArray(firstVal)) {
@@ -278,17 +277,6 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
       }
     }
   }, [open, initialData, defaultDate])
-
-  // Resolve driver full name from drivers list (link field only has first name)
-  React.useEffect(() => {
-    if (isEdit && lists.drivers.length > 0 && selectedIds.driverId) {
-      const match = lists.drivers.find(d => d.id === selectedIds.driverId)
-      if (match && match.title !== form.driver) {
-        setForm(p => ({ ...p, driver: match.title }))
-        if (initialSnapshotRef.current) initialSnapshotRef.current.driver = match.title
-      }
-    }
-  }, [lists.drivers, selectedIds.driverId])
 
   // --- המנגנון שמאפס צ'קבוקסים (רץ ברקע) ---
   React.useEffect(() => {

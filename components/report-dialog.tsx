@@ -87,9 +87,7 @@ export function ReportDialog({ open, onOpenChange, reportType }: ReportDialogPro
         const names: string[] = []
         records.forEach((r: any) => {
           if (reportType === "report-driver") {
-            const first = r.fields?.[tenantFields?.drivers?.FIRST_NAME] || ""
-            const last = r.fields?.[tenantFields?.drivers?.LAST_NAME] || ""
-            const name = `${first} ${last}`.trim()
+            const name = (r.fields?.[tenantFields?.drivers?.FIRST_NAME] || "").trim()
             if (name) names.push(name)
           } else {
             const name = r.fields?.[tenantFields?.customers?.NAME] || ""

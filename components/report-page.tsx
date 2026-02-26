@@ -235,9 +235,8 @@ export function ReportPage({ reportType }: ReportPageProps) {
           const data = await drvRes.json()
           const map = new Map<string, string>()
           const names = (data.records || []).map((r: any) => {
-            const first = r.fields?.[tenantFields?.drivers?.FIRST_NAME] || ""
-            const last = r.fields?.[tenantFields?.drivers?.LAST_NAME] || ""
-            const full = `${first} ${last}`.trim()
+            const name = r.fields?.[tenantFields?.drivers?.FIRST_NAME] || ""
+            const full = name.trim()
             if (r.id && full) map.set(r.id, full)
             return full
           }).filter(Boolean)

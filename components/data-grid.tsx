@@ -418,9 +418,8 @@ function DataGrid({ schema }: { schema?: any }) {
       const json = await res.json()
       if (!json.records) return
       const items = json.records.map((x: any) => {
-        const first = x.fields?.[DRV.FIRST_NAME] || ""
-        const last = x.fields?.[DRV.LAST_NAME] || ""
-        return { id: x.id, title: `${first} ${last}`.trim() }
+        const name = x.fields?.[DRV.FIRST_NAME] || ""
+        return { id: x.id, title: name.trim() }
       }).filter((d: any) => d.title)
       setDriversList(items)
       const map = new Map<string, string>()

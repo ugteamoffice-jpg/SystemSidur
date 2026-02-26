@@ -61,7 +61,6 @@ export function SendWhatsappDialog({
   const WS = tenantFields?.workSchedule
   const DRV = tenantFields?.drivers
   const FIRST_NAME_ID = DRV?.FIRST_NAME || ""
-  const LAST_NAME_ID = DRV?.LAST_NAME || ""
   const PHONE_ID = DRV?.PHONE || ""
   const DRIVER_TYPE_ID = DRV?.DRIVER_TYPE || ""
 
@@ -98,10 +97,8 @@ export function SendWhatsappDialog({
       if (!json.records) throw new Error("No records")
 
       const match = json.records.find((d: any) => {
-        const firstName = d.fields[FIRST_NAME_ID] || ""
-        const lastName = d.fields[LAST_NAME_ID] || ""
-        const fullName = `${firstName} ${lastName}`.trim()
-        return fullName === driverName || firstName === driverName
+        const name = (d.fields[FIRST_NAME_ID] || "").trim()
+        return name === driverName
       })
 
       if (match) {
