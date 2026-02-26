@@ -35,6 +35,7 @@ interface ExportDriverPdfDialogProps {
 }
 
 function getDriverName(record: any, fieldId: string): string {
+  if (record.fields._driverFullName) return record.fields._driverFullName
   const driver = record.fields[fieldId]
   if (Array.isArray(driver) && driver.length > 0) return driver[0]?.title || ""
   if (typeof driver === "object" && driver?.title) return driver.title

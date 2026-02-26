@@ -91,7 +91,7 @@ const renderLinkField = (value: any) => {
 }
 
 // הגדרת העמודות - מקבל fields mapping מ-tenant config
-function createColumns(WS: any, driverNamesMap: Map<string, string>): ColumnDef<WorkScheduleRecord>[] {
+function createColumns(WS: any): ColumnDef<WorkScheduleRecord>[] {
   return [
   {
     id: "select",
@@ -219,18 +219,10 @@ function createColumns(WS: any, driverNamesMap: Map<string, string>): ColumnDef<
     minSize: 100,
   },
   {
-    accessorFn: (row: any) => {
-      const v = row.fields[WS.DRIVER]
-      if (Array.isArray(v) && v[0]?.id && driverNamesMap.has(v[0].id)) return driverNamesMap.get(v[0].id)
-      return renderLinkField(v)
-    },
+    accessorFn: (row: any) => row.fields._driverFullName || renderLinkField(row.fields[WS.DRIVER]),
     id: "driver",
     header: "שם נהג",
-    cell: ({ row }) => {
-      const v = row.original.fields[WS.DRIVER]
-      const name = Array.isArray(v) && v[0]?.id && driverNamesMap.has(v[0].id) ? driverNamesMap.get(v[0].id) : renderLinkField(v)
-      return <div className="text-right truncate px-2">{name}</div>
-    },
+    cell: ({ row }) => <div className="text-right truncate px-2">{row.original.fields._driverFullName || renderLinkField(row.original.fields[WS.DRIVER])}</div>,
     size: 120,
     minSize: 100,
   },
@@ -284,8 +276,8 @@ function DataGrid({ schema }: { schema?: any }) {
   const COLUMN_ORDER_KEY  = `workScheduleColumnOrder_${tenantId}`
   const COLUMN_VISIBILITY_KEY = `workScheduleColumnVisibility_${tenantId}`
   const WS = fields?.workSchedule || {} as any
-  const [driverNamesMap, setDriverNamesMap] = React.useState<Map<string, string>>(new Map())
-  const columns = React.useMemo(() => createColumns(WS, driverNamesMap), [WS, driverNamesMap])
+  const driverNamesRef = React.useRef<Map<string, string>>(new Map())
+  const columns = React.useMemo(() => createColumns(WS), [WS])
   const [data, setData] = React.useState<WorkScheduleRecord[]>([])
   const [rowSelection, setRowSelection] = React.useState({})
   const [globalFilter, setGlobalFilter] = React.useState("")
@@ -405,21 +397,52 @@ function DataGrid({ schema }: { schema?: any }) {
     return () => window.removeEventListener("columnVisibilityChange", handler)
   }, [])
 
+  const enrichDriverNames = (records: any[]) => {
+    const map = driverNamesRef.current
+    if (map.size === 0) return records
+    return records.map(record => {
+      const v = record.fields[WS.DRIVER]
+      if (Array.isArray(v) && v[0]?.id && map.has(v[0].id)) {
+        return { ...record, fields: { ...record.fields, _driverFullName: map.get(v[0].id) } }
+      }
+      return record
+    })
+  }
+
+  const loadDriversIfNeeded = async () => {
+    if (driverNamesRef.current.size > 0) return
+    const DRV = fields?.drivers
+    if (!DRV?.FIRST_NAME) return
+    try {
+      const res = await fetch(`/api/drivers?tenant=${tenantId}`)
+      const json = await res.json()
+      if (!json.records) return
+      const items = json.records.map((x: any) => {
+        const first = x.fields?.[DRV.FIRST_NAME] || ""
+        const last = x.fields?.[DRV.LAST_NAME] || ""
+        return { id: x.id, title: `${first} ${last}`.trim() }
+      }).filter((d: any) => d.title)
+      setDriversList(items)
+      const map = new Map<string, string>()
+      items.forEach((d: any) => map.set(d.id, d.title))
+      driverNamesRef.current = map
+    } catch {}
+  }
+
   const fetchData = async () => {
     try {
+      // Ensure drivers are loaded first for full name display
+      await loadDriversIfNeeded()
       const dateStr = format(dateFilterRef.current, "yyyy-MM-dd")
       const url = `/api/work-schedule?tenant=${tenantId}&date=${dateStr}&_t=${Date.now()}`
-      console.log('[fetchData] Fetching:', url)
       const response = await fetch(url, {
         cache: 'no-store',
         headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
       }) 
       const json = await response.json()
-      console.log('[fetchData] status:', response.status, 'records:', json.records?.length ?? 'N/A')
       if (json.records) {
-        setData(json.records.map((record: any) => ({ ...record, fields: { ...record.fields } })))
-      } else {
-        console.error('[fetchData] No records in response:', JSON.stringify(json).slice(0, 300))
+        const records = json.records.map((record: any) => ({ ...record, fields: { ...record.fields } }))
+        setData(enrichDriverNames(records))
       }
     } catch (error) { console.error("[fetchData] Exception:", error) }
   }
@@ -461,21 +484,8 @@ function DataGrid({ schema }: { schema?: any }) {
   }
 
   const fetchDriversList = async () => {
-    try {
-      const DRV = fields?.drivers
-      const res = await fetch(`/api/drivers?tenant=${tenantId}`)
-      const json = await res.json()
-      if (!json.records) return
-      const items = json.records.map((x: any) => {
-        const first = x.fields?.[DRV?.FIRST_NAME || ""] || ""
-        const last = x.fields?.[DRV?.LAST_NAME || ""] || ""
-        return { id: x.id, title: `${first} ${last}`.trim() }
-      }).filter((d: any) => d.title)
-      setDriversList(items)
-      const map = new Map<string, string>()
-      items.forEach((d: any) => map.set(d.id, d.title))
-      setDriverNamesMap(map)
-    } catch {}
+    driverNamesRef.current = new Map() // force reload
+    await loadDriversIfNeeded()
   }
 
   const handleBulkAssignDriver = () => {
@@ -485,7 +495,7 @@ function DataGrid({ schema }: { schema?: any }) {
     const selectedRows = table.getFilteredSelectedRowModel().rows
     const ids = selectedRows.map(r => r.original.id)
     // עדכון UI מיידי
-    setData(prev => prev.map(rec => ids.includes(rec.id) ? { ...rec, fields: { ...rec.fields, [WS.DRIVER]: [{ id: driver.id, title: driver.title }] } } : rec))
+    setData(prev => prev.map(rec => ids.includes(rec.id) ? { ...rec, fields: { ...rec.fields, [WS.DRIVER]: [{ id: driver.id, title: driver.title }], _driverFullName: driver.title } } : rec))
     setRowSelection({})
     setShowDriverAssignDialog(false)
     setSelectedDriverId("")
@@ -717,11 +727,6 @@ function DataGrid({ schema }: { schema?: any }) {
     fetchData()
   }, [dateFilter])
 
-  // Fetch drivers list on mount for full name display
-  React.useEffect(() => {
-    if (fields?.drivers) fetchDriversList()
-  }, [fields?.drivers])
-
   // Auto-refresh every 30 seconds so all users see the latest data
   React.useEffect(() => {
     const interval = setInterval(() => {
@@ -753,15 +758,9 @@ function DataGrid({ schema }: { schema?: any }) {
     }
     if (globalFilter) {
       const lowerFilter = globalFilter.toLowerCase()
-      filtered = filtered.filter((item) => Object.entries(item.fields).some(([key, val]) => {
+      filtered = filtered.filter((item) => Object.values(item.fields).some((val) => {
            if (val == null) return false
-           if (Array.isArray(val)) {
-             // For driver field, also check full name from map
-             if (key === WS.DRIVER && val[0]?.id && driverNamesMap.has(val[0].id)) {
-               if (driverNamesMap.get(val[0].id)!.toLowerCase().includes(lowerFilter)) return true
-             }
-             return val.some((v: any) => v?.title && String(v.title).toLowerCase().includes(lowerFilter))
-           }
+           if (Array.isArray(val)) return val.some((v: any) => v?.title && String(v.title).toLowerCase().includes(lowerFilter))
            if (typeof val === 'object' && val.title) return String(val.title).toLowerCase().includes(lowerFilter)
            return String(val).toLowerCase().includes(lowerFilter)
       }))
