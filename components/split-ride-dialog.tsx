@@ -156,34 +156,31 @@ export function SplitRideDialog({ open, onOpenChange, record, onSplit }: any) {
       const baseData = {
         date,
         customer: getValFromRecord(f[FIELDS.CUSTOMER]),
+        description: f[FIELDS.DESCRIPTION] || "",
         vehicleType: getValFromRecord(f[FIELDS.VEHICLE_TYPE]),
+        driver: getValFromRecord(f[FIELDS.DRIVER]),
         vehicleNum: f[FIELDS.VEHICLE_NUM] || "",
         managerNotes: f[FIELDS.MANAGER_NOTES] || "",
+        notes: f[FIELDS.DRIVER_NOTES] || "",
         orderName: f[FIELDS.ORDER_NAME] || "",
-        mobile: f[FIELDS.MOBILE] || "",
-        idNum: f[FIELDS.ID_NUM] || "",
+        mobile: f[FIELDS.MOBILE] != null ? String(f[FIELDS.MOBILE]) : "",
+        idNum: f[FIELDS.ID_NUM] != null ? String(f[FIELDS.ID_NUM]) : "",
         priceClientExcl,
         priceClientIncl,
         priceDriverExcl,
         priceDriverIncl,
       }
 
-      // הלוך
+      // הלוך - שעת התייצבות = שעת איסוף מקורית
       setOutbound({
         ...baseData,
-        description: f[FIELDS.DESCRIPTION] || "",
         pickup: normalizeTime(f[FIELDS.PICKUP_TIME] || ""),
-        driver: "",
-        notes: "",
       })
 
-      // חזור - השעה של החזור מהנסיעה המקורית היא ההלוך
+      // חזור - שעת התייצבות = שעת הורדה מקורית (אם יש)
       setReturnTrip({
         ...baseData,
-        description: f[FIELDS.DESCRIPTION] || "",
         pickup: normalizeTime(f[FIELDS.DROPOFF_TIME] || ""),
-        driver: "",
-        notes: "",
       })
     }
   }, [open, record])
