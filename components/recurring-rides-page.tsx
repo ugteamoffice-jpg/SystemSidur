@@ -1,7 +1,11 @@
 "use client"
 
 import * as React from "react"
-import { Plus, Pencil, Trash2, Copy, ToggleLeft, ToggleRight, Search } from "lucide-react"
+import { Plus, Pencil, Trash2, Copy, ToggleLeft, ToggleRight, Search, Filter } from "lucide-react"
+import {
+  ColumnDef, ColumnSizingState, ColumnOrderState,
+  flexRender, getCoreRowModel, useReactTable,
+} from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -73,6 +77,30 @@ export function RecurringRidesPage() {
   const [form, setForm] = React.useState<FormState>({ ...emptyForm })
   const [deleteConfirm, setDeleteConfirm] = React.useState<string | null>(null)
   const [searchFilter, setSearchFilter] = React.useState("")
+  const [activeFilter, setActiveFilter] = React.useState<"all" | "active" | "inactive">("all")
+  const [isResizing, setIsResizing] = React.useState(false)
+
+  const COL_SIZE_KEY = `recurringRidesColSize_${tenantId}`
+  const COL_ORDER_KEY = `recurringRidesColOrder_${tenantId}`
+
+  const [columnSizing, setColumnSizing] = React.useState<ColumnSizingState>(() => {
+    try { const s = localStorage.getItem(COL_SIZE_KEY); return s ? JSON.parse(s) : {} } catch { return {} }
+  })
+  const [columnOrder, setColumnOrder] = React.useState<ColumnOrderState>(() => {
+    try { const s = localStorage.getItem(COL_ORDER_KEY); return s ? JSON.parse(s) : [] } catch { return [] }
+  })
+
+  React.useEffect(() => {
+    if (Object.keys(columnSizing).length > 0) {
+      try { localStorage.setItem(COL_SIZE_KEY, JSON.stringify(columnSizing)) } catch {}
+    }
+  }, [columnSizing])
+
+  React.useEffect(() => {
+    if (columnOrder.length > 0) {
+      try { localStorage.setItem(COL_ORDER_KEY, JSON.stringify(columnOrder)) } catch {}
+    }
+  }, [columnOrder])
 
   const [lists, setLists] = React.useState<{ customers: ListItem[], drivers: ListItem[], vehicles: ListItem[] }>({
     customers: [], drivers: [], vehicles: []
@@ -140,6 +168,10 @@ export function RecurringRidesPage() {
   const handleSave = () => {
     if (!form.customerName || !form.description) {
       toast({ title: "שגיאה", description: "יש למלא לקוח ומסלול", variant: "destructive" })
+      return
+    }
+    if (!form.defaults.pickupTime) {
+      toast({ title: "שגיאה", description: "יש למלא שעת התייצבות", variant: "destructive" })
       return
     }
     if (form.activeDays.length === 0) {
@@ -304,88 +336,172 @@ export function RecurringRidesPage() {
     )
   }
 
-  const filteredRides = rides.filter(r => {
+  const filteredRides = React.useMemo(() => rides.filter(r => {
+    if (activeFilter === "active" && !r.active) return false
+    if (activeFilter === "inactive" && r.active) return false
     if (!searchFilter) return true
     const q = searchFilter.toLowerCase()
     return r.customerName.toLowerCase().includes(q) ||
       r.description.toLowerCase().includes(q) ||
       r.defaults.driverName.toLowerCase().includes(q)
-  })
+  }), [rides, searchFilter, activeFilter])
 
   const activeCount = rides.filter(r => r.active).length
 
+  // Tanstack columns
+  const columns = React.useMemo<ColumnDef<RecurringRide, any>[]>(() => [
+    {
+      id: "status", header: "מצב", size: 50, minSize: 40, enableResizing: true,
+      cell: ({ row }) => (
+        <button onClick={(e) => { e.stopPropagation(); handleToggle(row.original) }} title={row.original.active ? "פעיל" : "מושבת"}>
+          {row.original.active ? <ToggleRight className="h-5 w-5 text-green-600" /> : <ToggleLeft className="h-5 w-5 text-gray-400" />}
+        </button>
+      ),
+    },
+    {
+      id: "customer", header: "לקוח", size: 130, minSize: 60, enableResizing: true,
+      cell: ({ row }) => <span className="font-medium">{row.original.customerName}</span>,
+    },
+    {
+      id: "description", header: "מסלול", size: 220, minSize: 80, enableResizing: true,
+      cell: ({ row }) => <span className="truncate block" title={row.original.description}>{row.original.description}</span>,
+    },
+    {
+      id: "time", header: "שעה", size: 70, minSize: 50, enableResizing: true,
+      cell: ({ row }) => row.original.defaults.pickupTime || "-",
+    },
+    {
+      id: "driver", header: "נהג", size: 110, minSize: 60, enableResizing: true,
+      cell: ({ row }) => row.original.defaults.driverName || "-",
+    },
+    {
+      id: "days", header: "ימים", size: 120, minSize: 80, enableResizing: true,
+      cell: ({ row }) => (
+        <div className="flex gap-0.5">
+          {[0, 1, 2, 3, 4, 5, 6].map(d => (
+            <span key={d} className={`text-[10px] w-5 h-5 flex items-center justify-center rounded ${
+              row.original.activeDays.includes(d) ? "bg-blue-100 text-blue-700 font-bold" : "text-gray-300"
+            }`}>{DAY_LETTERS_HE[d]}</span>
+          ))}
+        </div>
+      ),
+    },
+    {
+      id: "price", header: "מחיר לקוח", size: 100, minSize: 60, enableResizing: true,
+      cell: ({ row }) => row.original.defaults.clientIncl ? `₪${row.original.defaults.clientIncl}` : "-",
+    },
+    {
+      id: "actions", header: "פעולות", size: 100, minSize: 80, enableResizing: false,
+      cell: ({ row }) => (
+        <div className="flex gap-1">
+          <button onClick={(e) => { e.stopPropagation(); openEdit(row.original) }} className="p-1 hover:bg-muted rounded" title="ערוך"><Pencil className="h-4 w-4" /></button>
+          <button onClick={(e) => { e.stopPropagation(); handleDuplicate(row.original) }} className="p-1 hover:bg-muted rounded" title="שכפל"><Copy className="h-4 w-4" /></button>
+          <button onClick={(e) => { e.stopPropagation(); setDeleteConfirm(row.original.id) }} className="p-1 hover:bg-red-50 rounded text-red-500" title="מחק"><Trash2 className="h-4 w-4" /></button>
+        </div>
+      ),
+    },
+  ], [])
+
+  const table = useReactTable({
+    data: filteredRides, columns, columnResizeMode: "onChange", getCoreRowModel: getCoreRowModel(),
+    onColumnSizingChange: setColumnSizing, onColumnOrderChange: setColumnOrder,
+    state: { columnSizing, columnOrder },
+  })
+
+  // Drag to reorder columns
+  const [draggedCol, setDraggedCol] = React.useState<string | null>(null)
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden p-4" dir="rtl">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h2 className="text-xl font-bold">נסיעות קבועות</h2>
-          <p className="text-sm text-muted-foreground">{rides.length} תבניות ({activeCount} פעילות)</p>
-        </div>
-        <Button onClick={openNew} className="gap-2">
-          <Plus className="h-4 w-4" /> תבנית חדשה
+      {/* Header row */}
+      <div className="flex items-center gap-3 mb-3">
+        <Button onClick={openNew} className="gap-2 shrink-0">
+          <Plus className="h-4 w-4" /> צור נסיעה קבועה
         </Button>
-      </div>
+        <span className="text-sm text-muted-foreground shrink-0">{rides.length} תבניות ({activeCount} פעילות)</span>
 
-      {/* Search */}
-      <div className="relative mb-3">
-        <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input value={searchFilter} onChange={e => setSearchFilter(e.target.value)}
-          placeholder="חיפוש לקוח, מסלול, נהג..." className="pr-9 text-right" />
+        <div className="relative flex-1">
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input value={searchFilter} onChange={e => setSearchFilter(e.target.value)}
+            placeholder="חיפוש לקוח, מסלול, נהג..." className="pr-9 text-right h-9" />
+        </div>
+
+        <div className="flex gap-1 shrink-0">
+          {(["all", "active", "inactive"] as const).map(f => (
+            <Button key={f} variant={activeFilter === f ? "default" : "outline"} size="sm"
+              className="text-xs h-9 px-3" onClick={() => setActiveFilter(f)}>
+              {f === "all" ? "הכל" : f === "active" ? "פעילות" : "לא פעילות"}
+            </Button>
+          ))}
+        </div>
       </div>
 
       {/* Table */}
       <div className="flex-1 overflow-auto border rounded-lg">
-        <Table>
+        <Table style={{ width: table.getCenterTotalSize() }}>
           <TableHeader>
-            <TableRow>
-              <TableHead className="text-right w-10">מצב</TableHead>
-              <TableHead className="text-right">לקוח</TableHead>
-              <TableHead className="text-right">מסלול</TableHead>
-              <TableHead className="text-right w-16">שעה</TableHead>
-              <TableHead className="text-right">נהג</TableHead>
-              <TableHead className="text-right w-32">ימים</TableHead>
-              <TableHead className="text-right w-24">מחיר לקוח</TableHead>
-              <TableHead className="text-right w-28">פעולות</TableHead>
-            </TableRow>
+            {table.getHeaderGroups().map(headerGroup => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map(header => (
+                  <TableHead key={header.id}
+                    className="text-right relative border-l select-none"
+                    style={{ width: header.getSize() }}
+                    draggable={header.column.id !== "actions"}
+                    onDragStart={() => setDraggedCol(header.column.id)}
+                    onDragOver={e => e.preventDefault()}
+                    onDrop={() => {
+                      if (draggedCol && draggedCol !== header.column.id) {
+                        const currentOrder = table.getState().columnOrder.length
+                          ? [...table.getState().columnOrder]
+                          : columns.map(c => c.id!)
+                        const fromIdx = currentOrder.indexOf(draggedCol)
+                        const toIdx = currentOrder.indexOf(header.column.id)
+                        if (fromIdx !== -1 && toIdx !== -1) {
+                          currentOrder.splice(fromIdx, 1)
+                          currentOrder.splice(toIdx, 0, draggedCol)
+                          setColumnOrder(currentOrder)
+                        }
+                      }
+                      setDraggedCol(null)
+                    }}
+                  >
+                    <div className="flex items-center gap-1 cursor-grab">
+                      {flexRender(header.column.columnDef.header, header.getContext())}
+                    </div>
+                    {header.column.getCanResize() && (
+                      <div onMouseDown={(e) => {
+                        e.stopPropagation(); e.preventDefault(); setIsResizing(true)
+                        const startX = e.clientX; const startWidth = header.getSize()
+                        const onMouseMove = (me: MouseEvent) => {
+                          const newWidth = Math.max(header.column.columnDef.minSize || 50, startWidth + (startX - me.clientX))
+                          setColumnSizing(old => ({ ...old, [header.id]: newWidth }))
+                        }
+                        const onMouseUp = () => { setIsResizing(false); document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp) }
+                        document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp)
+                      }} className="absolute left-0 top-0 h-full w-1 cursor-col-resize touch-none select-none z-20 hover:bg-primary transition-colors duration-200" />
+                    )}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
           </TableHeader>
           <TableBody>
-            {filteredRides.length === 0 ? (
+            {table.getRowModel().rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
-                  {rides.length === 0 ? "אין תבניות. לחץ \"תבנית חדשה\" כדי להוסיף." : "לא נמצאו תוצאות"}
+                <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
+                  {rides.length === 0 ? "אין נסיעות קבועות. לחץ \"צור נסיעה קבועה\" כדי להוסיף." : "לא נמצאו תוצאות"}
                 </TableCell>
               </TableRow>
             ) : (
-              filteredRides.map(ride => (
-                <TableRow key={ride.id} className={!ride.active ? "opacity-40" : ""}>
-                  <TableCell>
-                    <button onClick={() => handleToggle(ride)} title={ride.active ? "פעיל" : "מושבת"}>
-                      {ride.active ? <ToggleRight className="h-5 w-5 text-green-600" /> : <ToggleLeft className="h-5 w-5 text-gray-400" />}
-                    </button>
-                  </TableCell>
-                  <TableCell className="font-medium">{ride.customerName}</TableCell>
-                  <TableCell className="max-w-[200px] truncate" title={ride.description}>{ride.description}</TableCell>
-                  <TableCell className="text-sm">{ride.defaults.pickupTime || "-"}</TableCell>
-                  <TableCell className="text-sm">{ride.defaults.driverName || "-"}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-0.5">
-                      {[0, 1, 2, 3, 4, 5, 6].map(d => (
-                        <span key={d} className={`text-[10px] w-5 h-5 flex items-center justify-center rounded ${
-                          ride.activeDays.includes(d) ? "bg-blue-100 text-blue-700 font-bold" : "text-gray-300"
-                        }`}>{DAY_LETTERS_HE[d]}</span>
-                      ))}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {ride.defaults.clientIncl ? `₪${ride.defaults.clientIncl}` : "-"}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <button onClick={() => openEdit(ride)} className="p-1 hover:bg-muted rounded" title="ערוך"><Pencil className="h-4 w-4" /></button>
-                      <button onClick={() => handleDuplicate(ride)} className="p-1 hover:bg-muted rounded" title="שכפל"><Copy className="h-4 w-4" /></button>
-                      <button onClick={() => setDeleteConfirm(ride.id)} className="p-1 hover:bg-red-50 rounded text-red-500" title="מחק"><Trash2 className="h-4 w-4" /></button>
-                    </div>
-                  </TableCell>
+              table.getRowModel().rows.map(row => (
+                <TableRow key={row.id} className={`cursor-pointer hover:bg-muted/50 ${!row.original.active ? "opacity-40" : ""}`}
+                  onClick={() => openEdit(row.original)}>
+                  {row.getVisibleCells().map(cell => (
+                    <TableCell key={cell.id} className="text-right truncate border-l text-sm"
+                      style={{ width: cell.column.getSize() }}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
                 </TableRow>
               ))
             )}
@@ -397,7 +513,7 @@ export function RecurringRidesPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col" dir="rtl">
           <DialogHeader>
-            <DialogTitle>{editingId ? "עריכת תבנית" : "תבנית חדשה"}</DialogTitle>
+            <DialogTitle>{editingId ? "עריכת נסיעה קבועה" : "נסיעה קבועה חדשה"}</DialogTitle>
             <DialogDescription>נסיעה קבועה שתשובץ אוטומטית</DialogDescription>
           </DialogHeader>
 
