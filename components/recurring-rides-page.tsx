@@ -87,7 +87,19 @@ export function RecurringRidesPage() {
     try { const s = localStorage.getItem(COL_SIZE_KEY); return s ? JSON.parse(s) : {} } catch { return {} }
   })
   const [columnOrder, setColumnOrder] = React.useState<ColumnOrderState>(() => {
-    try { const s = localStorage.getItem(COL_ORDER_KEY); return s ? JSON.parse(s) : [] } catch { return [] }
+    try {
+      const s = localStorage.getItem(COL_ORDER_KEY)
+      if (s) {
+        const saved = JSON.parse(s)
+        // Reset if old column IDs detected
+        if (saved.includes("time") || saved.includes("price") || !saved.includes("pickup")) {
+          localStorage.removeItem(COL_ORDER_KEY)
+          return []
+        }
+        return saved
+      }
+      return []
+    } catch { return [] }
   })
 
   React.useEffect(() => {
@@ -351,28 +363,52 @@ export function RecurringRidesPage() {
   // Tanstack columns
   const columns = React.useMemo<ColumnDef<RecurringRide, any>[]>(() => [
     {
-      id: "status", header: "מצב", size: 50, minSize: 40, enableResizing: true,
+      id: "status", header: "סטטוס", size: 65, minSize: 50, enableResizing: true,
       cell: ({ row }) => (
         <button onClick={(e) => { e.stopPropagation(); handleToggle(row.original) }} title={row.original.active ? "פעיל" : "מושבת"}>
-          {row.original.active ? <ToggleRight className="h-5 w-5 text-green-600" /> : <ToggleLeft className="h-5 w-5 text-gray-400" />}
+          {row.original.active ? <ToggleRight className="h-6 w-6 text-green-600" /> : <ToggleLeft className="h-6 w-6 text-gray-400" />}
         </button>
       ),
     },
     {
-      id: "customer", header: "לקוח", size: 130, minSize: 60, enableResizing: true,
+      id: "customer", header: "שם לקוח", size: 130, minSize: 60, enableResizing: true,
       cell: ({ row }) => <span className="font-medium">{row.original.customerName}</span>,
     },
     {
-      id: "description", header: "מסלול", size: 220, minSize: 80, enableResizing: true,
-      cell: ({ row }) => <span className="truncate block" title={row.original.description}>{row.original.description}</span>,
-    },
-    {
-      id: "time", header: "שעה", size: 70, minSize: 50, enableResizing: true,
+      id: "pickup", header: "התייצבות", size: 80, minSize: 55, enableResizing: true,
       cell: ({ row }) => row.original.defaults.pickupTime || "-",
     },
     {
-      id: "driver", header: "נהג", size: 110, minSize: 60, enableResizing: true,
+      id: "description", header: "מסלול", size: 200, minSize: 80, enableResizing: true,
+      cell: ({ row }) => <span className="truncate block" title={row.original.description}>{row.original.description}</span>,
+    },
+    {
+      id: "dropoff", header: "חזור", size: 70, minSize: 50, enableResizing: true,
+      cell: ({ row }) => row.original.defaults.dropoffTime || "-",
+    },
+    {
+      id: "vehicle", header: "סוג רכב", size: 100, minSize: 60, enableResizing: true,
+      cell: ({ row }) => row.original.defaults.vehicleTypeName || "-",
+    },
+    {
+      id: "driver", header: "שם נהג", size: 110, minSize: 60, enableResizing: true,
       cell: ({ row }) => row.original.defaults.driverName || "-",
+    },
+    {
+      id: "clientExcl", header: 'מחיר לקוח + מע"מ', size: 120, minSize: 70, enableResizing: true,
+      cell: ({ row }) => row.original.defaults.clientExcl ? `₪${row.original.defaults.clientExcl}` : "-",
+    },
+    {
+      id: "clientIncl", header: 'מחיר לקוח כולל מע"מ', size: 130, minSize: 70, enableResizing: true,
+      cell: ({ row }) => row.original.defaults.clientIncl ? `₪${row.original.defaults.clientIncl}` : "-",
+    },
+    {
+      id: "driverExcl", header: 'מחיר נהג + מע"מ', size: 120, minSize: 70, enableResizing: true,
+      cell: ({ row }) => row.original.defaults.driverExcl ? `₪${row.original.defaults.driverExcl}` : "-",
+    },
+    {
+      id: "driverIncl", header: 'מחיר נהג כולל מע"מ', size: 130, minSize: 70, enableResizing: true,
+      cell: ({ row }) => row.original.defaults.driverIncl ? `₪${row.original.defaults.driverIncl}` : "-",
     },
     {
       id: "days", header: "ימים", size: 120, minSize: 80, enableResizing: true,
@@ -385,10 +421,6 @@ export function RecurringRidesPage() {
           ))}
         </div>
       ),
-    },
-    {
-      id: "price", header: "מחיר לקוח", size: 100, minSize: 60, enableResizing: true,
-      cell: ({ row }) => row.original.defaults.clientIncl ? `₪${row.original.defaults.clientIncl}` : "-",
     },
     {
       id: "actions", header: "פעולות", size: 100, minSize: 80, enableResizing: false,
