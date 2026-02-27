@@ -32,6 +32,7 @@ interface ExportDriverPdfDialogProps {
   currentDate: Date
   allRecords: any[]
   initialDriverName?: string
+  selectedRecords?: any[]
 }
 
 function getDriverName(record: any, fieldId: string): string {
@@ -59,6 +60,7 @@ export function ExportDriverPdfDialog({
   currentDate,
   allRecords,
   initialDriverName,
+  selectedRecords,
 }: ExportDriverPdfDialogProps) {
   const { toast } = useToast()
   const tenantFields = useTenantFields()
@@ -70,8 +72,12 @@ export function ExportDriverPdfDialog({
   const [endDate, setEndDate] = React.useState<Date | undefined>(currentDate)
   const [endDateMonth, setEndDateMonth] = React.useState<Date>(currentDate)
 
+  const hasSelected = selectedRecords && selectedRecords.length > 0
+  const [useSelectedOnly, setUseSelectedOnly] = React.useState(false)
+
   React.useEffect(() => {
     if (open) {
+      setUseSelectedOnly(hasSelected || false)
       setStartDate(currentDate)
       setEndDate(currentDate)
       setStartDateMonth(currentDate)
@@ -81,11 +87,12 @@ export function ExportDriverPdfDialog({
 
   const generateReport = () => {
     if (!initialDriverName) return
-    if (!startDate || !endDate) {
+
+    if (!useSelectedOnly && (!startDate || !endDate)) {
       toast({ title: "שגיאה", description: "יש לבחור תאריכים", variant: "destructive" })
       return
     }
-    if (startDate > endDate) {
+    if (!useSelectedOnly && startDate && endDate && startDate > endDate) {
       toast({ title: "שגיאה", description: "תאריך ההתחלה חייב להיות לפני תאריך הסיום", variant: "destructive" })
       return
     }
@@ -93,19 +100,25 @@ export function ExportDriverPdfDialog({
     // טעינת הגדרות חברה
     const settings = loadReportSettings(tenantId)
 
-    const startOfDay = new Date(startDate)
-    startOfDay.setHours(0, 0, 0, 0)
-    const endOfDay = new Date(endDate)
-    endOfDay.setHours(23, 59, 59, 999)
+    let filteredRecords: any[]
 
-    const filteredRecords = allRecords.filter((record) => {
-      const recordDate = record.fields[WS?.DATE || ""]
-        ? new Date(record.fields[WS?.DATE || ""])
-        : null
-      if (!recordDate) return false
-      const driverName = getDriverName(record, WS?.DRIVER || "")
-      return driverName === initialDriverName && recordDate >= startOfDay && recordDate <= endOfDay
-    })
+    if (useSelectedOnly && hasSelected) {
+      filteredRecords = [...selectedRecords!]
+    } else {
+      const startOfDay = new Date(startDate!)
+      startOfDay.setHours(0, 0, 0, 0)
+      const endOfDay = new Date(endDate!)
+      endOfDay.setHours(23, 59, 59, 999)
+
+      filteredRecords = allRecords.filter((record) => {
+        const recordDate = record.fields[WS?.DATE || ""]
+          ? new Date(record.fields[WS?.DATE || ""])
+          : null
+        if (!recordDate) return false
+        const driverName = getDriverName(record, WS?.DRIVER || "")
+        return driverName === initialDriverName && recordDate >= startOfDay && recordDate <= endOfDay
+      })
+    }
 
     if (filteredRecords.length === 0) {
       toast({
@@ -318,7 +331,7 @@ export function ExportDriverPdfDialog({
   <h1>דוח נסיעות עבור נהג ${escapeHtml(initialDriverName)}</h1>
 
   <div class="info-line">
-    <span>תקופה: ${format(startDate, "d.M.yyyy")} — ${format(endDate, "d.M.yyyy")}</span>
+    <span>תקופה: ${useSelectedOnly ? `${filteredRecords.length} נסיעות נבחרו` : `${format(startDate!, "d.M.yyyy")} — ${format(endDate!, "d.M.yyyy")}`}</span>
     <span>תאריך הפקה: ${format(new Date(), "d.M.yyyy")}</span>
     <span>סה"כ נסיעות: ${filteredRecords.length}</span>
   </div>
@@ -381,7 +394,7 @@ export function ExportDriverPdfDialog({
         <DialogHeader>
           <DialogTitle className="text-right">ייצוא דוח נסיעות</DialogTitle>
           <DialogDescription className="text-right">
-            בחר טווח תאריכים ליצירת דוח PDF
+            {useSelectedOnly ? "ייצוא PDF לנסיעות שנבחרו" : "בחר טווח תאריכים ליצירת דוח PDF"}
           </DialogDescription>
         </DialogHeader>
 
@@ -391,6 +404,19 @@ export function ExportDriverPdfDialog({
             <Input value={initialDriverName || ""} disabled className="text-right bg-muted" />
           </div>
 
+          {hasSelected && (
+            <label className="flex items-center gap-2 cursor-pointer text-sm bg-blue-50 p-3 rounded-md border border-blue-200">
+              <input
+                type="checkbox"
+                checked={useSelectedOnly}
+                onChange={(e) => setUseSelectedOnly(e.target.checked)}
+                className="rounded"
+              />
+              <span>רק נסיעות מסומנות ({selectedRecords!.length})</span>
+            </label>
+          )}
+
+          {!useSelectedOnly && (
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>מתאריך:</Label>
@@ -446,6 +472,7 @@ export function ExportDriverPdfDialog({
               </Popover>
             </div>
           </div>
+          )}
         </div>
 
         <DialogFooter className="flex-row-reverse gap-2">

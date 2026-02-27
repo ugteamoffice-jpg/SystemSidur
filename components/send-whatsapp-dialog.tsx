@@ -32,9 +32,11 @@ interface SendWhatsappDialogProps {
   currentDate: Date
   allRecords: any[]
   initialDriverName?: string
+  selectedRecords?: any[]
 }
 
 function getDriverName(record: any, fieldId: string): string {
+  if (record.fields._driverFullName) return record.fields._driverFullName
   const driver = record.fields[fieldId]
   if (Array.isArray(driver) && driver.length > 0) return driver[0]?.title || ""
   if (typeof driver === "object" && driver?.title) return driver.title
@@ -54,6 +56,7 @@ export function SendWhatsappDialog({
   currentDate,
   allRecords,
   initialDriverName,
+  selectedRecords,
 }: SendWhatsappDialogProps) {
   const { toast } = useToast()
   const tenantFields = useTenantFields()
@@ -77,6 +80,7 @@ export function SendWhatsappDialog({
 
   React.useEffect(() => {
     if (open) {
+      setUseSelectedOnly(hasSelected || false)
       setStartDate(currentDate)
       setEndDate(currentDate)
       setStartDateMonth(currentDate)
@@ -132,26 +136,35 @@ export function SendWhatsappDialog({
     return clean
   }
 
+  const hasSelected = selectedRecords && selectedRecords.length > 0
+  const [useSelectedOnly, setUseSelectedOnly] = React.useState(false)
+
   // בניית ההודעה — משותף לשליחה ולהעתקה
   const buildMessage = (): string | null => {
     if (!initialDriverName || !driverInfo) return null
-    if (!startDate || !endDate) return null
+    if (!useSelectedOnly && (!startDate || !endDate)) return null
 
     const settings = loadReportSettings(tenantId)
 
-    const startOfDay = new Date(startDate)
-    startOfDay.setHours(0, 0, 0, 0)
-    const endOfDay = new Date(endDate)
-    endOfDay.setHours(23, 59, 59, 999)
+    let filteredRecords: any[]
 
-    const filteredRecords = allRecords.filter((record) => {
-      const recordDate = record.fields[WS?.DATE || ""]
-        ? new Date(record.fields[WS?.DATE || ""])
-        : null
-      if (!recordDate) return false
-      const name = getDriverName(record, WS?.DRIVER || "")
-      return name === initialDriverName && recordDate >= startOfDay && recordDate <= endOfDay
-    })
+    if (useSelectedOnly && hasSelected) {
+      filteredRecords = [...selectedRecords!]
+    } else {
+      const startOfDay = new Date(startDate!)
+      startOfDay.setHours(0, 0, 0, 0)
+      const endOfDay = new Date(endDate!)
+      endOfDay.setHours(23, 59, 59, 999)
+
+      filteredRecords = allRecords.filter((record) => {
+        const recordDate = record.fields[WS?.DATE || ""]
+          ? new Date(record.fields[WS?.DATE || ""])
+          : null
+        if (!recordDate) return false
+        const name = getDriverName(record, WS?.DRIVER || "")
+        return name === initialDriverName && recordDate >= startOfDay && recordDate <= endOfDay
+      })
+    }
 
     if (filteredRecords.length === 0) return null
 
@@ -292,7 +305,7 @@ export function SendWhatsappDialog({
         <DialogHeader>
           <DialogTitle className="text-right">שליחה בוואטסאפ</DialogTitle>
           <DialogDescription className="text-right">
-            שלח סידור עבודה לנהג בוואטסאפ
+            {useSelectedOnly ? "שלח נסיעות שנבחרו לנהג בוואטסאפ" : "שלח סידור עבודה לנהג בוואטסאפ"}
           </DialogDescription>
         </DialogHeader>
 
@@ -333,6 +346,19 @@ export function SendWhatsappDialog({
           )}
 
           {/* תאריכים */}
+          {hasSelected && (
+            <label className="flex items-center gap-2 cursor-pointer text-sm bg-blue-50 p-3 rounded-md border border-blue-200">
+              <input
+                type="checkbox"
+                checked={useSelectedOnly}
+                onChange={(e) => setUseSelectedOnly(e.target.checked)}
+                className="rounded"
+              />
+              <span>רק נסיעות מסומנות ({selectedRecords!.length})</span>
+            </label>
+          )}
+
+          {!useSelectedOnly && (
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>מתאריך:</Label>
@@ -388,6 +414,7 @@ export function SendWhatsappDialog({
               </Popover>
             </div>
           </div>
+          )}
         </div>
 
         <DialogFooter className="flex-row-reverse gap-2">

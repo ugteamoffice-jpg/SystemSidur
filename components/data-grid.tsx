@@ -344,6 +344,7 @@ function DataGrid({ schema }: { schema?: any }) {
   const [exportDriverName, setExportDriverName] = React.useState("")
   const [showWhatsappDialog, setShowWhatsappDialog] = React.useState(false)
   const [whatsappDriverName, setWhatsappDriverName] = React.useState("")
+  const [selectedRecordsForExport, setSelectedRecordsForExport] = React.useState<any[]>([])
 
   // State variables לטווח תאריכים
   const [dateRangeMode, setDateRangeMode] = React.useState(false)
@@ -1057,6 +1058,9 @@ function DataGrid({ schema }: { schema?: any }) {
                           ? driver[0]?.title 
                           : (typeof driver === 'object' && driver?.title ? driver.title : String(driver || ""))
                         if (!driverName) return
+                        // If rows are selected via checkbox, use those; otherwise just this row
+                        const selected = table.getFilteredSelectedRowModel().rows
+                        setSelectedRecordsForExport(selected.length > 0 ? selected.map(r => r.original) : [row.original])
                         setExportDriverName(driverName)
                         setShowExportPdfDialog(true)
                       }}
@@ -1072,6 +1076,9 @@ function DataGrid({ schema }: { schema?: any }) {
                           ? driver[0]?.title 
                           : (typeof driver === 'object' && driver?.title ? driver.title : String(driver || ""))
                         if (!driverName) return
+                        // If rows are selected via checkbox, use those; otherwise just this row
+                        const selected = table.getFilteredSelectedRowModel().rows
+                        setSelectedRecordsForExport(selected.length > 0 ? selected.map(r => r.original) : [row.original])
                         setWhatsappDriverName(driverName)
                         setShowWhatsappDialog(true)
                       }}
@@ -1447,6 +1454,7 @@ function DataGrid({ schema }: { schema?: any }) {
         currentDate={dateFilter}
         allRecords={data}
         initialDriverName={exportDriverName}
+        selectedRecords={selectedRecordsForExport}
       />
 
       <SendWhatsappDialog
@@ -1455,6 +1463,7 @@ function DataGrid({ schema }: { schema?: any }) {
         currentDate={dateFilter}
         allRecords={data}
         initialDriverName={whatsappDriverName}
+        selectedRecords={selectedRecordsForExport}
       />
 
       {/* Calendar Modal */}
