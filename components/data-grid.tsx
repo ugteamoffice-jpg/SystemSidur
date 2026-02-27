@@ -1090,10 +1090,10 @@ function DataGrid({ schema }: { schema?: any }) {
                     {table.getFilteredSelectedRowModel().rows.length > 0 && (() => {
                       const selectedRows = table.getFilteredSelectedRowModel().rows;
                       const count = selectedRows.length;
-                      const allSent = selectedRows.every(r => r.original.fields[WS.SENT]);
-                      const allApproved = selectedRows.every(r => r.original.fields[WS.APPROVED]);
-                      const noneSent = selectedRows.every(r => !r.original.fields[WS.SENT]);
-                      const noneApproved = selectedRows.every(r => !r.original.fields[WS.APPROVED]);
+                      const notSentRows = selectedRows.filter(r => !r.original.fields[WS.SENT]);
+                      const sentRows = selectedRows.filter(r => !!r.original.fields[WS.SENT]);
+                      const notApprovedRows = selectedRows.filter(r => !r.original.fields[WS.APPROVED]);
+                      const approvedRows = selectedRows.filter(r => !!r.original.fields[WS.APPROVED]);
                       const someHaveDriver = selectedRows.some(r => {
                         const d = r.original.fields[WS.DRIVER];
                         return d && (!Array.isArray(d) || d.length > 0);
@@ -1110,24 +1110,24 @@ function DataGrid({ schema }: { schema?: any }) {
                             </ContextMenuItem>
                           )}
                           <div className="h-px bg-border my-1" />
-                          {!allSent && (
-                            <ContextMenuItem onSelect={() => { bulkUpdateField(selectedRows, WS.SENT, true); }} className="cursor-pointer text-right">
-                              סמן שלח ל-{count} נסיעות
+                          {notSentRows.length > 0 && (
+                            <ContextMenuItem onSelect={() => { bulkUpdateField(notSentRows, WS.SENT, true); }} className="cursor-pointer text-right">
+                              סמן שלח ל-{notSentRows.length} נסיעות
                             </ContextMenuItem>
                           )}
-                          {!noneSent && (
-                            <ContextMenuItem onSelect={() => { bulkUpdateField(selectedRows, WS.SENT, false); }} className="cursor-pointer text-right">
-                              בטל שלח ל-{count} נסיעות
+                          {sentRows.length > 0 && (
+                            <ContextMenuItem onSelect={() => { bulkUpdateField(sentRows, WS.SENT, false); }} className="cursor-pointer text-right">
+                              בטל שלח ל-{sentRows.length} נסיעות
                             </ContextMenuItem>
                           )}
-                          {!allApproved && (
-                            <ContextMenuItem onSelect={() => { bulkUpdateField(selectedRows, WS.APPROVED, true); }} className="cursor-pointer text-right">
-                              סמן מאושר ל-{count} נסיעות
+                          {notApprovedRows.length > 0 && (
+                            <ContextMenuItem onSelect={() => { bulkUpdateField(notApprovedRows, WS.APPROVED, true); }} className="cursor-pointer text-right">
+                              סמן מאושר ל-{notApprovedRows.length} נסיעות
                             </ContextMenuItem>
                           )}
-                          {!noneApproved && (
-                            <ContextMenuItem onSelect={() => { bulkUpdateField(selectedRows, WS.APPROVED, false); }} className="cursor-pointer text-right">
-                              בטל מאושר ל-{count} נסיעות
+                          {approvedRows.length > 0 && (
+                            <ContextMenuItem onSelect={() => { bulkUpdateField(approvedRows, WS.APPROVED, false); }} className="cursor-pointer text-right">
+                              בטל מאושר ל-{approvedRows.length} נסיעות
                             </ContextMenuItem>
                           )}
                         </>
