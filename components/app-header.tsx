@@ -21,7 +21,7 @@ import { useTenant } from "@/lib/tenant-context"
 
 const UserButton = dynamic(() => import("@clerk/nextjs").then(mod => mod.UserButton), { ssr: false })
 
-export type PageType = "work-schedule" | "customers" | "drivers" | "vehicles" | "report-customer" | "report-driver" | "report-invoices" | "report-profit"
+export type PageType = "work-schedule" | "customers" | "drivers" | "vehicles" | "recurring-rides" | "report-customer" | "report-driver" | "report-invoices" | "report-profit"
 
 const reportPages: PageType[] = ["report-customer", "report-driver", "report-invoices", "report-profit"]
 
@@ -78,6 +78,7 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
   
   const navItems = [
     { id: "work-schedule" as PageType, label: "סידור עבודה" },
+    { id: "recurring-rides" as PageType, label: "נסיעות קבועות" },
     { id: "customers" as PageType, label: "לקוחות" },
     { id: "drivers" as PageType, label: "נהגים" },
     { id: "vehicles" as PageType, label: "רכבים" },
