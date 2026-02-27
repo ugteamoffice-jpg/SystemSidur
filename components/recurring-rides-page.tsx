@@ -259,17 +259,17 @@ export function RecurringRidesPage() {
         </div>
         <div className="grid grid-cols-3 gap-2">
           <div>
-            <Label className="text-xs">נהג</Label>
-            <AutoComplete options={lists.drivers} value={getDayVal(day, "driverName")}
-              onChange={(v: string) => setDayOverride(day, "driverName", v)}
-              onSelect={(o: ListItem) => { setDayOverride(day, "driverName", o.title); setDayOverride(day, "driverId", o.id) }}
-              placeholder="" />
-          </div>
-          <div>
             <Label className="text-xs">סוג רכב</Label>
             <AutoComplete options={lists.vehicles} value={getDayVal(day, "vehicleTypeName")}
               onChange={(v: string) => setDayOverride(day, "vehicleTypeName", v)}
               onSelect={(o: ListItem) => { setDayOverride(day, "vehicleTypeName", o.title); setDayOverride(day, "vehicleTypeId", o.id) }}
+              placeholder="" />
+          </div>
+          <div>
+            <Label className="text-xs">נהג</Label>
+            <AutoComplete options={lists.drivers} value={getDayVal(day, "driverName")}
+              onChange={(v: string) => setDayOverride(day, "driverName", v)}
+              onSelect={(o: ListItem) => { setDayOverride(day, "driverName", o.title); setDayOverride(day, "driverId", o.id) }}
               placeholder="" />
           </div>
           <div>
@@ -437,19 +437,19 @@ export function RecurringRidesPage() {
                         onChange={e => setForm(p => ({ ...p, defaults: { ...p.defaults, dropoffTime: e.target.value } }))} />
                     </div>
                   </div>
-                  <div className="space-y-1">
-                    <Label>נהג</Label>
-                    <AutoComplete options={lists.drivers} value={form.defaults.driverName}
-                      onChange={(v: string) => setForm(p => ({ ...p, defaults: { ...p.defaults, driverName: v, driverId: "" } }))}
-                      onSelect={(o: ListItem) => setForm(p => ({ ...p, defaults: { ...p.defaults, driverName: o.title, driverId: o.id } }))}
-                      placeholder="" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-3 gap-3">
                     <div className="space-y-1">
                       <Label>סוג רכב</Label>
                       <AutoComplete options={lists.vehicles} value={form.defaults.vehicleTypeName}
                         onChange={(v: string) => setForm(p => ({ ...p, defaults: { ...p.defaults, vehicleTypeName: v, vehicleTypeId: "" } }))}
                         onSelect={(o: ListItem) => setForm(p => ({ ...p, defaults: { ...p.defaults, vehicleTypeName: o.title, vehicleTypeId: o.id } }))}
+                        placeholder="" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>נהג</Label>
+                      <AutoComplete options={lists.drivers} value={form.defaults.driverName}
+                        onChange={(v: string) => setForm(p => ({ ...p, defaults: { ...p.defaults, driverName: v, driverId: "" } }))}
+                        onSelect={(o: ListItem) => setForm(p => ({ ...p, defaults: { ...p.defaults, driverName: o.title, driverId: o.id } }))}
                         placeholder="" />
                     </div>
                     <div className="space-y-1">
