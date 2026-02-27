@@ -235,81 +235,69 @@ export function RecurringRidesPage() {
   const renderDaySettings = (day: number) => {
     const hasOverride = form.dayOverrides[day] && Object.keys(form.dayOverrides[day]).length > 0
     return (
-      <div key={day} className="border rounded-lg p-3 space-y-2 bg-white">
+      <div key={day} className="border rounded-lg p-3 space-y-3 bg-white">
         <div className="flex items-center justify-between">
-          <span className="font-bold text-sm">יום {DAY_NAMES_HE[day]}</span>
+          <span className="font-bold">יום {DAY_NAMES_HE[day]}</span>
           {hasOverride && (
             <button onClick={() => clearDayOverride(day)}
-              className="text-[10px] text-red-500 hover:underline">
+              className="text-xs text-red-500 hover:underline">
               אפס לברירת מחדל
             </button>
           )}
         </div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-3">
           <div>
-            <Label className="text-[10px]">שעת התייצבות</Label>
+            <Label className="text-xs">שעת התייצבות</Label>
             <Input type="time" value={getDayVal(day, "pickupTime")}
-              onChange={e => setDayOverride(day, "pickupTime", e.target.value)} className="h-7 text-sm" />
+              onChange={e => setDayOverride(day, "pickupTime", e.target.value)} className="h-9" />
           </div>
           <div>
-            <Label className="text-[10px]">שעת חזור</Label>
+            <Label className="text-xs">שעת חזור</Label>
             <Input type="time" value={getDayVal(day, "dropoffTime")}
-              onChange={e => setDayOverride(day, "dropoffTime", e.target.value)} className="h-7 text-sm" />
+              onChange={e => setDayOverride(day, "dropoffTime", e.target.value)} className="h-9" />
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <div>
-            <Label className="text-[10px]">נהג</Label>
+            <Label className="text-xs">נהג</Label>
             <AutoComplete options={lists.drivers} value={getDayVal(day, "driverName")}
               onChange={(v: string) => setDayOverride(day, "driverName", v)}
               onSelect={(o: ListItem) => { setDayOverride(day, "driverName", o.title); setDayOverride(day, "driverId", o.id) }}
               placeholder="" />
           </div>
           <div>
-            <Label className="text-[10px]">סוג רכב</Label>
+            <Label className="text-xs">סוג רכב</Label>
             <AutoComplete options={lists.vehicles} value={getDayVal(day, "vehicleTypeName")}
               onChange={(v: string) => setDayOverride(day, "vehicleTypeName", v)}
               onSelect={(o: ListItem) => { setDayOverride(day, "vehicleTypeName", o.title); setDayOverride(day, "vehicleTypeId", o.id) }}
               placeholder="" />
           </div>
-        </div>
-        <div>
-          <Label className="text-[10px]">מס׳ רכב</Label>
-          <Input value={getDayVal(day, "vehicleNum")}
-            onChange={e => setDayOverride(day, "vehicleNum", e.target.value)} className="h-7 text-sm text-right" />
-        </div>
-        <div className="grid grid-cols-4 gap-1">
           <div>
-            <Label className="text-[10px]">לקוח ל.מ</Label>
+            <Label className="text-xs">מס׳ רכב</Label>
+            <Input value={getDayVal(day, "vehicleNum")}
+              onChange={e => setDayOverride(day, "vehicleNum", e.target.value)} className="h-8 text-sm text-right" />
+          </div>
+        </div>
+        <div className="grid grid-cols-4 gap-2">
+          <div>
+            <Label className="text-xs">לקוח לפני מע״מ</Label>
             <Input type="number" value={getDayVal(day, "clientExcl")}
-              onChange={e => setDayVat(day, e.target.value, "excl", "client")} className="h-7 text-sm" />
+              onChange={e => setDayVat(day, e.target.value, "excl", "client")} className="h-9" />
           </div>
           <div>
-            <Label className="text-[10px]">לקוח כ.מ</Label>
+            <Label className="text-xs">לקוח כולל מע״מ</Label>
             <Input type="number" value={getDayVal(day, "clientIncl")}
-              onChange={e => setDayVat(day, e.target.value, "incl", "client")} className="h-7 text-sm font-bold" />
+              onChange={e => setDayVat(day, e.target.value, "incl", "client")} className="h-9 font-bold" />
           </div>
           <div>
-            <Label className="text-[10px]">נהג ל.מ</Label>
+            <Label className="text-xs">נהג לפני מע״מ</Label>
             <Input type="number" value={getDayVal(day, "driverExcl")}
-              onChange={e => setDayVat(day, e.target.value, "excl", "driver")} className="h-7 text-sm" />
+              onChange={e => setDayVat(day, e.target.value, "excl", "driver")} className="h-9" />
           </div>
           <div>
-            <Label className="text-[10px]">נהג כ.מ</Label>
+            <Label className="text-xs">נהג כולל מע״מ</Label>
             <Input type="number" value={getDayVal(day, "driverIncl")}
-              onChange={e => setDayVat(day, e.target.value, "incl", "driver")} className="h-7 text-sm font-bold" />
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <Label className="text-[10px]">הערות מנהל</Label>
-            <Input value={getDayVal(day, "managerNotes")}
-              onChange={e => setDayOverride(day, "managerNotes", e.target.value)} className="h-7 text-sm text-right" />
-          </div>
-          <div>
-            <Label className="text-[10px]">הערות נהג</Label>
-            <Input value={getDayVal(day, "driverNotes")}
-              onChange={e => setDayOverride(day, "driverNotes", e.target.value)} className="h-7 text-sm text-right" />
+              onChange={e => setDayVat(day, e.target.value, "incl", "driver")} className="h-9 font-bold" />
           </div>
         </div>
       </div>
@@ -472,13 +460,13 @@ export function RecurringRidesPage() {
                   </div>
                   {/* מחירים ברירת מחדל */}
                   <div className="grid grid-cols-4 gap-2">
-                    <div><Label className="text-[10px]">לקוח ל.מ</Label><Input type="number" value={form.defaults.clientExcl}
+                    <div><Label className="text-xs">לקוח לפני מע״מ</Label><Input type="number" value={form.defaults.clientExcl}
                       onChange={e => setForm(p => ({ ...p, defaults: calcVat(e.target.value, "excl", "client", p.defaults) }))} className="h-8 text-sm" /></div>
-                    <div><Label className="text-[10px]">לקוח כ.מ</Label><Input type="number" value={form.defaults.clientIncl}
+                    <div><Label className="text-xs">לקוח כולל מע״מ</Label><Input type="number" value={form.defaults.clientIncl}
                       onChange={e => setForm(p => ({ ...p, defaults: calcVat(e.target.value, "incl", "client", p.defaults) }))} className="h-8 text-sm font-bold" /></div>
-                    <div><Label className="text-[10px]">נהג ל.מ</Label><Input type="number" value={form.defaults.driverExcl}
+                    <div><Label className="text-xs">נהג לפני מע״מ</Label><Input type="number" value={form.defaults.driverExcl}
                       onChange={e => setForm(p => ({ ...p, defaults: calcVat(e.target.value, "excl", "driver", p.defaults) }))} className="h-8 text-sm" /></div>
-                    <div><Label className="text-[10px]">נהג כ.מ</Label><Input type="number" value={form.defaults.driverIncl}
+                    <div><Label className="text-xs">נהג כולל מע״מ</Label><Input type="number" value={form.defaults.driverIncl}
                       onChange={e => setForm(p => ({ ...p, defaults: calcVat(e.target.value, "incl", "driver", p.defaults) }))} className="h-8 text-sm font-bold" /></div>
                   </div>
                   <div className="space-y-1">
