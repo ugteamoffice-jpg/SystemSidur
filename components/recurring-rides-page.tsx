@@ -379,7 +379,7 @@ export function RecurringRidesPage() {
       cell: ({ row }) => row.original.defaults.pickupTime || "-",
     },
     {
-      id: "description", header: "מסלול", size: 200, minSize: 80, enableResizing: true,
+      id: "description", header: "מסלול", size: 400, minSize: 100, enableResizing: true,
       cell: ({ row }) => <span className="truncate block" title={row.original.description}>{row.original.description}</span>,
     },
     {
@@ -470,7 +470,7 @@ export function RecurringRidesPage() {
 
       {/* Table */}
       <div className="flex-1 overflow-auto border rounded-lg">
-        <Table style={{ width: table.getCenterTotalSize() }}>
+        <Table style={{ width: "100%", minWidth: table.getCenterTotalSize() }}>
           <TableHeader>
             {table.getHeaderGroups().map(headerGroup => (
               <TableRow key={headerGroup.id}>
