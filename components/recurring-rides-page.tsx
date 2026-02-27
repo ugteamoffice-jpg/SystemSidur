@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Plus, Pencil, Trash2, Copy, ToggleLeft, ToggleRight } from "lucide-react"
+import { Plus, Pencil, Trash2, Copy, ToggleLeft, ToggleRight, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -16,8 +16,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
 import { useTenant, useTenantFields } from "@/lib/tenant-context"
 import {
-  RecurringRide, DayPrices, loadRecurringRides, addRecurringRide,
-  updateRecurringRide, deleteRecurringRide, DAY_NAMES_HE, DAY_LETTERS_HE
+  RecurringRide, DaySettings, loadRecurringRides, addRecurringRide,
+  updateRecurringRide, deleteRecurringRide, DAY_NAMES_HE, DAY_LETTERS_HE,
+  EMPTY_DAY_SETTINGS
 } from "@/lib/recurring-rides"
 
 interface ListItem { id: string; title: string }
@@ -28,21 +29,14 @@ function AutoComplete({ options, value, onChange, onSelect, placeholder }: any) 
   const filtered = options.filter((o: any) => String(o.title || "").toLowerCase().includes(safeValue))
   return (
     <div className="relative w-full">
-      <Input
-        value={value}
-        onChange={e => { onChange(e.target.value); setShow(true) }}
-        onBlur={() => setTimeout(() => setShow(false), 200)}
-        onFocus={() => setShow(true)}
-        className="text-right"
-        placeholder={placeholder}
-      />
+      <Input value={value} onChange={e => { onChange(e.target.value); setShow(true) }}
+        onBlur={() => setTimeout(() => setShow(false), 200)} onFocus={() => setShow(true)}
+        className="text-right h-8 text-sm" placeholder={placeholder} />
       {show && filtered.length > 0 && (
         <div className="absolute z-50 w-full bg-white border shadow-md max-h-40 overflow-auto rounded-md mt-1 text-black">
           {filtered.map((o: any) => (
             <div key={o.id} className="p-2 hover:bg-gray-100 cursor-pointer text-right text-sm"
-              onMouseDown={() => { onChange(o.title); if (onSelect) onSelect(o) }}>
-              {o.title}
-            </div>
+              onMouseDown={() => { onChange(o.title); if (onSelect) onSelect(o) }}>{o.title}</div>
           ))}
         </div>
       )}
@@ -50,53 +44,48 @@ function AutoComplete({ options, value, onChange, onSelect, placeholder }: any) 
   )
 }
 
-const emptyPrices: DayPrices = { clientExcl: "", clientIncl: "", driverExcl: "", driverIncl: "" }
+// ===== Form types =====
+interface FormState {
+  customerName: string; customerId: string
+  description: string; orderName: string; mobile: string; idNum: string
+  activeDays: number[]
+  defaults: DaySettings
+  dayOverrides: { [day: number]: Partial<DaySettings> }
+  active: boolean
+}
 
-const emptyForm = {
+const emptyForm: FormState = {
   customerName: "", customerId: "",
-  description: "",
-  pickupTime: "", dropoffTime: "",
-  driverName: "", driverId: "",
-  vehicleTypeName: "", vehicleTypeId: "",
-  vehicleNum: "",
-  managerNotes: "", driverNotes: "",
-  orderName: "", mobile: "", idNum: "",
-  activeDays: [0, 1, 2, 3, 4] as number[],
-  defaultPrices: { ...emptyPrices },
-  dayPrices: {} as { [day: number]: DayPrices },
-  useDayPrices: false,
+  description: "", orderName: "", mobile: "", idNum: "",
+  activeDays: [0, 1, 2, 3, 4],
+  defaults: { ...EMPTY_DAY_SETTINGS },
+  dayOverrides: {},
   active: true,
 }
 
 export function RecurringRidesPage() {
   const { tenantId } = useTenant()
-  const tenantFields = useTenantFields()
   const { toast } = useToast()
 
   const [rides, setRides] = React.useState<RecurringRide[]>([])
   const [dialogOpen, setDialogOpen] = React.useState(false)
   const [editingId, setEditingId] = React.useState<string | null>(null)
-  const [form, setForm] = React.useState({ ...emptyForm })
+  const [form, setForm] = React.useState<FormState>({ ...emptyForm })
   const [deleteConfirm, setDeleteConfirm] = React.useState<string | null>(null)
+  const [searchFilter, setSearchFilter] = React.useState("")
 
   const [lists, setLists] = React.useState<{ customers: ListItem[], drivers: ListItem[], vehicles: ListItem[] }>({
     customers: [], drivers: [], vehicles: []
   })
 
-  // Load rides
-  React.useEffect(() => {
-    setRides(loadRecurringRides(tenantId))
-  }, [tenantId])
+  React.useEffect(() => { setRides(loadRecurringRides(tenantId)) }, [tenantId])
 
-  // Load autocomplete lists
   React.useEffect(() => {
     const load = async (url: string) => {
       try {
-        const r = await fetch(url)
-        const d = await r.json()
+        const r = await fetch(url); const d = await r.json()
         return d.records ? d.records.map((x: any) => ({
-          id: x.id,
-          title: x.fields && Object.values(x.fields)[0] ? String(Object.values(x.fields)[0]) : ""
+          id: x.id, title: x.fields && Object.values(x.fields)[0] ? String(Object.values(x.fields)[0]) : ""
         })) : []
       } catch { return [] }
     }
@@ -111,36 +100,27 @@ export function RecurringRidesPage() {
 
   const openNew = () => {
     setEditingId(null)
-    setForm({ ...emptyForm, dayPrices: {}, defaultPrices: { ...emptyPrices } })
+    setForm({ ...emptyForm, defaults: { ...EMPTY_DAY_SETTINGS }, dayOverrides: {} })
     setDialogOpen(true)
   }
 
   const openEdit = (ride: RecurringRide) => {
     setEditingId(ride.id)
-    const hasDayPrices = Object.keys(ride.dayPrices).length > 0
     setForm({
       customerName: ride.customerName, customerId: ride.customerId,
-      description: ride.description,
-      pickupTime: ride.pickupTime, dropoffTime: ride.dropoffTime,
-      driverName: ride.driverName, driverId: ride.driverId,
-      vehicleTypeName: ride.vehicleTypeName, vehicleTypeId: ride.vehicleTypeId,
-      vehicleNum: ride.vehicleNum,
-      managerNotes: ride.managerNotes, driverNotes: ride.driverNotes,
-      orderName: ride.orderName, mobile: ride.mobile, idNum: ride.idNum,
+      description: ride.description, orderName: ride.orderName,
+      mobile: ride.mobile, idNum: ride.idNum,
       activeDays: [...ride.activeDays],
-      defaultPrices: { ...ride.defaultPrices },
-      dayPrices: JSON.parse(JSON.stringify(ride.dayPrices)),
-      useDayPrices: hasDayPrices,
+      defaults: { ...ride.defaults },
+      dayOverrides: JSON.parse(JSON.stringify(ride.dayOverrides)),
       active: ride.active,
     })
     setDialogOpen(true)
   }
 
   const handleDuplicate = (ride: RecurringRide) => {
-    addRecurringRide(tenantId, {
-      ...ride,
-      active: true,
-    })
+    const { id, createdAt, updatedAt, ...rest } = ride
+    addRecurringRide(tenantId, { ...rest, active: true })
     reload()
     toast({ title: "שוכפל בהצלחה" })
   }
@@ -158,8 +138,8 @@ export function RecurringRidesPage() {
   }
 
   const handleSave = () => {
-    if (!form.customerName || !form.description || !form.pickupTime) {
-      toast({ title: "שגיאה", description: "יש למלא לקוח, מסלול ושעת התייצבות", variant: "destructive" })
+    if (!form.customerName || !form.description) {
+      toast({ title: "שגיאה", description: "יש למלא לקוח ומסלול", variant: "destructive" })
       return
     }
     if (form.activeDays.length === 0) {
@@ -167,19 +147,12 @@ export function RecurringRidesPage() {
       return
     }
 
-    const data = {
+    const data: Omit<RecurringRide, "id" | "createdAt" | "updatedAt"> = {
       customerName: form.customerName, customerId: form.customerId,
-      description: form.description,
-      pickupTime: form.pickupTime, dropoffTime: form.dropoffTime,
-      driverName: form.driverName, driverId: form.driverId,
-      vehicleTypeName: form.vehicleTypeName, vehicleTypeId: form.vehicleTypeId,
-      vehicleNum: form.vehicleNum,
-      managerNotes: form.managerNotes, driverNotes: form.driverNotes,
-      orderName: form.orderName, mobile: form.mobile, idNum: form.idNum,
-      activeDays: form.activeDays,
-      defaultPrices: form.defaultPrices,
-      dayPrices: form.useDayPrices ? form.dayPrices : {},
-      active: form.active,
+      description: form.description, orderName: form.orderName,
+      mobile: form.mobile, idNum: form.idNum,
+      activeDays: form.activeDays, defaults: form.defaults,
+      dayOverrides: form.dayOverrides, active: form.active,
     }
 
     if (editingId) {
@@ -202,7 +175,7 @@ export function RecurringRidesPage() {
     }))
   }
 
-  const calcVat = (value: string, type: "excl" | "incl", side: "client" | "driver", target: DayPrices): DayPrices => {
+  const calcVat = (value: string, type: "excl" | "incl", side: "client" | "driver", target: any) => {
     const numVal = parseFloat(value)
     const rate = 1.18
     const updated = { ...target }
@@ -223,55 +196,153 @@ export function RecurringRidesPage() {
     return updated
   }
 
-  const updateDefaultPrice = (value: string, type: "excl" | "incl", side: "client" | "driver") => {
-    setForm(prev => ({ ...prev, defaultPrices: calcVat(value, type, side, prev.defaultPrices) }))
+  // Get effective value for a day field (override or default)
+  const getDayVal = (day: number, field: keyof DaySettings): string => {
+    const override = form.dayOverrides[day]
+    if (override && override[field] !== undefined && override[field] !== "") return override[field] as string
+    return form.defaults[field]
   }
 
-  const updateDayPrice = (day: number, value: string, type: "excl" | "incl", side: "client" | "driver") => {
+  const setDayOverride = (day: number, field: string, value: string) => {
     setForm(prev => {
-      const current = prev.dayPrices[day] || { ...emptyPrices }
-      return { ...prev, dayPrices: { ...prev.dayPrices, [day]: calcVat(value, type, side, current) } }
+      const current = prev.dayOverrides[day] || {}
+      return { ...prev, dayOverrides: { ...prev.dayOverrides, [day]: { ...current, [field]: value } } }
     })
   }
 
-  const renderPriceRow = (label: string, prices: DayPrices, onChange: (v: string, t: "excl" | "incl", s: "client" | "driver") => void) => (
-    <div className="space-y-2">
-      <span className="text-xs font-medium text-muted-foreground">{label}</span>
-      <div className="grid grid-cols-4 gap-2">
-        <div>
-          <Label className="text-[10px]">לקוח לפני מע״מ</Label>
-          <Input type="number" value={prices.clientExcl} onChange={e => onChange(e.target.value, "excl", "client")} className="h-8 text-sm" />
+  const setDayVat = (day: number, value: string, type: "excl" | "incl", side: "client" | "driver") => {
+    setForm(prev => {
+      const current = prev.dayOverrides[day] || {}
+      const updated = calcVat(value, type, side, {
+        clientExcl: current.clientExcl ?? prev.defaults.clientExcl,
+        clientIncl: current.clientIncl ?? prev.defaults.clientIncl,
+        driverExcl: current.driverExcl ?? prev.defaults.driverExcl,
+        driverIncl: current.driverIncl ?? prev.defaults.driverIncl,
+      })
+      return { ...prev, dayOverrides: { ...prev.dayOverrides, [day]: { ...current, ...updated } } }
+    })
+  }
+
+  const clearDayOverride = (day: number) => {
+    setForm(prev => {
+      const newOverrides = { ...prev.dayOverrides }
+      delete newOverrides[day]
+      return { ...prev, dayOverrides: newOverrides }
+    })
+  }
+
+  // Render per-day settings section
+  const renderDaySettings = (day: number) => {
+    const hasOverride = form.dayOverrides[day] && Object.keys(form.dayOverrides[day]).length > 0
+    return (
+      <div key={day} className="border rounded-lg p-3 space-y-2 bg-white">
+        <div className="flex items-center justify-between">
+          <span className="font-bold text-sm">יום {DAY_NAMES_HE[day]}</span>
+          {hasOverride && (
+            <button onClick={() => clearDayOverride(day)}
+              className="text-[10px] text-red-500 hover:underline">
+              אפס לברירת מחדל
+            </button>
+          )}
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <Label className="text-[10px]">שעת התייצבות</Label>
+            <Input type="time" value={getDayVal(day, "pickupTime")}
+              onChange={e => setDayOverride(day, "pickupTime", e.target.value)} className="h-7 text-sm" />
+          </div>
+          <div>
+            <Label className="text-[10px]">שעת חזור</Label>
+            <Input type="time" value={getDayVal(day, "dropoffTime")}
+              onChange={e => setDayOverride(day, "dropoffTime", e.target.value)} className="h-7 text-sm" />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <Label className="text-[10px]">נהג</Label>
+            <AutoComplete options={lists.drivers} value={getDayVal(day, "driverName")}
+              onChange={(v: string) => setDayOverride(day, "driverName", v)}
+              onSelect={(o: ListItem) => { setDayOverride(day, "driverName", o.title); setDayOverride(day, "driverId", o.id) }}
+              placeholder="" />
+          </div>
+          <div>
+            <Label className="text-[10px]">סוג רכב</Label>
+            <AutoComplete options={lists.vehicles} value={getDayVal(day, "vehicleTypeName")}
+              onChange={(v: string) => setDayOverride(day, "vehicleTypeName", v)}
+              onSelect={(o: ListItem) => { setDayOverride(day, "vehicleTypeName", o.title); setDayOverride(day, "vehicleTypeId", o.id) }}
+              placeholder="" />
+          </div>
         </div>
         <div>
-          <Label className="text-[10px]">לקוח כולל מע״מ</Label>
-          <Input type="number" value={prices.clientIncl} onChange={e => onChange(e.target.value, "incl", "client")} className="h-8 text-sm font-bold" />
+          <Label className="text-[10px]">מס׳ רכב</Label>
+          <Input value={getDayVal(day, "vehicleNum")}
+            onChange={e => setDayOverride(day, "vehicleNum", e.target.value)} className="h-7 text-sm text-right" />
         </div>
-        <div>
-          <Label className="text-[10px]">נהג לפני מע״מ</Label>
-          <Input type="number" value={prices.driverExcl} onChange={e => onChange(e.target.value, "excl", "driver")} className="h-8 text-sm" />
+        <div className="grid grid-cols-4 gap-1">
+          <div>
+            <Label className="text-[10px]">לקוח ל.מ</Label>
+            <Input type="number" value={getDayVal(day, "clientExcl")}
+              onChange={e => setDayVat(day, e.target.value, "excl", "client")} className="h-7 text-sm" />
+          </div>
+          <div>
+            <Label className="text-[10px]">לקוח כ.מ</Label>
+            <Input type="number" value={getDayVal(day, "clientIncl")}
+              onChange={e => setDayVat(day, e.target.value, "incl", "client")} className="h-7 text-sm font-bold" />
+          </div>
+          <div>
+            <Label className="text-[10px]">נהג ל.מ</Label>
+            <Input type="number" value={getDayVal(day, "driverExcl")}
+              onChange={e => setDayVat(day, e.target.value, "excl", "driver")} className="h-7 text-sm" />
+          </div>
+          <div>
+            <Label className="text-[10px]">נהג כ.מ</Label>
+            <Input type="number" value={getDayVal(day, "driverIncl")}
+              onChange={e => setDayVat(day, e.target.value, "incl", "driver")} className="h-7 text-sm font-bold" />
+          </div>
         </div>
-        <div>
-          <Label className="text-[10px]">נהג כולל מע״מ</Label>
-          <Input type="number" value={prices.driverIncl} onChange={e => onChange(e.target.value, "incl", "driver")} className="h-8 text-sm font-bold" />
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <Label className="text-[10px]">הערות מנהל</Label>
+            <Input value={getDayVal(day, "managerNotes")}
+              onChange={e => setDayOverride(day, "managerNotes", e.target.value)} className="h-7 text-sm text-right" />
+          </div>
+          <div>
+            <Label className="text-[10px]">הערות נהג</Label>
+            <Input value={getDayVal(day, "driverNotes")}
+              onChange={e => setDayOverride(day, "driverNotes", e.target.value)} className="h-7 text-sm text-right" />
+          </div>
         </div>
       </div>
-    </div>
-  )
+    )
+  }
+
+  const filteredRides = rides.filter(r => {
+    if (!searchFilter) return true
+    const q = searchFilter.toLowerCase()
+    return r.customerName.toLowerCase().includes(q) ||
+      r.description.toLowerCase().includes(q) ||
+      r.defaults.driverName.toLowerCase().includes(q)
+  })
 
   const activeCount = rides.filter(r => r.active).length
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden p-4" dir="rtl">
-      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-xl font-bold">נסיעות קבועות</h2>
           <p className="text-sm text-muted-foreground">{rides.length} תבניות ({activeCount} פעילות)</p>
         </div>
         <Button onClick={openNew} className="gap-2">
-          <Plus className="h-4 w-4" />
-          תבנית חדשה
+          <Plus className="h-4 w-4" /> תבנית חדשה
         </Button>
+      </div>
+
+      {/* Search */}
+      <div className="relative mb-3">
+        <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input value={searchFilter} onChange={e => setSearchFilter(e.target.value)}
+          placeholder="חיפוש לקוח, מסלול, נהג..." className="pr-9 text-right" />
       </div>
 
       {/* Table */}
@@ -282,64 +353,49 @@ export function RecurringRidesPage() {
               <TableHead className="text-right w-10">מצב</TableHead>
               <TableHead className="text-right">לקוח</TableHead>
               <TableHead className="text-right">מסלול</TableHead>
-              <TableHead className="text-right w-20">שעה</TableHead>
+              <TableHead className="text-right w-16">שעה</TableHead>
               <TableHead className="text-right">נהג</TableHead>
               <TableHead className="text-right w-32">ימים</TableHead>
               <TableHead className="text-right w-24">מחיר לקוח</TableHead>
-              <TableHead className="text-right w-24">מחיר נהג</TableHead>
               <TableHead className="text-right w-28">פעולות</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rides.length === 0 ? (
+            {filteredRides.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
-                  אין תבניות. לחץ "תבנית חדשה" כדי להוסיף.
+                <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+                  {rides.length === 0 ? "אין תבניות. לחץ \"תבנית חדשה\" כדי להוסיף." : "לא נמצאו תוצאות"}
                 </TableCell>
               </TableRow>
             ) : (
-              rides.map(ride => (
+              filteredRides.map(ride => (
                 <TableRow key={ride.id} className={!ride.active ? "opacity-40" : ""}>
                   <TableCell>
                     <button onClick={() => handleToggle(ride)} title={ride.active ? "פעיל" : "מושבת"}>
-                      {ride.active
-                        ? <ToggleRight className="h-5 w-5 text-green-600" />
-                        : <ToggleLeft className="h-5 w-5 text-gray-400" />
-                      }
+                      {ride.active ? <ToggleRight className="h-5 w-5 text-green-600" /> : <ToggleLeft className="h-5 w-5 text-gray-400" />}
                     </button>
                   </TableCell>
                   <TableCell className="font-medium">{ride.customerName}</TableCell>
                   <TableCell className="max-w-[200px] truncate" title={ride.description}>{ride.description}</TableCell>
-                  <TableCell>{ride.pickupTime}</TableCell>
-                  <TableCell>{ride.driverName || "-"}</TableCell>
+                  <TableCell className="text-sm">{ride.defaults.pickupTime || "-"}</TableCell>
+                  <TableCell className="text-sm">{ride.defaults.driverName || "-"}</TableCell>
                   <TableCell>
                     <div className="flex gap-0.5">
                       {[0, 1, 2, 3, 4, 5, 6].map(d => (
                         <span key={d} className={`text-[10px] w-5 h-5 flex items-center justify-center rounded ${
                           ride.activeDays.includes(d) ? "bg-blue-100 text-blue-700 font-bold" : "text-gray-300"
-                        }`}>
-                          {DAY_LETTERS_HE[d]}
-                        </span>
+                        }`}>{DAY_LETTERS_HE[d]}</span>
                       ))}
                     </div>
                   </TableCell>
                   <TableCell className="text-sm">
-                    {ride.defaultPrices.clientIncl ? `₪${ride.defaultPrices.clientIncl}` : "-"}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {ride.defaultPrices.driverIncl ? `₪${ride.defaultPrices.driverIncl}` : "-"}
+                    {ride.defaults.clientIncl ? `₪${ride.defaults.clientIncl}` : "-"}
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <button onClick={() => openEdit(ride)} className="p-1 hover:bg-muted rounded" title="ערוך">
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button onClick={() => handleDuplicate(ride)} className="p-1 hover:bg-muted rounded" title="שכפל">
-                        <Copy className="h-4 w-4" />
-                      </button>
-                      <button onClick={() => setDeleteConfirm(ride.id)} className="p-1 hover:bg-red-50 rounded text-red-500" title="מחק">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      <button onClick={() => openEdit(ride)} className="p-1 hover:bg-muted rounded" title="ערוך"><Pencil className="h-4 w-4" /></button>
+                      <button onClick={() => handleDuplicate(ride)} className="p-1 hover:bg-muted rounded" title="שכפל"><Copy className="h-4 w-4" /></button>
+                      <button onClick={() => setDeleteConfirm(ride.id)} className="p-1 hover:bg-red-50 rounded text-red-500" title="מחק"><Trash2 className="h-4 w-4" /></button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -354,158 +410,134 @@ export function RecurringRidesPage() {
         <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col" dir="rtl">
           <DialogHeader>
             <DialogTitle>{editingId ? "עריכת תבנית" : "תבנית חדשה"}</DialogTitle>
-            <DialogDescription>נסיעה קבועה שתשובץ אוטומטית בימים הנבחרים</DialogDescription>
+            <DialogDescription>נסיעה קבועה שתשובץ אוטומטית</DialogDescription>
           </DialogHeader>
 
           <Tabs defaultValue="details" className="flex-1 flex flex-col overflow-hidden">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="details">פרטים</TabsTrigger>
-              <TabsTrigger value="days">ימים</TabsTrigger>
-              <TabsTrigger value="prices">מחירים</TabsTrigger>
+              <TabsTrigger value="schedule">שיבוץ לפי יום</TabsTrigger>
             </TabsList>
 
             <div className="flex-1 overflow-y-auto p-1 mt-2">
-              {/* Tab: Details */}
+              {/* Tab: פרטים */}
               <TabsContent value="details" className="space-y-3 mt-0">
                 <div className="space-y-1">
                   <Label>שם לקוח *</Label>
-                  <AutoComplete
-                    options={lists.customers} value={form.customerName}
+                  <AutoComplete options={lists.customers} value={form.customerName}
                     onChange={(v: string) => setForm(p => ({ ...p, customerName: v, customerId: "" }))}
                     onSelect={(o: ListItem) => setForm(p => ({ ...p, customerName: o.title, customerId: o.id }))}
-                    placeholder=""
-                  />
+                    placeholder="" />
                 </div>
                 <div className="space-y-1">
                   <Label>תיאור (מסלול) *</Label>
                   <Textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} className="text-right" />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <Label>שעת התייצבות *</Label>
-                    <Input type="time" value={form.pickupTime} onChange={e => setForm(p => ({ ...p, pickupTime: e.target.value }))} />
+
+                {/* ברירת מחדל */}
+                <div className="border-t pt-3 space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground">ברירת מחדל (לכל הימים)</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label>שעת התייצבות</Label>
+                      <Input type="time" value={form.defaults.pickupTime}
+                        onChange={e => setForm(p => ({ ...p, defaults: { ...p.defaults, pickupTime: e.target.value } }))} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>שעת חזור</Label>
+                      <Input type="time" value={form.defaults.dropoffTime}
+                        onChange={e => setForm(p => ({ ...p, defaults: { ...p.defaults, dropoffTime: e.target.value } }))} />
+                    </div>
                   </div>
                   <div className="space-y-1">
-                    <Label>שעת חזור</Label>
-                    <Input type="time" value={form.dropoffTime} onChange={e => setForm(p => ({ ...p, dropoffTime: e.target.value }))} />
+                    <Label>נהג</Label>
+                    <AutoComplete options={lists.drivers} value={form.defaults.driverName}
+                      onChange={(v: string) => setForm(p => ({ ...p, defaults: { ...p.defaults, driverName: v, driverId: "" } }))}
+                      onSelect={(o: ListItem) => setForm(p => ({ ...p, defaults: { ...p.defaults, driverName: o.title, driverId: o.id } }))}
+                      placeholder="" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label>סוג רכב</Label>
+                      <AutoComplete options={lists.vehicles} value={form.defaults.vehicleTypeName}
+                        onChange={(v: string) => setForm(p => ({ ...p, defaults: { ...p.defaults, vehicleTypeName: v, vehicleTypeId: "" } }))}
+                        onSelect={(o: ListItem) => setForm(p => ({ ...p, defaults: { ...p.defaults, vehicleTypeName: o.title, vehicleTypeId: o.id } }))}
+                        placeholder="" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>מס׳ רכב</Label>
+                      <Input value={form.defaults.vehicleNum}
+                        onChange={e => setForm(p => ({ ...p, defaults: { ...p.defaults, vehicleNum: e.target.value } }))} className="text-right" />
+                    </div>
+                  </div>
+                  {/* מחירים ברירת מחדל */}
+                  <div className="grid grid-cols-4 gap-2">
+                    <div><Label className="text-[10px]">לקוח ל.מ</Label><Input type="number" value={form.defaults.clientExcl}
+                      onChange={e => setForm(p => ({ ...p, defaults: calcVat(e.target.value, "excl", "client", p.defaults) }))} className="h-8 text-sm" /></div>
+                    <div><Label className="text-[10px]">לקוח כ.מ</Label><Input type="number" value={form.defaults.clientIncl}
+                      onChange={e => setForm(p => ({ ...p, defaults: calcVat(e.target.value, "incl", "client", p.defaults) }))} className="h-8 text-sm font-bold" /></div>
+                    <div><Label className="text-[10px]">נהג ל.מ</Label><Input type="number" value={form.defaults.driverExcl}
+                      onChange={e => setForm(p => ({ ...p, defaults: calcVat(e.target.value, "excl", "driver", p.defaults) }))} className="h-8 text-sm" /></div>
+                    <div><Label className="text-[10px]">נהג כ.מ</Label><Input type="number" value={form.defaults.driverIncl}
+                      onChange={e => setForm(p => ({ ...p, defaults: calcVat(e.target.value, "incl", "driver", p.defaults) }))} className="h-8 text-sm font-bold" /></div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label>הערות מנהל</Label>
+                    <Textarea value={form.defaults.managerNotes}
+                      onChange={e => setForm(p => ({ ...p, defaults: { ...p.defaults, managerNotes: e.target.value } }))} className="text-right" rows={2} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>הערות נהג</Label>
+                    <Textarea value={form.defaults.driverNotes}
+                      onChange={e => setForm(p => ({ ...p, defaults: { ...p.defaults, driverNotes: e.target.value } }))} className="text-right" rows={2} />
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <Label>נהג</Label>
-                  <AutoComplete
-                    options={lists.drivers} value={form.driverName}
-                    onChange={(v: string) => setForm(p => ({ ...p, driverName: v, driverId: "" }))}
-                    onSelect={(o: ListItem) => setForm(p => ({ ...p, driverName: o.title, driverId: o.id }))}
-                    placeholder=""
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <Label>סוג רכב</Label>
-                    <AutoComplete
-                      options={lists.vehicles} value={form.vehicleTypeName}
-                      onChange={(v: string) => setForm(p => ({ ...p, vehicleTypeName: v, vehicleTypeId: "" }))}
-                      onSelect={(o: ListItem) => setForm(p => ({ ...p, vehicleTypeName: o.title, vehicleTypeId: o.id }))}
-                      placeholder=""
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label>מס׳ רכב</Label>
-                    <Input value={form.vehicleNum} onChange={e => setForm(p => ({ ...p, vehicleNum: e.target.value }))} className="text-right" />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <Label>הערות מנהל</Label>
-                  <Textarea value={form.managerNotes} onChange={e => setForm(p => ({ ...p, managerNotes: e.target.value }))} className="text-right" rows={2} />
-                </div>
-                <div className="space-y-1">
-                  <Label>הערות נהג</Label>
-                  <Textarea value={form.driverNotes} onChange={e => setForm(p => ({ ...p, driverNotes: e.target.value }))} className="text-right" rows={2} />
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="space-y-1">
-                    <Label>שם מזמין</Label>
-                    <Input value={form.orderName} onChange={e => setForm(p => ({ ...p, orderName: e.target.value }))} className="text-right" />
-                  </div>
-                  <div className="space-y-1">
-                    <Label>נייד</Label>
-                    <Input value={form.mobile} onChange={e => setForm(p => ({ ...p, mobile: e.target.value }))} className="text-right" />
-                  </div>
-                  <div className="space-y-1">
-                    <Label>ת.ז</Label>
-                    <Input value={form.idNum} onChange={e => setForm(p => ({ ...p, idNum: e.target.value }))} className="text-right" />
-                  </div>
+
+                {/* פרטי מזמין */}
+                <div className="border-t pt-3 grid grid-cols-3 gap-3">
+                  <div className="space-y-1"><Label>שם מזמין</Label><Input value={form.orderName}
+                    onChange={e => setForm(p => ({ ...p, orderName: e.target.value }))} className="text-right" /></div>
+                  <div className="space-y-1"><Label>נייד</Label><Input value={form.mobile}
+                    onChange={e => setForm(p => ({ ...p, mobile: e.target.value }))} className="text-right" /></div>
+                  <div className="space-y-1"><Label>ת.ז</Label><Input value={form.idNum}
+                    onChange={e => setForm(p => ({ ...p, idNum: e.target.value }))} className="text-right" /></div>
                 </div>
               </TabsContent>
 
-              {/* Tab: Days */}
-              <TabsContent value="days" className="space-y-4 mt-0">
-                <p className="text-sm text-muted-foreground">בחר את הימים בשבוע שהנסיעה תשובץ:</p>
-                <div className="grid grid-cols-7 gap-2">
-                  {[0, 1, 2, 3, 4, 5, 6].map(d => (
-                    <button
-                      key={d}
-                      type="button"
-                      onClick={() => toggleDay(d)}
-                      className={`flex flex-col items-center p-3 rounded-lg border-2 transition-all ${
-                        form.activeDays.includes(d)
-                          ? "border-blue-500 bg-blue-50 text-blue-700"
-                          : "border-gray-200 bg-white text-gray-400 hover:border-gray-300"
-                      }`}
-                    >
-                      <span className="text-lg font-bold">{DAY_LETTERS_HE[d]}</span>
-                      <span className="text-[10px]">{DAY_NAMES_HE[d]}</span>
-                    </button>
-                  ))}
-                </div>
-                <div className="flex gap-2 mt-2">
-                  <Button type="button" variant="outline" size="sm" onClick={() => setForm(p => ({ ...p, activeDays: [0, 1, 2, 3, 4] }))}>
-                    א׳-ה׳
-                  </Button>
-                  <Button type="button" variant="outline" size="sm" onClick={() => setForm(p => ({ ...p, activeDays: [0, 1, 2, 3, 4, 5] }))}>
-                    א׳-ו׳
-                  </Button>
-                  <Button type="button" variant="outline" size="sm" onClick={() => setForm(p => ({ ...p, activeDays: [0, 1, 2, 3, 4, 5, 6] }))}>
-                    כל השבוע
-                  </Button>
-                  <Button type="button" variant="outline" size="sm" onClick={() => setForm(p => ({ ...p, activeDays: [] }))}>
-                    נקה הכל
-                  </Button>
-                </div>
-              </TabsContent>
-
-              {/* Tab: Prices */}
-              <TabsContent value="prices" className="space-y-4 mt-0">
-                {renderPriceRow("מחיר ברירת מחדל", form.defaultPrices, updateDefaultPrice)}
-
-                <div className="border-t pt-3">
-                  <label className="flex items-center gap-2 cursor-pointer text-sm">
-                    <input
-                      type="checkbox"
-                      checked={form.useDayPrices}
-                      onChange={e => setForm(p => ({ ...p, useDayPrices: e.target.checked }))}
-                      className="rounded"
-                    />
-                    <span className="font-medium">מחירים שונים לפי יום</span>
-                  </label>
-                </div>
-
-                {form.useDayPrices && (
-                  <div className="space-y-3">
-                    {form.activeDays.map(d => (
-                      <div key={d} className="p-3 border rounded-lg bg-muted/30">
-                        {renderPriceRow(
-                          `יום ${DAY_NAMES_HE[d]}`,
-                          form.dayPrices[d] || { ...emptyPrices },
-                          (v, t, s) => updateDayPrice(d, v, t, s)
-                        )}
-                      </div>
+              {/* Tab: שיבוץ לפי יום */}
+              <TabsContent value="schedule" className="space-y-3 mt-0">
+                {/* Day Selection */}
+                <div>
+                  <p className="text-sm font-medium mb-2">ימים פעילים</p>
+                  <div className="flex gap-1.5">
+                    {[0, 1, 2, 3, 4, 5, 6].map(d => (
+                      <button key={d} type="button" onClick={() => toggleDay(d)}
+                        className={`flex flex-col items-center py-2 px-3 rounded-lg border-2 transition-all text-xs ${
+                          form.activeDays.includes(d) ? "border-blue-500 bg-blue-50 text-blue-700 font-bold" : "border-gray-200 text-gray-400 hover:border-gray-300"
+                        }`}>
+                        <span>{DAY_LETTERS_HE[d]}</span>
+                      </button>
                     ))}
-                    {form.activeDays.length === 0 && (
-                      <p className="text-sm text-muted-foreground text-center py-4">בחר ימים בטאב "ימים" כדי להגדיר מחירים</p>
-                    )}
+                    <div className="flex gap-1 mr-2 items-center">
+                      <Button type="button" variant="ghost" size="sm" className="text-[10px] h-6 px-2"
+                        onClick={() => setForm(p => ({ ...p, activeDays: [0, 1, 2, 3, 4] }))}>א-ה</Button>
+                      <Button type="button" variant="ghost" size="sm" className="text-[10px] h-6 px-2"
+                        onClick={() => setForm(p => ({ ...p, activeDays: [0, 1, 2, 3, 4, 5, 6] }))}>הכל</Button>
+                    </div>
                   </div>
-                )}
+                </div>
+
+                <div className="border-t pt-3" />
+                <p className="text-xs text-muted-foreground">שנה ערכים ליום ספציפי. שדות ריקים ישתמשו בברירת מחדל מטאב "פרטים".</p>
+
+                {/* Per-day settings */}
+                <div className="space-y-2">
+                  {form.activeDays.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-8">בחר ימים למעלה</p>
+                  ) : (
+                    form.activeDays.map(d => renderDaySettings(d))
+                  )}
+                </div>
               </TabsContent>
             </div>
           </Tabs>

@@ -70,7 +70,7 @@ import {
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { useTenantFields, useTenant } from "@/lib/tenant-context"
-import { getActiveRidesForDay, getPricesForDay, loadRecurringRides } from "@/lib/recurring-rides"
+import { AutoAssignDialog } from "@/components/auto-assign-dialog"
 
 // --- ממשקים ---
 export interface WorkScheduleRecord {
@@ -346,7 +346,7 @@ function DataGrid({ schema }: { schema?: any }) {
   const [showWhatsappDialog, setShowWhatsappDialog] = React.useState(false)
   const [whatsappDriverName, setWhatsappDriverName] = React.useState("")
   const [selectedRecordsForExport, setSelectedRecordsForExport] = React.useState<any[]>([])
-  const [autoAssigning, setAutoAssigning] = React.useState(false)
+  const [showAutoAssignDialog, setShowAutoAssignDialog] = React.useState(false)
 
   // State variables לטווח תאריכים
   const [dateRangeMode, setDateRangeMode] = React.useState(false)
@@ -723,80 +723,6 @@ function DataGrid({ schema }: { schema?: any }) {
     }, 2000)
   }, [])
 
-  // שיבוץ אוטומטי — יוצר נסיעות מתבניות קבועות ליום הנוכחי
-  const handleAutoAssign = async () => {
-    const dayOfWeek = dateFilter.getDay() // 0=Sunday
-    const templates = getActiveRidesForDay(tenantId, dayOfWeek)
-
-    if (templates.length === 0) {
-      toast({ title: "אין תבניות", description: "אין נסיעות קבועות פעילות ליום זה", variant: "destructive" })
-      return
-    }
-
-    const dateStr = format(dateFilter, "yyyy-MM-dd")
-    const existingSet = new Set(
-      data.map(r => `${r.fields[WS.DESCRIPTION] || ""}|${r.fields[WS.PICKUP_TIME] || ""}`)
-    )
-
-    const toCreate = templates.filter(t => {
-      const key = `${t.description}|${t.pickupTime}`
-      return !existingSet.has(key)
-    })
-
-    if (toCreate.length === 0) {
-      toast({ title: "הכל כבר משובץ", description: `כל ${templates.length} הנסיעות הקבועות כבר קיימות ליום זה` })
-      return
-    }
-
-    setAutoAssigning(true)
-    let created = 0
-
-    try {
-      for (const t of toCreate) {
-        const prices = getPricesForDay(t, dayOfWeek)
-        const payload: any = {
-          fields: {
-            [WS.DATE]: dateStr,
-            [WS.DESCRIPTION]: t.description,
-            [WS.PICKUP_TIME]: t.pickupTime,
-            [WS.DROPOFF_TIME]: t.dropoffTime || null,
-            [WS.VEHICLE_NUM]: t.vehicleNum || null,
-            [WS.MANAGER_NOTES]: t.managerNotes || null,
-            [WS.DRIVER_NOTES]: t.driverNotes || null,
-            [WS.ORDER_NAME]: t.orderName || null,
-            [WS.MOBILE]: t.mobile || null,
-            [WS.ID_NUM]: t.idNum ? Number(t.idNum) : null,
-            [WS.PRICE_CLIENT_EXCL]: prices.clientExcl ? parseFloat(prices.clientExcl) : null,
-            [WS.PRICE_CLIENT_INCL]: prices.clientIncl ? parseFloat(prices.clientIncl) : null,
-            [WS.PRICE_DRIVER_EXCL]: prices.driverExcl ? parseFloat(prices.driverExcl) : null,
-            [WS.PRICE_DRIVER_INCL]: prices.driverIncl ? parseFloat(prices.driverIncl) : null,
-            [WS.CUSTOMER]: t.customerId ? [t.customerId] : null,
-            [WS.DRIVER]: t.driverId ? [t.driverId] : null,
-            [WS.VEHICLE_TYPE]: t.vehicleTypeId ? [t.vehicleTypeId] : null,
-          }
-        }
-        Object.keys(payload.fields).forEach(k => payload.fields[k] === undefined && delete payload.fields[k])
-
-        const res = await fetch(`/api/work-schedule?tenant=${tenantId}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        })
-        if (res.ok) created++
-      }
-
-      toast({
-        title: "שיבוץ הושלם",
-        description: `נוצרו ${created} נסיעות מתוך ${toCreate.length} תבניות${templates.length > toCreate.length ? ` (${templates.length - toCreate.length} כבר היו קיימות)` : ""}`
-      })
-      await fetchDataAfterSave()
-    } catch (err) {
-      console.error("Auto-assign error:", err)
-      toast({ title: "שגיאה", description: "לא הצלחנו ליצור חלק מהנסיעות", variant: "destructive" })
-    } finally {
-      setAutoAssigning(false)
-    }
-  }
 
   // Sync ref and fetch when date changes
   React.useEffect(() => {
@@ -948,11 +874,10 @@ function DataGrid({ schema }: { schema?: any }) {
             variant="outline"
             size="sm"
             className="gap-1.5 shrink-0 h-8 md:h-9 text-xs md:text-sm"
-            onClick={handleAutoAssign}
-            disabled={autoAssigning}
-            title="שיבוץ נסיעות קבועות ליום זה"
+            onClick={() => setShowAutoAssignDialog(true)}
+            title="שיבוץ נסיעות קבועות"
           >
-            {autoAssigning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CalendarCheck className="h-3.5 w-3.5" />}
+            <CalendarCheck className="h-3.5 w-3.5" />
             <span className="hidden md:inline">שיבוץ אוטומטי</span>
           </Button>
 
@@ -1553,6 +1478,14 @@ function DataGrid({ schema }: { schema?: any }) {
         allRecords={data}
         initialDriverName={whatsappDriverName}
         selectedRecords={selectedRecordsForExport}
+      />
+
+      <AutoAssignDialog
+        open={showAutoAssignDialog}
+        onOpenChange={setShowAutoAssignDialog}
+        currentDate={dateFilter}
+        existingRecords={data}
+        onComplete={fetchDataAfterSave}
       />
 
       {/* Calendar Modal */}
