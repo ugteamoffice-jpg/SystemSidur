@@ -77,7 +77,7 @@ export function RecurringRidesPage() {
   const [form, setForm] = React.useState<FormState>({ ...emptyForm })
   const [deleteConfirm, setDeleteConfirm] = React.useState<string | null>(null)
   const [searchFilter, setSearchFilter] = React.useState("")
-  const [activeFilter, setActiveFilter] = React.useState<"all" | "active" | "inactive">("all")
+  const [activeFilter, setActiveFilter] = React.useState<"all" | "active" | "inactive">("active")
   const [isResizing, setIsResizing] = React.useState(false)
 
   const COL_SIZE_KEY = `recurringRidesColSize_${tenantId}`
