@@ -450,7 +450,15 @@ export function RecurringRidesPage() {
         <Button onClick={openNew} className="gap-2 shrink-0">
           <Plus className="h-4 w-4" /> צור נסיעה קבועה
         </Button>
-        <span className="text-sm text-muted-foreground shrink-0">{rides.length} תבניות ({activeCount} פעילות)</span>
+
+        <div className="flex gap-1 shrink-0">
+          {(["active", "inactive"] as const).map(f => (
+            <Button key={f} variant={activeFilter === f ? "default" : "outline"} size="sm"
+              className="text-xs h-9 px-3" onClick={() => setActiveFilter(prev => prev === f ? "all" : f)}>
+              {f === "active" ? "פעילות" : "לא פעילות"}
+            </Button>
+          ))}
+        </div>
 
         <div className="relative flex-1">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -458,14 +466,7 @@ export function RecurringRidesPage() {
             placeholder="חיפוש לקוח, מסלול, נהג..." className="pr-9 text-right h-9" />
         </div>
 
-        <div className="flex gap-1 shrink-0">
-          {(["all", "active", "inactive"] as const).map(f => (
-            <Button key={f} variant={activeFilter === f ? "default" : "outline"} size="sm"
-              className="text-xs h-9 px-3" onClick={() => setActiveFilter(f)}>
-              {f === "all" ? "הכל" : f === "active" ? "פעילות" : "לא פעילות"}
-            </Button>
-          ))}
-        </div>
+        <span className="text-sm text-muted-foreground shrink-0">סה״כ {rides.length} מסלולים ({activeCount} פעילים)</span>
       </div>
 
       {/* Table */}
