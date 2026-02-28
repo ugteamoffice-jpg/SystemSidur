@@ -576,7 +576,7 @@ export function RecurringRidesPage() {
                   <p className="text-sm font-medium text-muted-foreground">ברירת מחדל (לכל הימים)</p>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <Label>שעת התייצבות</Label>
+                      <Label>שעת התייצבות *</Label>
                       <Input type="time" value={form.defaults.pickupTime}
                         onChange={e => setForm(p => ({ ...p, defaults: { ...p.defaults, pickupTime: e.target.value } }))} />
                     </div>
