@@ -1460,7 +1460,7 @@ function DataGrid({ schema }: { schema?: any }) {
                           newDays[index] = !newDays[index]
                           setSelectedDays(newDays)
                         }}
-                        className={`flex-1 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
+                        className={`flex-1 py-2 rounded-lg border-2 text-sm font-medium transition-all text-center ${
                           selectedDays[index]
                             ? "border-orange-500 bg-orange-50 text-orange-700"
                             : "border-gray-200 text-gray-400 hover:border-gray-300"
