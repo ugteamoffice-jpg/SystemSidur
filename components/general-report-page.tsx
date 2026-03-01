@@ -4,7 +4,7 @@ import * as React from "react"
 import { format } from "date-fns"
 import { he } from "date-fns/locale"
 import { requestQueue } from "@/lib/request-queue"
-import { Calendar as CalendarIcon, Loader2, Search, X, SlidersHorizontal, UserCog, DollarSign, Trash2, GripHorizontal } from "lucide-react"
+import { Calendar as CalendarIcon, Loader2, Search, X, SlidersHorizontal, UserCog, DollarSign, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -212,6 +212,14 @@ export function GeneralReportPage() {
     if (filters.description) parts.push(`מסלול: ${filters.description}`)
     return parts.join(" | ")
   }, [filters])
+
+  const totals = React.useMemo(() => ({
+    p1: filteredData.reduce((s, r) => s + (Number(r.fields[WS.PRICE_CLIENT_EXCL]) || 0), 0),
+    p2: filteredData.reduce((s, r) => s + (Number(r.fields[WS.PRICE_CLIENT_INCL]) || 0), 0),
+    p3: filteredData.reduce((s, r) => s + (Number(r.fields[WS.PRICE_DRIVER_EXCL]) || 0), 0),
+    p4: filteredData.reduce((s, r) => s + (Number(r.fields[WS.PRICE_DRIVER_INCL]) || 0), 0),
+    profit: filteredData.reduce((s, r) => s + ((Number(r.fields[WS.PRICE_CLIENT_INCL]) || 0) - (Number(r.fields[WS.PRICE_DRIVER_INCL]) || 0)), 0),
+  }), [filteredData, WS])
 
   const allSelected = filteredData.length > 0 && selectedIds.size === filteredData.length
   const toggleAll = () => setSelectedIds(allSelected ? new Set() : new Set(filteredData.map(r => r.id)))
@@ -589,6 +597,24 @@ export function GeneralReportPage() {
               </span>
             </div>
           )}
+
+          {hasSearched && filteredData.length > 0 && (
+            <div className="hidden lg:flex gap-2 xl:gap-3 text-[10px] xl:text-sm bg-muted/20 border rounded px-2 xl:px-4 py-1 xl:py-1.5 shadow-sm items-center shrink-0">
+              <div className="flex flex-col gap-0.5 whitespace-nowrap">
+                <span>לקוח לפני מע"מ: <span className="font-bold">{totals.p1.toLocaleString()} ₪</span></span>
+                <span>לקוח כולל מע"מ: <span className="font-bold">{totals.p2.toLocaleString()} ₪</span></span>
+              </div>
+              <div className="w-px bg-border self-stretch my-0.5" />
+              <div className="flex flex-col gap-0.5 whitespace-nowrap">
+                <span>נהג לפני מע"מ: <span className="font-bold">{totals.p3.toLocaleString()} ₪</span></span>
+                <span>נהג כולל מע"מ: <span className="font-bold">{totals.p4.toLocaleString()} ₪</span></span>
+              </div>
+              <div className="w-px bg-border self-stretch my-0.5" />
+              <div className="flex flex-col gap-0.5 whitespace-nowrap text-orange-500 font-medium">
+                <span>רווח כולל: <span className="font-bold">{totals.profit.toLocaleString()} ₪</span></span>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="rounded-md border flex-1 overflow-auto min-h-0">
@@ -628,7 +654,7 @@ export function GeneralReportPage() {
                     >
                       {col.id === "sel"
                         ? <div className="flex items-center justify-center"><Checkbox checked={allSelected} onCheckedChange={toggleAll} /></div>
-                        : <div className="flex items-center gap-1 cursor-grab">{!col.noDrag && <GripHorizontal className="h-3 w-3 text-muted-foreground/50 shrink-0" />}{col.label}</div>
+                        : <div className="flex items-center gap-1 cursor-grab">{col.label}</div>
                       }
                       {!col.noResize && (
                         <div onMouseDown={e => handleResizeStart(col.id, e)}
