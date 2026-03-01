@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Database, Moon, Sun, Settings, ChevronDown, Eye } from "lucide-react"
+import { Moon, Sun, Settings, ChevronDown, Eye } from "lucide-react"
 import { useTheme } from "next-themes"
 import dynamic from "next/dynamic"
 import { ReportSettingsDialog } from "@/components/report-settings-dialog"
@@ -100,8 +100,7 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 md:gap-4 min-w-0">
               <div className="flex items-center gap-2 shrink-0">
-                <Database className="h-6 w-6 md:h-7 md:w-7 text-primary" />
-                <h1 className="text-base md:text-xl font-bold hidden sm:block">מערכת ניהול</h1>
+                <img src="/luz-logo.png" alt="LUZ" className="h-8 md:h-10" />
               </div>
               <nav className="flex gap-0.5 md:gap-1 flex-wrap">
                 {navItems.map((item) => (
