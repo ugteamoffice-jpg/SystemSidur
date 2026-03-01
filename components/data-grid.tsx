@@ -1308,7 +1308,7 @@ function DataGrid({ schema }: { schema?: any }) {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="count" className="text-right">כמה פעמים לשכפל כל תאריך?</Label>
+                <Label htmlFor="count" className="text-right">כמה פעמים לשכפל את הנסיעה?</Label>
                 <Input 
                   id="count"
                   type="number"
