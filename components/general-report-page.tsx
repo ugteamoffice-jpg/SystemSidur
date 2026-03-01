@@ -601,13 +601,13 @@ export function GeneralReportPage() {
           {hasSearched && filteredData.length > 0 && (
             <div className="hidden lg:flex gap-2 xl:gap-3 text-[10px] xl:text-sm bg-muted/20 border rounded px-2 xl:px-4 py-1 xl:py-1.5 shadow-sm items-center shrink-0">
               <div className="flex flex-col gap-0.5 whitespace-nowrap">
-                <span>לקוח לפני מע"מ: <span className="font-bold">{totals.p1.toLocaleString()} ₪</span></span>
-                <span>לקוח כולל מע"מ: <span className="font-bold">{totals.p2.toLocaleString()} ₪</span></span>
+                <span>לקוח+ מע"מ: <span className="font-bold">{totals.p1.toLocaleString()} ₪</span></span>
+                <span>לקוח כולל: <span className="font-bold">{totals.p2.toLocaleString()} ₪</span></span>
               </div>
               <div className="w-px bg-border self-stretch my-0.5" />
               <div className="flex flex-col gap-0.5 whitespace-nowrap">
-                <span>נהג לפני מע"מ: <span className="font-bold">{totals.p3.toLocaleString()} ₪</span></span>
-                <span>נהג כולל מע"מ: <span className="font-bold">{totals.p4.toLocaleString()} ₪</span></span>
+                <span>נהג+ מע"מ: <span className="font-bold">{totals.p3.toLocaleString()} ₪</span></span>
+                <span>נהג כולל: <span className="font-bold">{totals.p4.toLocaleString()} ₪</span></span>
               </div>
               <div className="w-px bg-border self-stretch my-0.5" />
               <div className="flex flex-col gap-0.5 whitespace-nowrap text-orange-500 font-medium">

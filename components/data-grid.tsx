@@ -816,13 +816,16 @@ function DataGrid({ schema }: { schema?: any }) {
   return (
     <div className="w-full h-[calc(100vh-2rem)] flex flex-col space-y-1 md:space-y-2 p-1.5 md:p-4 overflow-hidden" dir="rtl">
       <div className="flex flex-col gap-1 md:gap-2 flex-none">
-        {/* Toolbar - wraps on mobile */}
-        <div className="flex items-center gap-1 md:gap-2 flex-wrap">
+        {/* Toolbar */}
+        <div className="flex items-center gap-1 md:gap-2 overflow-x-auto no-scrollbar">
           <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
             <PopoverTrigger asChild>
-              <Button variant={"outline"} className="w-[180px] md:w-[240px] justify-start text-right font-normal shrink-0 text-[11px] md:text-sm h-8 md:h-9 px-2 md:px-3">
-                <CalendarIcon className="ml-1 md:ml-2 h-3.5 w-3.5 md:h-4 md:w-4" />
-                {format(dateFilter, "EEEE '|' PPP", { locale: he })}
+              <Button variant={"outline"} className="w-[140px] md:w-[240px] justify-start text-right font-normal shrink-0 text-[11px] md:text-sm h-8 md:h-9 px-2 md:px-3">
+                <CalendarIcon className="ml-1 md:ml-2 h-3.5 w-3.5 md:h-4 md:w-4 shrink-0" />
+                <span className="truncate">
+                  <span className="hidden md:inline">{format(dateFilter, "EEEE '|' PPP", { locale: he })}</span>
+                  <span className="md:hidden">{format(dateFilter, "dd/MM/yy", { locale: he })}</span>
+                </span>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="end" side="bottom">
@@ -843,11 +846,11 @@ function DataGrid({ schema }: { schema?: any }) {
             </PopoverContent>
           </Popover>
 
-          {/* חצי ניווט בין תאריכים */}
+          {/* חצי ניווט בין תאריכים - רק בדסקטופ */}
           <Button
             variant="outline"
             size="icon"
-            className="shrink-0 h-8 w-8 md:h-9 md:w-9"
+            className="hidden md:flex shrink-0 h-8 w-8 md:h-9 md:w-9"
             title="יום קודם"
             onClick={() => {
               const prev = new Date(dateFilter)
@@ -861,7 +864,7 @@ function DataGrid({ schema }: { schema?: any }) {
           <Button
             variant="outline"
             size="icon"
-            className="shrink-0 h-8 w-8 md:h-9 md:w-9"
+            className="hidden md:flex shrink-0 h-8 w-8 md:h-9 md:w-9"
             title="יום הבא"
             onClick={() => {
               const next = new Date(dateFilter)
@@ -894,7 +897,7 @@ function DataGrid({ schema }: { schema?: any }) {
             variant="outline" 
             size="icon" 
             className={cn(
-                "shrink-0 h-8 w-8 md:h-9 md:w-9 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950 transition-colors",
+                "hidden md:flex shrink-0 h-8 w-8 md:h-9 md:w-9 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950 transition-colors",
                 selectedCount === 0 && "opacity-50"
             )}
             onClick={() => setShowDeleteDialog(true)}

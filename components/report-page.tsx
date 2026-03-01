@@ -873,7 +873,15 @@ export function ReportPage({ reportType }: ReportPageProps) {
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="end">
-                    <Calendar mode="single" selected={tempFilters.startDate} onSelect={(d) => { setTempFilters(p => ({ ...p, startDate: d })); setStartCalOpen(false) }} locale={he} dir="rtl" initialFocus />
+                    <Calendar mode="single" selected={tempFilters.startDate} onSelect={(d) => {
+                      if (d) {
+                        const endOfMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0)
+                        setTempFilters(p => ({ ...p, startDate: d, endDate: endOfMonth }))
+                      } else {
+                        setTempFilters(p => ({ ...p, startDate: d }))
+                      }
+                      setStartCalOpen(false)
+                    }} locale={he} dir="rtl" initialFocus />
                   </PopoverContent>
                 </Popover>
                 <span className="text-muted-foreground text-sm">עד</span>

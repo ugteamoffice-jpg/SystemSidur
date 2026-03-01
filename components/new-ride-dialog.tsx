@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Plus, Loader2, Pencil, Upload, Calendar as CalendarIcon, X, FileText, Eye, ChevronUp, ChevronDown } from "lucide-react"
+import { Plus, Loader2, Pencil, Upload, Calendar as CalendarIcon, X, FileText, Eye, ChevronUp, ChevronDown, Trash2 } from "lucide-react"
 import { format } from "date-fns"
 import { he } from "date-fns/locale"
 import { Button } from "@/components/ui/button"
@@ -19,6 +19,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
+import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/hooks/use-toast"
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
@@ -142,6 +144,8 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
   })
 
   const [status, setStatus] = React.useState({ sent: false, approved: false })
+  const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false)
+  const [isDeleting, setIsDeleting] = React.useState(false)
   const [orderFormFiles, setOrderFormFiles] = React.useState<{file: File, name: string}[]>([])
   const [existingAttachment, setExistingAttachment] = React.useState<any[]>([])
   const [attachmentDate, setAttachmentDate] = React.useState<string>("")
@@ -513,14 +517,48 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
     }
   }
 
+  const handleDelete = async () => {
+    if (!initialData?.id) return
+    setIsDeleting(true)
+    try {
+      const res = await fetch(`/api/work-schedule/${initialData.id}?tenant=${tenantId}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error("Delete failed")
+      setOpen(false)
+      if (onRideSaved) onRideSaved()
+      toast({ title: "הנסיעה נמחקה בהצלחה" })
+    } catch {
+      toast({ title: "שגיאה במחיקה", variant: "destructive" })
+    } finally {
+      setIsDeleting(false)
+      setShowDeleteConfirm(false)
+    }
+  }
+
   return (
     <>
+    <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+      <AlertDialogContent dir="rtl">
+        <AlertDialogHeader>
+          <AlertDialogTitle>מחיקת נסיעה</AlertDialogTitle>
+          <AlertDialogDescription>האם אתה בטוח שברצונך למחוק נסיעה זו? פעולה זו אינה ניתנת לביטול.</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="flex-row-reverse gap-2">
+          <AlertDialogCancel>ביטול</AlertDialogCancel>
+          <AlertDialogAction className="bg-red-600 hover:bg-red-700 text-white" onClick={handleDelete}>
+            {isDeleting ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
+            מחק לצמיתות
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     <Dialog open={open} onOpenChange={setOpen}>
       {!isControlled && (
         <DialogTrigger asChild>
           {triggerChild || (
-            <Button className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
-              <Plus className="h-4 w-4" /> צור נסיעה
+            <Button className="gap-1 bg-primary text-primary-foreground hover:bg-primary/90 h-8 md:h-9 text-xs md:text-sm px-2 md:px-4">
+              <Plus className="h-3.5 w-3.5 md:h-4 md:w-4" />
+              <span className="hidden md:inline">צור נסיעה</span>
+              <span className="md:hidden">חדש</span>
             </Button>
           )}
         </DialogTrigger>
@@ -564,7 +602,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                     <Label className={cn("text-sm block mb-px", showErrors && !date && "text-red-500")}>תאריך *</Label>
                     <Button
                       variant={"outline"}
-                      className={cn("w-full justify-start text-right h-8 text-sm", showErrors && !date && "border-red-500")}
+                      className={cn("w-full justify-start text-right h-8 text-sm overflow-hidden", showErrors && !date && "border-red-500")}
                       onClick={() => setCalendarModal({
                         open: true,
                         selected: date,
@@ -572,8 +610,8 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                       })}
                       type="button"
                     >
-                      <CalendarIcon className="ml-1 h-3.5 w-3.5" />
-                      {date ? format(date, "EEEE '|' PPP", { locale: he }) : "בחר תאריך"}
+                      <CalendarIcon className="ml-1 h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">{date ? format(date, "dd/MM/yyyy", { locale: he }) : "בחר תאריך"}</span>
                     </Button>
                   </div>
                   <div>
@@ -726,46 +764,48 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                 </div>
               </TabsContent>
 
-              <TabsContent value="prices" className="space-y-4 mt-0">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-3 p-3 border rounded-lg bg-orange-50/50">
-                    <div className="flex justify-between items-center">
-                      <h3 className="font-bold text-orange-700 text-sm">מחיר לקוח</h3>
-                      <div className="flex items-center gap-1">
-                        <Label className="text-sm whitespace-nowrap">מע"מ %</Label>
-                        <Input type="number" value={vatClient} onChange={(e) => setVatClient(e.target.value)} className="w-14 h-7 bg-white text-center text-xs" />
-                      </div>
+              <TabsContent value="prices" className="space-y-3 mt-0">
+                {/* מחיר לקוח */}
+                <div className="p-3 border rounded-lg bg-orange-50/50">
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="font-bold text-orange-700 text-sm">מחיר לקוח</h3>
+                    <div className="flex items-center gap-1">
+                      <Label className="text-xs text-muted-foreground whitespace-nowrap">מע"מ%</Label>
+                      <Input type="number" value={vatClient} onChange={(e) => setVatClient(e.target.value)} className="w-12 h-6 bg-white text-center text-xs px-1" />
                     </div>
-                    <div className="space-y-1"><Label className="text-sm">לפני מע"מ</Label><Input type="number" value={prices.ce} onChange={(e) => calculateVat(e.target.value, 'excl', 'client')} className="bg-white h-9" /></div>
-                    <div className="space-y-1"><Label className="text-sm">כולל מע"מ</Label><Input type="number" value={prices.ci} onChange={(e) => calculateVat(e.target.value, 'incl', 'client')} className="bg-white font-bold h-9" /></div>
                   </div>
-
-                  <div className="space-y-3 p-3 border rounded-lg bg-orange-50/50">
-                    <div className="flex justify-between items-center">
-                      <h3 className="font-bold text-orange-700 text-sm">מחיר נהג</h3>
-                      <div className="flex items-center gap-1">
-                        <Label className="text-sm whitespace-nowrap">מע"מ %</Label>
-                        <Input type="number" value={vatDriver} onChange={(e) => setVatDriver(e.target.value)} className="w-14 h-7 bg-white text-center text-xs" />
-                      </div>
-                    </div>
-                    <div className="space-y-1"><Label className="text-sm">לפני מע"מ</Label><Input type="number" value={prices.de} onChange={(e) => calculateVat(e.target.value, 'excl', 'driver')} className="bg-white h-9" /></div>
-                    <div className="space-y-1"><Label className="text-sm">כולל מע"מ</Label><Input type="number" value={prices.di} onChange={(e) => calculateVat(e.target.value, 'incl', 'driver')} className="bg-white font-bold h-9" /></div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div><Label className="text-xs text-muted-foreground">לפני מע"מ</Label><Input type="number" value={prices.ce} onChange={(e) => calculateVat(e.target.value, 'excl', 'client')} className="bg-white h-8 text-sm mt-0.5" /></div>
+                    <div><Label className="text-xs text-muted-foreground">כולל מע"מ</Label><Input type="number" value={prices.ci} onChange={(e) => calculateVat(e.target.value, 'incl', 'client')} className="bg-white h-8 text-sm font-bold mt-0.5" /></div>
                   </div>
                 </div>
-
-                {/* Profit summary */}
+                {/* מחיר נהג */}
+                <div className="p-3 border rounded-lg bg-orange-50/50">
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="font-bold text-orange-700 text-sm">מחיר נהג</h3>
+                    <div className="flex items-center gap-1">
+                      <Label className="text-xs text-muted-foreground whitespace-nowrap">מע"מ%</Label>
+                      <Input type="number" value={vatDriver} onChange={(e) => setVatDriver(e.target.value)} className="w-12 h-6 bg-white text-center text-xs px-1" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div><Label className="text-xs text-muted-foreground">לפני מע"מ</Label><Input type="number" value={prices.de} onChange={(e) => calculateVat(e.target.value, 'excl', 'driver')} className="bg-white h-8 text-sm mt-0.5" /></div>
+                    <div><Label className="text-xs text-muted-foreground">כולל מע"מ</Label><Input type="number" value={prices.di} onChange={(e) => calculateVat(e.target.value, 'incl', 'driver')} className="bg-white h-8 text-sm font-bold mt-0.5" /></div>
+                  </div>
+                </div>
+                {/* רווח */}
                 <div className="p-3 border rounded-lg bg-green-50/50">
                   <h3 className="font-bold text-green-700 text-sm mb-2">רווח</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <Label className="text-sm">רווח לפני מע"מ</Label>
-                      <div className="h-9 flex items-center px-3 border rounded bg-white font-bold text-green-700">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">לפני מע"מ</Label>
+                      <div className="h-8 flex items-center px-2 border rounded bg-white font-bold text-green-700 text-sm mt-0.5">
                         {((parseFloat(prices.ce) || 0) - (parseFloat(prices.de) || 0)).toLocaleString()} ₪
                       </div>
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-sm">רווח כולל מע"מ</Label>
-                      <div className="h-9 flex items-center px-3 border rounded bg-white font-bold text-green-700">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">כולל מע"מ</Label>
+                      <div className="h-8 flex items-center px-2 border rounded bg-white font-bold text-green-700 text-sm mt-0.5">
                         {((parseFloat(prices.ci) || 0) - (parseFloat(prices.di) || 0)).toLocaleString()} ₪
                       </div>
                     </div>
@@ -782,11 +822,32 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
           </Tabs>
 
           <DialogFooter className="mt-1.5 pt-1.5 border-t">
-            <Button variant="outline" type="button" onClick={() => setOpen(false)}>ביטול</Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? <Loader2 className="animate-spin ml-2" /> : <Pencil className="w-4 h-4 ml-2" />}
-              {isUploading ? "מעלה קובץ..." : isEdit ? "שמור שינויים" : "צור נסיעה"}
-            </Button>
+            <div className="flex items-center justify-between w-full gap-2">
+              {/* שלח / מאושר */}
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-1.5 cursor-pointer text-sm">
+                  <Checkbox checked={status.sent} onCheckedChange={v => setStatus(p => ({ ...p, sent: !!v }))} className="h-4 w-4" />
+                  <span className="text-green-700 font-medium">שלח</span>
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer text-sm">
+                  <Checkbox checked={status.approved} onCheckedChange={v => setStatus(p => ({ ...p, approved: !!v }))} className="h-4 w-4" />
+                  <span className="text-orange-700 font-medium">מאושר</span>
+                </label>
+              </div>
+              <div className="flex items-center gap-2">
+                {isEdit && (
+                  <Button type="button" variant="outline" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200 h-8 px-2"
+                    onClick={() => setShowDeleteConfirm(true)}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+                <Button variant="outline" type="button" onClick={() => setOpen(false)}>ביטול</Button>
+                <Button type="submit" disabled={loading}>
+                  {loading ? <Loader2 className="animate-spin ml-2" /> : <Pencil className="w-4 h-4 ml-2" />}
+                  {isUploading ? "מעלה קובץ..." : isEdit ? "שמור שינויים" : "צור נסיעה"}
+                </Button>
+              </div>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>

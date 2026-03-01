@@ -101,11 +101,8 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
         <div className="px-3 md:px-6 py-2">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 md:gap-4 min-w-0">
-              {/* Mobile hamburger */}
-              <Button variant="ghost" size="icon" className="md:hidden h-9 w-9 shrink-0" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              </Button>
-              <div className="flex items-center shrink-0">
+              {/* Logo - mobile: absolute center, desktop: normal flow */}
+              <div className="flex items-center shrink-0 md:static absolute left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0">
                 <img src="/luz-logo.png" alt="LUZ" className="h-10 md:h-14 border-0 outline-none bg-transparent" />
               </div>
               {/* Desktop nav */}
@@ -143,11 +140,6 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </nav>
-              {/* Mobile: show current page name */}
-              <span className="md:hidden text-sm font-medium truncate">
-                {navItems.find(i => i.id === activePage)?.label || 
-                 (isReportActive ? reportLabel[activePage] : "")}
-              </span>
             </div>
             
             <div className="flex items-center gap-1 md:gap-2 shrink-0">
@@ -207,34 +199,6 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
           </div>
         </div>
       </div>
-
-      {/* Mobile menu overlay */}
-      {mobileMenuOpen && (
-        <div className="md:hidden border-b border-border bg-card shadow-lg" dir="rtl">
-          <div className="flex flex-col p-3 gap-1">
-            {navItems.map((item) => (
-              <Button
-                key={item.id}
-                variant={activePage === item.id ? "default" : "ghost"}
-                onClick={() => { onPageChange(item.id); setMobileMenuOpen(false) }}
-                className="justify-start text-sm h-10"
-              >
-                {item.label}
-              </Button>
-            ))}
-            <div className="border-t my-1" />
-            <Button variant={activePage === "report-general" ? "default" : "ghost"} onClick={() => { onPageChange("report-general"); setMobileMenuOpen(false) }} className="justify-start text-sm h-10">דוח נסיעות כללי</Button>
-            <Button variant={activePage === "report-customer" ? "default" : "ghost"} onClick={() => { onPageChange("report-customer"); setMobileMenuOpen(false) }} className="justify-start text-sm h-10">דוח לקוח</Button>
-            <Button variant={activePage === "report-driver" ? "default" : "ghost"} onClick={() => { onPageChange("report-driver"); setMobileMenuOpen(false) }} className="justify-start text-sm h-10">דוח נהג</Button>
-            <Button variant={activePage === "report-invoices" ? "default" : "ghost"} onClick={() => { onPageChange("report-invoices"); setMobileMenuOpen(false) }} className="justify-start text-sm h-10">דוח חשבוניות</Button>
-            <Button variant={activePage === "report-profit" ? "default" : "ghost"} onClick={() => { onPageChange("report-profit"); setMobileMenuOpen(false) }} className="justify-start text-sm h-10">דוח רווח והפסד</Button>
-            <div className="border-t my-1" />
-            <Button variant="ghost" onClick={() => { setShowReportSettings(true); setMobileMenuOpen(false) }} className="justify-start text-sm h-10">
-              <Settings className="h-4 w-4 ml-2" /> הגדרות
-            </Button>
-          </div>
-        </div>
-      )}
 
       <ReportSettingsDialog 
         open={showReportSettings} 
