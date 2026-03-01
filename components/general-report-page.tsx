@@ -4,7 +4,7 @@ import * as React from "react"
 import { format } from "date-fns"
 import { he } from "date-fns/locale"
 import { requestQueue } from "@/lib/request-queue"
-import { Calendar as CalendarIcon, Loader2, Search, X, SlidersHorizontal, UserCog, DollarSign } from "lucide-react"
+import { Calendar as CalendarIcon, Loader2, Search, X, SlidersHorizontal, UserCog, DollarSign, Trash2, GripHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useTenantFields, useTenant } from "@/lib/tenant-context"
 import { useToast } from "@/hooks/use-toast"
@@ -83,6 +84,18 @@ export function GeneralReportPage() {
   const [updateClient, setUpdateClient] = React.useState(true)
   const [updateDriver, setUpdateDriver] = React.useState(true)
   const [isUpdating, setIsUpdating] = React.useState(false)
+
+  // Delete state
+  const [showDeleteDialog, setShowDeleteDialog] = React.useState(false)
+
+  // Column order
+  const COL_ORDER_KEY = `generalReportColOrder_${tenantId}`
+  const defaultColOrder = ["sel","date","customer","pickup","route","dropoff","vehicleType","driver","vehicleNum","p1","p2","p3","p4"]
+  const [columnOrder, setColumnOrder] = React.useState<string[]>(() => {
+    try { const s = localStorage.getItem(COL_ORDER_KEY); return s ? JSON.parse(s) : defaultColOrder } catch { return defaultColOrder }
+  })
+  React.useEffect(() => { try { localStorage.setItem(COL_ORDER_KEY, JSON.stringify(columnOrder)) } catch {} }, [columnOrder])
+  const [draggedCol, setDraggedCol] = React.useState<string | null>(null)
 
   const COL_KEY = `generalReportColWidths_${tenantId}`
   const defaultWidths: Record<string, number> = { sel:45, date:95, customer:140, pickup:75, route:200, dropoff:75, vehicleType:100, driver:120, vehicleNum:90, p1:105, p2:115, p3:105, p4:115 }
@@ -204,6 +217,22 @@ export function GeneralReportPage() {
   const toggleAll = () => setSelectedIds(allSelected ? new Set() : new Set(filteredData.map(r => r.id)))
   const toggleRow = (id: string) => { const s = new Set(selectedIds); s.has(id) ? s.delete(id) : s.add(id); setSelectedIds(s) }
 
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return
+    setIsUpdating(true)
+    const results = await Promise.all(Array.from(selectedIds).map(id =>
+      requestQueue.add(async () => {
+        const res = await fetch(`/api/work-schedule/${id}?tenant=${tenantId}`, { method: "DELETE" })
+        return res.ok
+      }).catch(() => false)
+    ))
+    const errors = results.filter(ok => !ok).length
+    setIsUpdating(false); setShowDeleteDialog(false); setSelectedIds(new Set())
+    await applyFilters()
+    errors > 0 ? toast({ title: "שגיאה", description: `נכשלה מחיקת ${errors} נסיעות`, variant: "destructive" })
+               : toast({ title: "הצלחה", description: `נמחקו ${selectedIds.size} נסיעות` })
+  }
+
   const handleBulkUpdateDriver = async () => {
     if (!bulkDriverId || selectedIds.size === 0) return
     setIsUpdating(true)
@@ -247,8 +276,8 @@ export function GeneralReportPage() {
                : toast({ title: "הצלחה", description: `מחירים עודכנו ב-${selectedIds.size} נסיעות` })
   }
 
-  const cols = [
-    { id: "sel",         label: "",               width: colWidths.sel || 45 },
+  const colDefs = [
+    { id: "sel",         label: "",               width: colWidths.sel || 45,  noResize: true, noDrag: true },
     { id: "date",        label: "תאריך",           width: colWidths.date || 95 },
     { id: "customer",    label: "שם לקוח",         width: colWidths.customer || 140 },
     { id: "pickup",      label: "הלוך",            width: colWidths.pickup || 75 },
@@ -262,6 +291,10 @@ export function GeneralReportPage() {
     { id: "p3",          label: 'נהג לפני מע"מ',   width: colWidths.p3 || 105 },
     { id: "p4",          label: 'נהג כולל מע"מ',   width: colWidths.p4 || 115 },
   ]
+
+  // Sort by columnOrder
+  const colDefMap = Object.fromEntries(colDefs.map(c => [c.id, c]))
+  const cols = columnOrder.map(id => colDefMap[id]).filter(Boolean)
 
   const renderCell = (col: string, rec: RideRecord) => {
     const f = rec.fields
@@ -528,7 +561,13 @@ export function GeneralReportPage() {
           <Button variant={selectedIds.size > 0 ? "default" : "outline"} size="sm"
             className={`shrink-0 text-xs md:text-sm h-8 md:h-9 px-2 md:px-3 gap-1 transition-colors ${selectedIds.size > 0 ? "bg-orange-500 hover:bg-orange-600 text-white" : "opacity-50 cursor-not-allowed"}`}
             onClick={() => setShowPriceDialog(true)} disabled={selectedIds.size === 0}>
-            <DollarSign className="h-3.5 w-3.5" /> עדכן מחירים
+            <DollarSign className="h-3.5 w-3.5" /> עדכן מחיר
+          </Button>
+
+          <Button variant={selectedIds.size > 0 ? "default" : "outline"} size="sm"
+            className={`shrink-0 text-xs md:text-sm h-8 md:h-9 px-2 md:px-3 gap-1 transition-colors ${selectedIds.size > 0 ? "bg-red-500 hover:bg-red-600 text-white" : "opacity-50 cursor-not-allowed"}`}
+            onClick={() => setShowDeleteDialog(true)} disabled={selectedIds.size === 0}>
+            <Trash2 className="h-3.5 w-3.5" /> מחק
           </Button>
 
           {hasSearched && (
@@ -569,9 +608,29 @@ export function GeneralReportPage() {
               <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                 <TableRow>
                   {cols.map(col => (
-                    <TableHead key={col.id} className="text-right border-l relative select-none" style={{ width: col.width }}>
-                      {col.id === "sel" ? <Checkbox checked={allSelected} onCheckedChange={toggleAll} /> : col.label}
-                      {col.id !== "sel" && (
+                    <TableHead key={col.id} className="text-right border-l relative select-none" style={{ width: col.width }}
+                      draggable={!col.noDrag}
+                      onDragStart={() => !col.noDrag && setDraggedCol(col.id)}
+                      onDragOver={e => e.preventDefault()}
+                      onDrop={() => {
+                        if (draggedCol && draggedCol !== col.id && !col.noDrag) {
+                          const newOrder = [...columnOrder]
+                          const fromIdx = newOrder.indexOf(draggedCol)
+                          const toIdx = newOrder.indexOf(col.id)
+                          if (fromIdx !== -1 && toIdx !== -1) {
+                            newOrder.splice(fromIdx, 1)
+                            newOrder.splice(toIdx, 0, draggedCol)
+                            setColumnOrder(newOrder)
+                          }
+                        }
+                        setDraggedCol(null)
+                      }}
+                    >
+                      {col.id === "sel"
+                        ? <div className="flex items-center justify-center"><Checkbox checked={allSelected} onCheckedChange={toggleAll} /></div>
+                        : <div className="flex items-center gap-1 cursor-grab">{!col.noDrag && <GripHorizontal className="h-3 w-3 text-muted-foreground/50 shrink-0" />}{col.label}</div>
+                      }
+                      {!col.noResize && (
                         <div onMouseDown={e => handleResizeStart(col.id, e)}
                           className="absolute left-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary transition-colors duration-200 z-20" />
                       )}
@@ -599,6 +658,25 @@ export function GeneralReportPage() {
           )}
         </div>
       </div>
+      {/* ====== Delete AlertDialog ====== */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>מחיקת נסיעות</AlertDialogTitle>
+            <AlertDialogDescription>
+              האם אתה בטוח שברצונך למחוק <strong>{selectedIds.size} נסיעות</strong> לצמיתות?
+              <br />פעולה זו אינה ניתנת לביטול.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row-reverse gap-2">
+            <AlertDialogCancel>ביטול</AlertDialogCancel>
+            <AlertDialogAction className="bg-red-600 hover:bg-red-700 text-white" onClick={handleBulkDelete}>
+              {isUpdating ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
+              כן, מחק לצמיתות
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }
