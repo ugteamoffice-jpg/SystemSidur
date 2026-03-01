@@ -525,7 +525,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
           )}
         </DialogTrigger>
       )}
-      <DialogContent className="w-[95vw] sm:max-w-[900px] h-[85vh] flex flex-col" dir="rtl">
+      <DialogContent className="w-full h-full md:w-[95vw] md:max-w-[900px] md:h-[85vh] flex flex-col max-w-full max-h-full md:rounded-lg rounded-none" dir="rtl">
         <DialogHeader className="pb-0.5">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-base">{isEdit ? "עריכת נסיעה" : "נסיעה חדשה"}</DialogTitle>

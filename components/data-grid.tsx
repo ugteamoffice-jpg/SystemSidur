@@ -807,11 +807,11 @@ function DataGrid({ schema }: { schema?: any }) {
   return (
     <div className="w-full h-[calc(100vh-2rem)] flex flex-col space-y-1 md:space-y-2 p-1.5 md:p-4 overflow-hidden" dir="rtl">
       <div className="flex flex-col gap-1 md:gap-2 flex-none">
-        {/* שורה אחת - הכל */}
-        <div className="flex items-center gap-1 md:gap-2 flex-nowrap overflow-hidden">
+        {/* Toolbar - wraps on mobile */}
+        <div className="flex items-center gap-1 md:gap-2 flex-wrap">
           <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
             <PopoverTrigger asChild>
-              <Button variant={"outline"} className="w-[240px] justify-start text-right font-normal shrink-0 text-[11px] md:text-sm h-8 md:h-9 px-2 md:px-3">
+              <Button variant={"outline"} className="w-[180px] md:w-[240px] justify-start text-right font-normal shrink-0 text-[11px] md:text-sm h-8 md:h-9 px-2 md:px-3">
                 <CalendarIcon className="ml-1 md:ml-2 h-3.5 w-3.5 md:h-4 md:w-4" />
                 {format(dateFilter, "EEEE '|' PPP", { locale: he })}
               </Button>
@@ -951,7 +951,46 @@ function DataGrid({ schema }: { schema?: any }) {
         </div>
       </div>
       
-      <div className="rounded-md border flex-1 overflow-auto min-h-0" ref={tableScrollRef}>
+      {/* Mobile card view */}
+      <div className="md:hidden flex-1 overflow-auto min-h-0 space-y-2 pb-2">
+        {table.getRowModel().rows?.length ? (
+          table.getRowModel().rows.map((row) => {
+            const f = row.original.fields
+            const customerName = Array.isArray(f[WS.CUSTOMER]) ? f[WS.CUSTOMER]?.[0] : (f[WS.CUSTOMER] || "")
+            const driverName = f._driverFullName || (Array.isArray(f[WS.DRIVER]) ? f[WS.DRIVER]?.[0] : (f[WS.DRIVER] || ""))
+            const isSent = !!f[WS.SENT]
+            const isApproved = !!f[WS.APPROVED]
+            return (
+              <div key={row.id} className="border rounded-lg p-3 bg-card shadow-sm" onClick={() => setEditingRecord(row.original)}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-bold text-sm">{customerName || "—"}</span>
+                  <div className="flex items-center gap-2">
+                    {isApproved && <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">מאושר</span>}
+                    {isSent && <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded">נשלח</span>}
+                    {!isSent && !isApproved && <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">טיוטה</span>}
+                  </div>
+                </div>
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <div className="flex gap-4">
+                    <span>🕐 {f[WS.PICKUP_TIME] || "—"}</span>
+                    {f[WS.DROPOFF_TIME] && <span>🔄 {f[WS.DROPOFF_TIME]}</span>}
+                  </div>
+                  <div className="truncate">📍 {f[WS.DESCRIPTION] || "—"}</div>
+                  <div className="flex gap-4">
+                    <span>🚗 {driverName || "ללא נהג"}</span>
+                    {f[WS.PRICE_CLIENT_INCL] && <span>💰 ₪{f[WS.PRICE_CLIENT_INCL]}</span>}
+                  </div>
+                </div>
+              </div>
+            )
+          })
+        ) : (
+          <div className="text-center text-muted-foreground py-8">אין תוצאות.</div>
+        )}
+      </div>
+
+      {/* Desktop table view */}
+      <div className="hidden md:block rounded-md border flex-1 overflow-auto min-h-0" ref={tableScrollRef}>
         <Table className="relative w-full" style={{ tableLayout: 'fixed' }}>
           <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -1221,7 +1260,7 @@ function DataGrid({ schema }: { schema?: any }) {
 
       {/* Dialog לשכפול */}
       <Dialog open={showDuplicateDialog} onOpenChange={(open) => { setShowDuplicateDialog(open); if (!open) setBulkDuplicateRecords([]); }}>
-        <DialogContent dir="rtl" className="max-w-2xl h-[85vh] flex flex-col">
+        <DialogContent dir="rtl" className="w-full h-full md:max-w-2xl md:h-[85vh] flex flex-col max-w-full max-h-full md:rounded-lg rounded-none">
           <DialogHeader>
             <DialogTitle className="text-right">
               {bulkDuplicateRecords.length > 1 ? `שכפול ${bulkDuplicateRecords.length} נסיעות` : "שכפול נסיעה"}

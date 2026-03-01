@@ -544,7 +544,7 @@ export function RecurringRidesPage() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col" dir="rtl">
+        <DialogContent className="w-full h-full md:max-w-[700px] md:h-[85vh] flex flex-col max-w-full max-h-full md:rounded-lg rounded-none" dir="rtl">
           <DialogHeader>
             <DialogTitle>{editingId ? "עריכת נסיעה קבועה" : "נסיעה קבועה חדשה"}</DialogTitle>
             <DialogDescription>נסיעה קבועה שתשובץ אוטומטית</DialogDescription>
