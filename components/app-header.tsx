@@ -100,7 +100,7 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 md:gap-4 min-w-0">
               <div className="flex items-center gap-2 shrink-0">
-                <img src="/luz-logo.png" alt="LUZ" className="h-8 md:h-10" />
+                <img src="/luz-logo.png" alt="LUZ" className="h-12 md:h-14 object-contain" style={{ background: "none", border: "none" }} />
               </div>
               <nav className="flex gap-0.5 md:gap-1 flex-wrap">
                 {navItems.map((item) => (
