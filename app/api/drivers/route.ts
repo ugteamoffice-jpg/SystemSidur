@@ -57,6 +57,30 @@ export async function POST(request: Request) {
   } catch (error) { return NextResponse.json({ error: 'Error' }, { status: 500 }); }
 }
 
+export async function DELETE(request: Request) {
+  try {
+    const ctx = await getTenantFromRequest(request);
+    if (isTenantError(ctx)) return ctx;
+    const { config, apiKey } = ctx;
+    const TABLE_ID = config.tables.DRIVERS;
+    const API_URL = config.apiUrl;
+
+    const { searchParams } = new URL(request.url);
+    const recordId = searchParams.get('recordId');
+    if (!recordId) return NextResponse.json({ error: 'Missing recordId' }, { status: 400 });
+
+    const endpoint = `${API_URL}/api/table/${TABLE_ID}/record?fieldKeyType=id`;
+    const response = await fetch(endpoint, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ records: [recordId] }),
+      cache: 'no-store'
+    });
+    if (!response.ok) return NextResponse.json({ error: "Error" }, { status: response.status });
+    return NextResponse.json({ success: true });
+  } catch (error) { return NextResponse.json({ error: 'Error' }, { status: 500 }); }
+}
+
 export async function PATCH(request: Request) {
   try {
     const ctx = await getTenantFromRequest(request);

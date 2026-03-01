@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Search, Loader2 } from "lucide-react"
+import { Plus, Search, Loader2, Trash2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useTenantFields, useTenant } from "@/lib/tenant-context"
 
@@ -36,6 +37,7 @@ export default function DriversGrid() {
   const [phoneError, setPhoneError] = useState("")
   const [carNumberError, setCarNumberError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const { toast } = useToast()
 
   const [scrollTop, setScrollTop] = useState(0)
@@ -138,6 +140,20 @@ export default function DriversGrid() {
     } catch (error) { toast({ title: "שגיאה", description: "נכשל", variant: "destructive" }) }
   }
 
+  const handlePermanentDelete = async () => {
+    if (!editingDriverId) return
+    try {
+      const response = await fetch(`/api/drivers?tenant=${tenantId}&recordId=${editingDriverId}`, { method: "DELETE" })
+      if (!response.ok) throw new Error("Failed")
+      toast({ title: "הצלחה", description: "הנהג נמחק לצמיתות" })
+      setDeleteConfirmOpen(false)
+      setIsDialogOpen(false)
+      setEditingDriverId(null)
+      resetForm()
+      setDrivers(prev => prev.filter(d => d.id !== editingDriverId))
+    } catch (error) { toast({ title: "שגיאה", description: "המחיקה נכשלה", variant: "destructive" }) }
+  }
+
   const handleDeleteDriver = async () => {
     if (!editingDriverId) return
     try {
@@ -195,6 +211,9 @@ export default function DriversGrid() {
     if (!phone) { setPhoneError(""); return true };
     if (!/^\d+$/.test(phone)) { setPhoneError("מספרים בלבד"); return false };
     if (phone.length < 9 || phone.length > 10) { setPhoneError("9-10 ספרות"); return false };
+    // בדיקת כפילות — כל נהג אחר (לא הנהג הנערך כרגע)
+    const duplicate = drivers.find(d => d.id !== editingDriverId && d.fields[PHONE_ID] === phone)
+    if (duplicate) { setPhoneError(`מספר קיים כבר אצל: ${duplicate.fields[FIRST_NAME_ID] || "נהג אחר"}`); return false };
     setPhoneError("");
     return true;
   }
@@ -323,13 +342,24 @@ export default function DriversGrid() {
             </div>
             <div className="flex justify-end gap-2 mt-4">
                 {isEditMode && (
+                    <>
+                    <Button 
+                        variant="ghost"
+                        size="icon"
+                        className="mr-auto text-red-500 hover:text-red-700 hover:bg-red-50"
+                        title="מחק נהג לצמיתות"
+                        onClick={() => setDeleteConfirmOpen(true)}
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
                     <Button 
                         variant={(newDriver[STATUS_FIELD_ID] || "פעיל") === "לא פעיל" ? "default" : "destructive"} 
                         onClick={handleDeleteDriver} 
-                        className={`mr-auto ${(newDriver[STATUS_FIELD_ID] || "פעיל") === "לא פעיל" ? "bg-emerald-500 hover:bg-emerald-600 text-white" : "bg-rose-400 hover:bg-rose-500 text-white"}`}
+                        className={`${(newDriver[STATUS_FIELD_ID] || "פעיל") === "לא פעיל" ? "bg-emerald-500 hover:bg-emerald-600 text-white" : "bg-rose-400 hover:bg-rose-500 text-white"}`}
                     >
                         {(newDriver[STATUS_FIELD_ID] || "פעיל") === "לא פעיל" ? "הפוך לפעיל" : "הפוך ללא פעיל"}
                     </Button>
+                    </>
                 )}
                 <Button 
                   onClick={isEditMode ? handleUpdateDriver : handleCreateDriver} 
@@ -340,6 +370,28 @@ export default function DriversGrid() {
             </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>מחיקה לצמיתות</AlertDialogTitle>
+            <AlertDialogDescription>
+              האם אתה בטוח שברצונך למחוק את הנהג <strong>{newDriver[FIRST_NAME_ID]}</strong> לצמיתות?
+              <br />
+              פעולה זו אינה ניתנת לביטול.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row-reverse gap-2">
+            <AlertDialogCancel>ביטול</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={handlePermanentDelete}
+            >
+              כן, מחק לצמיתות
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
