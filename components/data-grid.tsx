@@ -336,6 +336,8 @@ function DataGrid({ schema }: { schema?: any }) {
   const [contextRecord, setContextRecord] = React.useState<WorkScheduleRecord | null>(null)
   const [showDuplicateDialog, setShowDuplicateDialog] = React.useState(false)
   const [bulkDuplicateRecords, setBulkDuplicateRecords] = React.useState<WorkScheduleRecord[]>([])
+  const [mobileLongPressRecord, setMobileLongPressRecord] = React.useState<WorkScheduleRecord | null>(null)
+  const longPressTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null)
   const [duplicateCount, setDuplicateCount] = React.useState("1")
   const [copyDriver, setCopyDriver] = React.useState(false)
   const [isDuplicating, setIsDuplicating] = React.useState(false)
@@ -813,8 +815,57 @@ function DataGrid({ schema }: { schema?: any }) {
 
   const selectedCount = table.getFilteredSelectedRowModel().rows.length;
 
+  // Mobile long press context menu
+  const MobileLongPressMenu = () => {
+    const rec = mobileLongPressRecord
+    if (!rec) return null
+    const f = rec.fields
+    const driver = f[WS.DRIVER]
+    const hasDriver = driver && (!Array.isArray(driver) || driver.length > 0)
+    const driverName = Array.isArray(driver) && driver.length > 0 ? driver[0]?.title : (typeof driver === 'object' && driver?.title ? driver.title : String(driver || ""))
+    const isSent = !!f[WS.SENT]
+    const isApproved = !!f[WS.APPROVED]
+
+    const close = () => setMobileLongPressRecord(null)
+
+    const menuItems: { label: string; action: () => void; danger?: boolean; disabled?: boolean }[] = [
+      { label: "עריכה", action: () => { setEditingRecord(rec); close() } },
+      { label: "שכפול", action: () => { setBulkDuplicateRecords([]); setContextRecord(rec); setShowDuplicateDialog(true); close() } },
+      { label: "פיצול", action: () => { setContextRecord(rec); handleSplit(); close() } },
+      ...(hasDriver ? [
+        { label: "ייצוא דוח לנהג", action: () => { setSelectedRecordsForExport([rec]); setExportDriverName(driverName); setShowExportPdfDialog(true); close() } },
+        { label: "שלח בוואטסאפ", action: () => { setSelectedRecordsForExport([rec]); setWhatsappDriverName(driverName); setShowWhatsappDialog(true); close() } },
+      ] : []),
+      { label: isSent ? "בטל שלח" : "סמן שלח", action: () => { bulkUpdateField([{ original: rec } as any], WS.SENT, !isSent); close() } },
+      { label: isApproved ? "בטל מאושר" : "סמן מאושר", action: () => { bulkUpdateField([{ original: rec } as any], WS.APPROVED, !isApproved); close() } },
+      { label: "שיבוץ נהג", action: () => { fetchDriversList(); setShowDriverAssignDialog(true); close() } },
+      ...(hasDriver ? [{ label: "מחק נהג", action: () => { bulkUpdateField([{ original: rec } as any], WS.DRIVER, null); close() }, danger: true }] : []),
+    ]
+
+    return (
+      <Dialog open={true} onOpenChange={close}>
+        <DialogContent dir="rtl" className="max-w-xs p-0 overflow-hidden" aria-describedby={undefined}>
+          <DialogTitle className="sr-only">תפריט נסיעה</DialogTitle>
+          <div className="p-3 border-b bg-muted/30">
+            <div className="font-bold text-sm truncate">{Array.isArray(f[WS.CUSTOMER]) ? f[WS.CUSTOMER][0]?.title : String(f[WS.CUSTOMER] || "—")}</div>
+            <div className="text-xs text-muted-foreground truncate">{f[WS.DESCRIPTION] || ""}</div>
+          </div>
+          <div className="flex flex-col py-1">
+            {menuItems.map((item, i) => (
+              <button key={i} onClick={item.action} disabled={item.disabled}
+                className={`text-right px-4 py-3 text-sm hover:bg-accent active:bg-accent transition-colors border-b last:border-b-0 ${item.danger ? "text-red-500" : ""} ${item.disabled ? "opacity-40" : ""}`}>
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+    )
+  }
+
   return (
     <div className="w-full h-[calc(100vh-2rem)] flex flex-col space-y-1 md:space-y-2 p-1.5 md:p-4 overflow-hidden" dir="rtl">
+      {mobileLongPressRecord && <MobileLongPressMenu />}
       <div className="flex flex-col gap-1 md:gap-2 flex-none">
         {/* Toolbar */}
         <div className="flex items-center gap-1 md:gap-2 overflow-x-auto no-scrollbar">
@@ -987,13 +1038,23 @@ function DataGrid({ schema }: { schema?: any }) {
               const isSent = !!(f[WS.SENT])
               const isApproved = !!(f[WS.APPROVED])
               return (
-                <div key={row.id} className="border rounded-lg p-3 bg-card shadow-sm active:bg-muted/50" onClick={() => setEditingRecord(row.original)}>
+                <div
+                  key={row.id}
+                  className="border rounded-lg p-3 bg-card shadow-sm active:bg-muted/50 select-none"
+                  onClick={() => setEditingRecord(row.original)}
+                  onTouchStart={() => {
+                    longPressTimer.current = setTimeout(() => {
+                      setMobileLongPressRecord(row.original)
+                    }, 500)
+                  }}
+                  onTouchEnd={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null } }}
+                  onTouchMove={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null } }}
+                >
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-bold text-sm">{customerText || "—"}</span>
                     <div className="flex items-center gap-2">
                       {isApproved && <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">מאושר</span>}
                       {isSent && <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded">נשלח</span>}
-                      {!isSent && !isApproved && <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">טיוטה</span>}
                     </div>
                   </div>
                   <div className="text-xs text-muted-foreground space-y-1">

@@ -214,11 +214,12 @@ export function GeneralReportPage() {
   }, [filters])
 
   const totals = React.useMemo(() => ({
-    p1: filteredData.reduce((s, r) => s + (Number(r.fields[WS.PRICE_CLIENT_EXCL]) || 0), 0),
-    p2: filteredData.reduce((s, r) => s + (Number(r.fields[WS.PRICE_CLIENT_INCL]) || 0), 0),
-    p3: filteredData.reduce((s, r) => s + (Number(r.fields[WS.PRICE_DRIVER_EXCL]) || 0), 0),
-    p4: filteredData.reduce((s, r) => s + (Number(r.fields[WS.PRICE_DRIVER_INCL]) || 0), 0),
-    profit: filteredData.reduce((s, r) => s + ((Number(r.fields[WS.PRICE_CLIENT_INCL]) || 0) - (Number(r.fields[WS.PRICE_DRIVER_INCL]) || 0)), 0),
+    p1: Math.round(filteredData.reduce((s, r) => s + (Number(r.fields[WS.PRICE_CLIENT_EXCL]) || 0), 0)),
+    p2: Math.round(filteredData.reduce((s, r) => s + (Number(r.fields[WS.PRICE_CLIENT_INCL]) || 0), 0)),
+    p3: Math.round(filteredData.reduce((s, r) => s + (Number(r.fields[WS.PRICE_DRIVER_EXCL]) || 0), 0)),
+    p4: Math.round(filteredData.reduce((s, r) => s + (Number(r.fields[WS.PRICE_DRIVER_INCL]) || 0), 0)),
+    p5: Math.round(filteredData.reduce((s, r) => s + ((Number(r.fields[WS.PRICE_CLIENT_EXCL]) || 0) - (Number(r.fields[WS.PRICE_DRIVER_EXCL]) || 0)), 0)),
+    p6: Math.round(filteredData.reduce((s, r) => s + ((Number(r.fields[WS.PRICE_CLIENT_INCL]) || 0) - (Number(r.fields[WS.PRICE_DRIVER_INCL]) || 0)), 0)),
   }), [filteredData, WS])
 
   const allSelected = filteredData.length > 0 && selectedIds.size === filteredData.length
@@ -344,7 +345,15 @@ export function GeneralReportPage() {
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="end">
-                    <Calendar mode="single" selected={tempFilters.startDate} onSelect={d => { setTempFilters(p => ({ ...p, startDate: d })); setStartCalOpen(false) }} locale={he} dir="rtl" initialFocus />
+                    <Calendar mode="single" selected={tempFilters.startDate} onSelect={d => {
+                      if (d) {
+                        const endOfMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0)
+                        setTempFilters(p => ({ ...p, startDate: d, endDate: endOfMonth }))
+                      } else {
+                        setTempFilters(p => ({ ...p, startDate: d }))
+                      }
+                      setStartCalOpen(false)
+                    }} locale={he} dir="rtl" initialFocus />
                   </PopoverContent>
                 </Popover>
                 <span className="text-muted-foreground text-sm">עד</span>
@@ -590,28 +599,37 @@ export function GeneralReportPage() {
           )}
 
           {hasSearched && (
-            <div className="flex items-center gap-1 md:gap-2 bg-card border rounded px-2 md:px-3 py-1 md:py-1.5 shadow-sm shrink-0 mr-auto">
-              <span className="text-[10px] md:text-xs text-muted-foreground">
-                סה"כ שורות: <span className="font-bold text-foreground text-xs md:text-sm">{filteredData.length}</span>
+            <div className="hidden md:flex bg-card p-1.5 lg:p-2 px-2 lg:px-4 rounded-md border shadow-sm items-center gap-2 lg:gap-4 whitespace-nowrap shrink-0 mr-auto">
+              <span className="text-muted-foreground text-[10px] lg:text-xs font-medium">
+                סה"כ שורות: <span className="font-bold text-foreground text-xs lg:text-sm">{filteredData.length}</span>
                 {selectedIds.size > 0 && <span className="mr-2 text-orange-600 font-bold">({selectedIds.size} נבחרו)</span>}
               </span>
             </div>
           )}
 
+          {hasSearched && (
+            <div className="flex md:hidden items-center gap-1 bg-card border rounded px-2 py-1 shadow-sm shrink-0 mr-auto">
+              <span className="text-[10px] text-muted-foreground">
+                {filteredData.length} שורות{selectedIds.size > 0 && <span className="text-orange-600 font-bold mr-1">({selectedIds.size} נבחרו)</span>}
+              </span>
+            </div>
+          )}
+
           {hasSearched && filteredData.length > 0 && (
-            <div className="hidden lg:flex gap-2 xl:gap-3 text-[10px] xl:text-sm bg-muted/20 border rounded px-2 xl:px-4 py-1 xl:py-1.5 shadow-sm items-center shrink-0">
-              <div className="flex flex-col gap-0.5 whitespace-nowrap">
+            <div className="hidden lg:flex gap-2 xl:gap-3 text-[10px] xl:text-sm bg-muted/20 p-1.5 xl:p-2 px-2 xl:px-4 rounded-md border shadow-sm items-center shrink-0">
+              <div className="flex flex-col gap-0.5 items-start justify-center whitespace-nowrap">
                 <span>לקוח+ מע"מ: <span className="font-bold">{totals.p1.toLocaleString()} ₪</span></span>
                 <span>לקוח כולל: <span className="font-bold">{totals.p2.toLocaleString()} ₪</span></span>
               </div>
-              <div className="w-px bg-border self-stretch my-0.5" />
-              <div className="flex flex-col gap-0.5 whitespace-nowrap">
+              <div className="w-px bg-border self-stretch my-1" />
+              <div className="flex flex-col gap-0.5 items-start justify-center whitespace-nowrap">
                 <span>נהג+ מע"מ: <span className="font-bold">{totals.p3.toLocaleString()} ₪</span></span>
                 <span>נהג כולל: <span className="font-bold">{totals.p4.toLocaleString()} ₪</span></span>
               </div>
-              <div className="w-px bg-border self-stretch my-0.5" />
-              <div className="flex flex-col gap-0.5 whitespace-nowrap text-orange-500 font-medium">
-                <span>רווח כולל: <span className="font-bold">{totals.profit.toLocaleString()} ₪</span></span>
+              <div className="w-px bg-border self-stretch my-1" />
+              <div className="flex flex-col gap-0.5 items-start justify-center text-orange-500 dark:text-orange-400 font-medium whitespace-nowrap">
+                <span>רווח+ מע"מ: <span className="font-bold">{totals.p5.toLocaleString()} ₪</span></span>
+                <span>רווח כולל: <span className="font-bold">{totals.p6.toLocaleString()} ₪</span></span>
               </div>
             </div>
           )}
