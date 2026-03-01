@@ -366,7 +366,7 @@ export function RecurringRidesPage() {
       id: "status", header: "סטטוס", size: 65, minSize: 50, enableResizing: true,
       cell: ({ row }) => (
         <button onClick={(e) => { e.stopPropagation(); handleToggle(row.original) }} title={row.original.active ? "פעיל" : "מושבת"}>
-          {row.original.active ? <ToggleRight className="h-6 w-6 text-green-600" /> : <ToggleLeft className="h-6 w-6 text-gray-400" />}
+          {row.original.active ? <ToggleRight className="h-6 w-6 text-orange-500" /> : <ToggleLeft className="h-6 w-6 text-gray-400" />}
         </button>
       ),
     },
@@ -416,7 +416,7 @@ export function RecurringRidesPage() {
         <div className="flex gap-0.5">
           {[0, 1, 2, 3, 4, 5, 6].map(d => (
             <span key={d} className={`text-[10px] w-5 h-5 flex items-center justify-center rounded ${
-              row.original.activeDays.includes(d) ? "bg-blue-100 text-blue-700 font-bold" : "text-gray-300"
+              row.original.activeDays.includes(d) ? "bg-orange-100 text-orange-700 font-bold" : "text-gray-300"
             }`}>{DAY_LETTERS_HE[d]}</span>
           ))}
         </div>
@@ -650,7 +650,7 @@ export function RecurringRidesPage() {
                     {[0, 1, 2, 3, 4, 5, 6].map(d => (
                       <button key={d} type="button" onClick={() => toggleDay(d)}
                         className={`flex flex-col items-center py-2 px-3 rounded-lg border-2 transition-all text-xs ${
-                          form.activeDays.includes(d) ? "border-blue-500 bg-blue-50 text-blue-700 font-bold" : "border-gray-200 text-gray-400 hover:border-gray-300"
+                          form.activeDays.includes(d) ? "border-orange-500 bg-orange-50 text-orange-700 font-bold" : "border-gray-200 text-gray-400 hover:border-gray-300"
                         }`}>
                         <span>{DAY_LETTERS_HE[d]}</span>
                       </button>

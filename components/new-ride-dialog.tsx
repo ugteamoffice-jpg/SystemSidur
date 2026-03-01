@@ -664,7 +664,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                         <FileText className="w-3 h-3 text-green-600 shrink-0" />
                         <span className="truncate flex-1">{att?.name || 'קובץ'}</span>
                         {att?.token && (
-                          <Button type="button" variant="ghost" size="sm" className="h-5 px-1 text-blue-600 shrink-0" onClick={() => {
+                          <Button type="button" variant="ghost" size="sm" className="h-5 px-1 text-orange-600 shrink-0" onClick={() => {
                             const tenant = window.location.pathname.split('/')[1] || 'UrbanTours'
                             const params = new URLSearchParams({ tenant })
                             if (att.presignedUrl || att.url) params.set('url', att.presignedUrl || att.url)
@@ -684,8 +684,8 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                     ))}
                     {/* קבצים חדשים */}
                     {orderFormFiles.map((entry, idx) => (
-                      <div key={`new-${idx}`} className="flex items-center gap-1 h-8 px-2 border rounded bg-blue-50 text-sm">
-                        <FileText className="w-3 h-3 text-blue-600 shrink-0" />
+                      <div key={`new-${idx}`} className="flex items-center gap-1 h-8 px-2 border rounded bg-orange-50 text-sm">
+                        <FileText className="w-3 h-3 text-orange-600 shrink-0" />
                         {editingFileName === idx ? (
                           <Input 
                             value={entry.name} 
@@ -699,7 +699,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                           <span className="truncate flex-1 cursor-pointer" onClick={() => setEditingFileName(idx)}>{entry.name}</span>
                         )}
                         <Button type="button" variant="ghost" size="sm" className="h-5 w-5 p-0 text-muted-foreground shrink-0" onClick={() => setEditingFileName(idx)} title="שנה שם"><Pencil className="w-2.5 h-2.5" /></Button>
-                        <Button type="button" variant="ghost" size="sm" className="h-5 px-1 text-blue-600 shrink-0" onClick={() => {
+                        <Button type="button" variant="ghost" size="sm" className="h-5 px-1 text-orange-600 shrink-0" onClick={() => {
                           const url = URL.createObjectURL(entry.file)
                           window.open(url, '_blank')
                         }} title="צפה בקובץ"><Eye className="w-3 h-3" /></Button>
@@ -717,7 +717,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                   <div>
                     <Label className="text-sm block mb-px">הערות מנהל</Label>
-                    <Textarea value={form.managerNotes} onChange={e => setForm(p => ({ ...p, managerNotes: e.target.value }))} className="text-right border-blue-200 bg-blue-50/30 h-12 text-sm resize-none" />
+                    <Textarea value={form.managerNotes} onChange={e => setForm(p => ({ ...p, managerNotes: e.target.value }))} className="text-right border-orange-200 bg-orange-50/30 h-12 text-sm resize-none" />
                   </div>
                   <div>
                     <Label className="text-sm block mb-px">הערות נהג</Label>
@@ -728,9 +728,9 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
 
               <TabsContent value="prices" className="space-y-4 mt-0">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-3 p-3 border rounded-lg bg-blue-50/50">
+                  <div className="space-y-3 p-3 border rounded-lg bg-orange-50/50">
                     <div className="flex justify-between items-center">
-                      <h3 className="font-bold text-blue-700 text-sm">מחיר לקוח</h3>
+                      <h3 className="font-bold text-orange-700 text-sm">מחיר לקוח</h3>
                       <div className="flex items-center gap-1">
                         <Label className="text-sm whitespace-nowrap">מע"מ %</Label>
                         <Input type="number" value={vatClient} onChange={(e) => setVatClient(e.target.value)} className="w-14 h-7 bg-white text-center text-xs" />

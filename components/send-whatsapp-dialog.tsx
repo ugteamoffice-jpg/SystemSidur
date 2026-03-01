@@ -347,7 +347,7 @@ export function SendWhatsappDialog({
 
           {/* תאריכים */}
           {hasSelected && (
-            <label className="flex items-center gap-2 cursor-pointer text-sm bg-blue-50 p-3 rounded-md border border-blue-200">
+            <label className="flex items-center gap-2 cursor-pointer text-sm bg-orange-50 p-3 rounded-md border border-orange-200">
               <input
                 type="checkbox"
                 checked={useSelectedOnly}

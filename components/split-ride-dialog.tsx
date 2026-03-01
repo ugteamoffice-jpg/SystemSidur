@@ -390,9 +390,9 @@ export function SplitRideDialog({ open, onOpenChange, record, onSplit }: any) {
         </div>
 
         {/* מחיר לקוח */}
-        <div className="space-y-4 p-4 border rounded-lg bg-blue-50/50">
+        <div className="space-y-4 p-4 border rounded-lg bg-orange-50/50">
           <div className="flex justify-between items-center">
-            <h3 className="font-bold text-blue-700">מחיר לקוח</h3>
+            <h3 className="font-bold text-orange-700">מחיר לקוח</h3>
             <div className="flex items-center gap-2">
               <Label className="text-xs whitespace-nowrap">מע"מ %</Label>
               <Input type="number" value={vatClient} onChange={(e) => setVatClient(e.target.value)} className="w-16 h-8 bg-white text-center" />
@@ -433,7 +433,7 @@ export function SplitRideDialog({ open, onOpenChange, record, onSplit }: any) {
 
         <div className="space-y-1">
           <Label>הערות מנהל</Label>
-          <Textarea value={trip.managerNotes} onChange={e => setTrip((p: any) => ({...p, managerNotes: e.target.value}))} className="text-right border-blue-200 bg-blue-50/30" />
+          <Textarea value={trip.managerNotes} onChange={e => setTrip((p: any) => ({...p, managerNotes: e.target.value}))} className="text-right border-orange-200 bg-orange-50/30" />
         </div>
 
         <div className="space-y-1">

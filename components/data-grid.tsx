@@ -911,7 +911,7 @@ function DataGrid({ schema }: { schema?: any }) {
                       <LayoutDashboard className="w-3.5 h-3.5 text-muted-foreground" />
                       <span className="text-muted-foreground text-[10px] lg:text-xs font-medium">סה"כ שורות: <span className="font-bold text-foreground text-xs lg:text-sm">{totals.totalRows}</span></span>
                   </div>
-                  <div className="flex items-center gap-1 lg:gap-2 text-green-600 dark:text-green-400">
+                  <div className="flex items-center gap-1 lg:gap-2 text-orange-500 dark:text-orange-400">
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       <span className="text-[10px] lg:text-xs font-medium">נסיעות מאושרות: <span className="font-bold text-xs lg:text-sm">{totals.approved}</span></span>
                   </div>
@@ -943,7 +943,7 @@ function DataGrid({ schema }: { schema?: any }) {
                <span>נהג כולל: <span className="font-bold">{totals.p4.toLocaleString()} ₪</span></span>
              </div>
              <div className="w-px bg-border self-stretch my-1"></div>
-             <div className="flex flex-col gap-0.5 items-start justify-center text-green-600 dark:text-green-400 font-medium whitespace-nowrap">
+             <div className="flex flex-col gap-0.5 items-start justify-center text-orange-500 dark:text-orange-400 font-medium whitespace-nowrap">
                <span>רווח+ מע"מ: <span className="font-bold">{totals.p5.toLocaleString()} ₪</span></span>
                <span>רווח כולל: <span className="font-bold">{totals.p6.toLocaleString()} ₪</span></span>
              </div>
@@ -1238,8 +1238,8 @@ function DataGrid({ schema }: { schema?: any }) {
             {/* הגדרות בסיסיות */}
             <div className="space-y-4 p-4 border rounded-lg bg-slate-50/50 dark:bg-slate-900/50">
               <div className="flex items-center gap-2 mb-3">
-                <LayoutDashboard className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                <h3 className="font-bold text-blue-700 dark:text-blue-300">הגדרות בסיסיות</h3>
+                <LayoutDashboard className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                <h3 className="font-bold text-orange-700 dark:text-orange-300">הגדרות בסיסיות</h3>
               </div>
               
               <div className="space-y-2">
@@ -1338,10 +1338,10 @@ function DataGrid({ schema }: { schema?: any }) {
 
             {/* טווח תאריכים מתקדם */}
             {dateRangeMode && (
-              <div className="space-y-4 p-4 border rounded-lg bg-blue-50/50 dark:bg-blue-950/50">
+              <div className="space-y-4 p-4 border rounded-lg bg-orange-50/50 dark:bg-orange-950/50">
                 <div className="flex items-center gap-2 mb-3">
-                  <CalendarIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                  <h3 className="font-bold text-blue-700 dark:text-blue-300">שכפול מתקדם (טווח תאריכים)</h3>
+                  <CalendarIcon className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                  <h3 className="font-bold text-orange-700 dark:text-orange-300">שכפול מתקדם (טווח תאריכים)</h3>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">

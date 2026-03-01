@@ -245,8 +245,8 @@ export function AutoAssignDialog({ open, onOpenChange, currentDate, existingReco
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">{selectedIds.size} מתוך {templates.length} נבחרו</span>
             <div className="flex gap-2">
-              <button onClick={selectAll} className="text-blue-600 hover:underline text-xs">סמן הכל</button>
-              <button onClick={deselectAll} className="text-blue-600 hover:underline text-xs">בטל הכל</button>
+              <button onClick={selectAll} className="text-orange-600 hover:underline text-xs">סמן הכל</button>
+              <button onClick={deselectAll} className="text-orange-600 hover:underline text-xs">בטל הכל</button>
             </div>
           </div>
 
@@ -264,7 +264,7 @@ export function AutoAssignDialog({ open, onOpenChange, currentDate, existingReco
                     selectedIds.has(t.id) ? "" : "opacity-40"
                   }`}>
                   {selectedIds.has(t.id)
-                    ? <CheckSquare className="h-5 w-5 text-blue-600 shrink-0" />
+                    ? <CheckSquare className="h-5 w-5 text-orange-600 shrink-0" />
                     : <Square className="h-5 w-5 text-gray-300 shrink-0" />
                   }
                   <div className="flex-1 min-w-0">
@@ -278,7 +278,7 @@ export function AutoAssignDialog({ open, onOpenChange, currentDate, existingReco
                       {t.defaults.driverName && <span>נהג: {t.defaults.driverName}</span>}
                       <div className="flex gap-0.5">
                         {[0, 1, 2, 3, 4, 5, 6].map(d => (
-                          <span key={d} className={`text-[9px] ${t.activeDays.includes(d) ? "text-blue-600 font-bold" : "text-gray-300"}`}>
+                          <span key={d} className={`text-[9px] ${t.activeDays.includes(d) ? "text-orange-600 font-bold" : "text-gray-300"}`}>
                             {DAY_LETTERS_HE[d]}
                           </span>
                         ))}

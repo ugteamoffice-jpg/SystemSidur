@@ -1045,7 +1045,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
           <Button 
             variant={selectedRowIds.size > 0 ? "default" : "outline"} 
             size="sm" 
-            className={`shrink-0 transition-colors text-xs md:text-sm h-8 md:h-9 px-2 md:px-3 ${selectedRowIds.size > 0 ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'opacity-50 cursor-not-allowed'}`}
+            className={`shrink-0 transition-colors text-xs md:text-sm h-8 md:h-9 px-2 md:px-3 ${selectedRowIds.size > 0 ? 'bg-orange-500 hover:bg-orange-600 text-white' : 'opacity-50 cursor-not-allowed'}`}
             onClick={() => setShowInvoiceDialog(true)}
             disabled={selectedRowIds.size === 0}
           >
@@ -1067,7 +1067,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
                   ייצוא לאקסל (CSV)
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={exportToPdf} className="cursor-pointer">
-                  <Printer className="h-4 w-4 ml-2 text-blue-600" />
+                  <Printer className="h-4 w-4 ml-2 text-orange-600" />
                   {reportType === "report-customer" ? "דוח רגיל / PDF" : "הדפסה / PDF"}
                 </DropdownMenuItem>
                 {reportType === "report-customer" && (
