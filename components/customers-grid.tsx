@@ -238,7 +238,7 @@ export default function CustomersGrid() {
     if (!/^\d+$/.test(hp)) { setHpError("מספרים בלבד"); return false };
     if (hp.length !== 9) { setHpError("ח.פ חייב להכיל 9 ספרות"); return false };
     // בדיקת כפילות — לקוח אחר (לא הנערך כרגע)
-    const duplicate = customers.find(c => c.id !== editingCustomerId && c.fields[HP_ID] === hp)
+    const duplicate = customers.find(c => c.id !== editingCustomerId && String(c.fields[HP_ID] || "") === hp)
     if (duplicate) { setHpError(`ח.פ קיים כבר אצל: ${duplicate.fields[NAME_ID] || "לקוח אחר"}`); return false };
     setHpError("");
     return true;
