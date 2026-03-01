@@ -16,7 +16,7 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from "@/components/ui/table"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { useTenant, useTenantFields } from "@/lib/tenant-context"
 import {
@@ -451,14 +451,14 @@ export function RecurringRidesPage() {
           <Plus className="h-4 w-4" /> צור נסיעה קבועה
         </Button>
 
-        <div className="flex gap-1 shrink-0">
-          {(["active", "inactive"] as const).map(f => (
-            <Button key={f} variant={activeFilter === f ? "default" : "outline"} size="sm"
-              className="text-xs h-9 px-3" onClick={() => setActiveFilter(prev => prev === f ? "all" : f)}>
-              {f === "active" ? "פעילות" : "לא פעילות"}
-            </Button>
-          ))}
-        </div>
+        <Select value={activeFilter} onValueChange={(v: "all" | "active" | "inactive") => setActiveFilter(v)}>
+          <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="active">פעילות</SelectItem>
+            <SelectItem value="inactive">לא פעילות</SelectItem>
+            <SelectItem value="all">הכל</SelectItem>
+          </SelectContent>
+        </Select>
 
         <div className="relative flex-1">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
