@@ -448,18 +448,17 @@ export function RecurringRidesPage() {
     <div className="flex-1 flex flex-col overflow-hidden p-4" dir="rtl">
       {/* Header row */}
       <div className="flex items-center gap-3 mb-3">
-        <Button onClick={openNew} className="gap-2 shrink-0">
-          <Plus className="h-4 w-4" /> צור נסיעה קבועה
-        </Button>
-
         <Select value={activeFilter} onValueChange={(v: "all" | "active" | "inactive") => setActiveFilter(v)}>
           <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="active">פעילות</SelectItem>
             <SelectItem value="inactive">לא פעילות</SelectItem>
-            <SelectItem value="all">הכל</SelectItem>
           </SelectContent>
         </Select>
+
+        <Button onClick={openNew} className="gap-2 shrink-0">
+          <Plus className="h-4 w-4" /> צור נסיעה קבועה
+        </Button>
 
         <div className="relative flex-1">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
