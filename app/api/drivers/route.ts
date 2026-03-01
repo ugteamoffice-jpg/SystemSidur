@@ -69,11 +69,10 @@ export async function DELETE(request: Request) {
     const recordId = searchParams.get('recordId');
     if (!recordId) return NextResponse.json({ error: 'Missing recordId' }, { status: 400 });
 
-    const endpoint = `${API_URL}/api/table/${TABLE_ID}/record?fieldKeyType=id`;
+    const endpoint = `${API_URL}/api/table/${TABLE_ID}/record?recordIds[]=${recordId}`;
     const response = await fetch(endpoint, {
       method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ records: [recordId] }),
+      headers: { 'Authorization': `Bearer ${apiKey}` },
       cache: 'no-store'
     });
     if (!response.ok) return NextResponse.json({ error: "Error" }, { status: response.status });
