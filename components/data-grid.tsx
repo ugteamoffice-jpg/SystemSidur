@@ -348,6 +348,15 @@ function DataGrid({ schema }: { schema?: any }) {
   const [selectedRecordsForExport, setSelectedRecordsForExport] = React.useState<any[]>([])
   const [showAutoAssignDialog, setShowAutoAssignDialog] = React.useState(false)
 
+  // Mobile detection - conditional render instead of CSS hiding
+  const [isMobile, setIsMobile] = React.useState(false)
+  React.useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener("resize", check)
+    return () => window.removeEventListener("resize", check)
+  }, [])
+
   // State variables לטווח תאריכים
   const [dateRangeMode, setDateRangeMode] = React.useState(false)
   const [newDateMode, setNewDateMode] = React.useState(false)
@@ -951,46 +960,62 @@ function DataGrid({ schema }: { schema?: any }) {
         </div>
       </div>
       
-      {/* Mobile card view */}
-      <div className="md:hidden flex-1 overflow-auto min-h-0 space-y-2 pb-2">
-        {table.getRowModel().rows?.length ? (
-          table.getRowModel().rows.map((row) => {
-            const f = row.original.fields
-            const customerName = Array.isArray(f[WS.CUSTOMER]) ? f[WS.CUSTOMER]?.[0] : (f[WS.CUSTOMER] || "")
-            const driverName = f._driverFullName || (Array.isArray(f[WS.DRIVER]) ? f[WS.DRIVER]?.[0] : (f[WS.DRIVER] || ""))
-            const isSent = !!f[WS.SENT]
-            const isApproved = !!f[WS.APPROVED]
-            return (
-              <div key={row.id} className="border rounded-lg p-3 bg-card shadow-sm" onClick={() => setEditingRecord(row.original)}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-bold text-sm">{customerName || "—"}</span>
-                  <div className="flex items-center gap-2">
-                    {isApproved && <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">מאושר</span>}
-                    {isSent && <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded">נשלח</span>}
-                    {!isSent && !isApproved && <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">טיוטה</span>}
+      {/* Mobile card view - only rendered on mobile */}
+      {isMobile && (
+        <div className="flex-1 overflow-auto min-h-0 space-y-2 pb-2">
+          {table.getRowModel().rows?.length ? (
+            table.getRowModel().rows.map((row) => {
+              const f = row.original.fields || {}
+              const safeStr = (v: any): string => {
+                if (!v) return ""
+                if (typeof v === "string") return v
+                if (typeof v === "number") return String(v)
+                if (Array.isArray(v)) return safeStr(v[0])
+                if (typeof v === "object" && v.title) return String(v.title)
+                if (typeof v === "object" && v.name) return String(v.name)
+                return ""
+              }
+              const customerText = safeStr(f[WS.CUSTOMER])
+              const driverText = String(f._driverFullName || "") || safeStr(f[WS.DRIVER])
+              const pickupTime = safeStr(f[WS.PICKUP_TIME])
+              const dropoffTime = safeStr(f[WS.DROPOFF_TIME])
+              const description = safeStr(f[WS.DESCRIPTION])
+              const price = safeStr(f[WS.PRICE_CLIENT_INCL])
+              const isSent = !!(f[WS.SENT])
+              const isApproved = !!(f[WS.APPROVED])
+              return (
+                <div key={row.id} className="border rounded-lg p-3 bg-card shadow-sm active:bg-muted/50" onClick={() => setEditingRecord(row.original)}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-bold text-sm">{customerText || "—"}</span>
+                    <div className="flex items-center gap-2">
+                      {isApproved && <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">מאושר</span>}
+                      {isSent && <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded">נשלח</span>}
+                      {!isSent && !isApproved && <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">טיוטה</span>}
+                    </div>
+                  </div>
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <div className="flex gap-4">
+                      {pickupTime ? <span>🕐 {pickupTime}</span> : null}
+                      {dropoffTime ? <span>🔄 {dropoffTime}</span> : null}
+                    </div>
+                    {description ? <div className="truncate">📍 {description}</div> : null}
+                    <div className="flex gap-4">
+                      <span>🚗 {driverText || "ללא נהג"}</span>
+                      {price ? <span>💰 ₪{price}</span> : null}
+                    </div>
                   </div>
                 </div>
-                <div className="text-xs text-muted-foreground space-y-1">
-                  <div className="flex gap-4">
-                    <span>🕐 {f[WS.PICKUP_TIME] || "—"}</span>
-                    {f[WS.DROPOFF_TIME] && <span>🔄 {f[WS.DROPOFF_TIME]}</span>}
-                  </div>
-                  <div className="truncate">📍 {f[WS.DESCRIPTION] || "—"}</div>
-                  <div className="flex gap-4">
-                    <span>🚗 {driverName || "ללא נהג"}</span>
-                    {f[WS.PRICE_CLIENT_INCL] && <span>💰 ₪{f[WS.PRICE_CLIENT_INCL]}</span>}
-                  </div>
-                </div>
-              </div>
-            )
-          })
-        ) : (
-          <div className="text-center text-muted-foreground py-8">אין תוצאות.</div>
-        )}
-      </div>
+              )
+            })
+          ) : (
+            <div className="text-center text-muted-foreground py-8">אין תוצאות.</div>
+          )}
+        </div>
+      )}
 
-      {/* Desktop table view */}
-      <div className="hidden md:block rounded-md border flex-1 overflow-auto min-h-0" ref={tableScrollRef}>
+      {/* Desktop table view - only rendered on desktop */}
+      {!isMobile && (
+        <div className="rounded-md border flex-1 overflow-auto min-h-0" ref={tableScrollRef}>
         <Table className="relative w-full" style={{ tableLayout: 'fixed' }}>
           <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -1195,6 +1220,7 @@ function DataGrid({ schema }: { schema?: any }) {
           </TableBody>
         </Table>
       </div>
+      )}
 
       {/* Dialog למחיקה */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
