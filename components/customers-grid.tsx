@@ -236,6 +236,10 @@ export default function CustomersGrid() {
   const validateHP = (hp: string) => {
     if (!hp) { setHpError(""); return true };
     if (!/^\d+$/.test(hp)) { setHpError("מספרים בלבד"); return false };
+    if (hp.length !== 9) { setHpError("ח.פ חייב להכיל 9 ספרות"); return false };
+    // בדיקת כפילות — לקוח אחר (לא הנערך כרגע)
+    const duplicate = customers.find(c => c.id !== editingCustomerId && c.fields[HP_ID] === hp)
+    if (duplicate) { setHpError(`ח.פ קיים כבר אצל: ${duplicate.fields[NAME_ID] || "לקוח אחר"}`); return false };
     setHpError("");
     return true;
   }
@@ -455,7 +459,7 @@ export default function CustomersGrid() {
                 )}
                 <Button 
                   onClick={isEditMode ? handleUpdateCustomer : handleCreateCustomer} 
-                  disabled={(!isEditMode && !newCustomer[NAME_ID]) || !!emailError || !!hpError || !!phoneError || !!accountingKeyError || !!ongoingPaymentError}
+                  disabled={(!isEditMode && !newCustomer[NAME_ID]) || !!emailError || !!phoneError || !!accountingKeyError || !!ongoingPaymentError}
                 >
                   {isEditMode ? "שמור שינויים" : "צור לקוח"}
                 </Button>
