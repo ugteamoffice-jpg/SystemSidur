@@ -1449,23 +1449,25 @@ function DataGrid({ schema }: { schema?: any }) {
 
                 <div className="space-y-2">
                   <Label className="block">ימים בשבוע:</Label>
-                  <div className="grid grid-cols-7 gap-3">
+                  <div className="flex gap-2 justify-between">
                     {['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'].map((day, index) => (
-                      <div key={index} className="flex items-center gap-1 justify-center">
-                        <Label htmlFor={`day-${index}`} className="cursor-pointer text-sm">
-                          {day}
-                        </Label>
-                        <Checkbox 
-                          id={`day-${index}`}
-                          checked={selectedDays[index]}
-                          onCheckedChange={(checked) => {
-                            const newDays = [...selectedDays]
-                            newDays[index] = !!checked
-                            setSelectedDays(newDays)
-                          }}
-                          disabled={isDuplicating}
-                        />
-                      </div>
+                      <button
+                        key={index}
+                        type="button"
+                        disabled={isDuplicating}
+                        onClick={() => {
+                          const newDays = [...selectedDays]
+                          newDays[index] = !newDays[index]
+                          setSelectedDays(newDays)
+                        }}
+                        className={`flex-1 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
+                          selectedDays[index]
+                            ? "border-orange-500 bg-orange-50 text-orange-700"
+                            : "border-gray-200 text-gray-400 hover:border-gray-300"
+                        } ${isDuplicating ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                      >
+                        {day}
+                      </button>
                     ))}
                   </div>
                 </div>
