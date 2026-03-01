@@ -9,6 +9,7 @@ import { DriversPage } from "@/components/drivers-page"
 import { VehiclesPage } from "@/components/vehicles-page"
 import { ReportPage } from "@/components/report-page"
 import type { ReportType } from "@/components/report-page"
+import { GeneralReportPage } from "@/components/general-report-page"
 import { RecurringRidesPage } from "@/components/recurring-rides-page"
 import { useTenant } from "@/lib/tenant-context"
 import { Loader2 } from "lucide-react"
@@ -25,7 +26,7 @@ export default function TenantHomePage() {
     )
   }
 
-  const isReport = activePage.startsWith("report-")
+  const isReport = activePage.startsWith("report-") && activePage !== "report-general"
 
   return (
     <div className="flex flex-col h-screen">
@@ -35,6 +36,7 @@ export default function TenantHomePage() {
       {activePage === "customers" && <CustomersPage />}
       {activePage === "drivers" && <DriversPage />}
       {activePage === "vehicles" && <VehiclesPage />}
+      {activePage === "report-general" && <GeneralReportPage />}
       {isReport && <ReportPage key={activePage} reportType={activePage as ReportType} />}
     </div>
   )

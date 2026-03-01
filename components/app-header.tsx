@@ -21,9 +21,9 @@ import { useTenant } from "@/lib/tenant-context"
 
 const UserButton = dynamic(() => import("@clerk/nextjs").then(mod => mod.UserButton), { ssr: false })
 
-export type PageType = "work-schedule" | "customers" | "drivers" | "vehicles" | "recurring-rides" | "report-customer" | "report-driver" | "report-invoices" | "report-profit"
+export type PageType = "work-schedule" | "customers" | "drivers" | "vehicles" | "recurring-rides" | "report-customer" | "report-driver" | "report-invoices" | "report-profit" | "report-general"
 
-const reportPages: PageType[] = ["report-customer", "report-driver", "report-invoices", "report-profit"]
+const reportPages: PageType[] = ["report-general", "report-customer", "report-driver", "report-invoices", "report-profit"]
 
 interface AppHeaderProps {
   activePage: PageType
@@ -88,6 +88,7 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
   const isReportActive = reportPages.includes(activePage)
 
   const reportLabel: Record<string, string> = {
+    "report-general": "דוח נסיעות כללי",
     "report-customer": "דוח לקוח",
     "report-driver": "דוח נהג",
     "report-invoices": "דוח חשבוניות",
@@ -134,6 +135,7 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" dir="rtl">
+                    <DropdownMenuItem onClick={() => onPageChange("report-general")}>דוח נסיעות כללי</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => onPageChange("report-customer")}>דוח לקוח</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => onPageChange("report-driver")}>דוח נהג</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => onPageChange("report-invoices")}>דוח חשבוניות</DropdownMenuItem>
@@ -221,6 +223,7 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
               </Button>
             ))}
             <div className="border-t my-1" />
+            <Button variant={activePage === "report-general" ? "default" : "ghost"} onClick={() => { onPageChange("report-general"); setMobileMenuOpen(false) }} className="justify-start text-sm h-10">דוח נסיעות כללי</Button>
             <Button variant={activePage === "report-customer" ? "default" : "ghost"} onClick={() => { onPageChange("report-customer"); setMobileMenuOpen(false) }} className="justify-start text-sm h-10">דוח לקוח</Button>
             <Button variant={activePage === "report-driver" ? "default" : "ghost"} onClick={() => { onPageChange("report-driver"); setMobileMenuOpen(false) }} className="justify-start text-sm h-10">דוח נהג</Button>
             <Button variant={activePage === "report-invoices" ? "default" : "ghost"} onClick={() => { onPageChange("report-invoices"); setMobileMenuOpen(false) }} className="justify-start text-sm h-10">דוח חשבוניות</Button>
