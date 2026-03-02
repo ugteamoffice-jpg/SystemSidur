@@ -84,7 +84,7 @@ export async function POST(request: Request) {
     if (!response.ok) {
       const errorData = await safeJsonParse(response);
       console.error(`[work-schedule POST] FAILED tenant=${ctx.tenantId}, status=${response.status}`, errorData);
-      return NextResponse.json({ error: "Request failed" }), { status: response.status });
+      return NextResponse.json({ error: "Request failed" }, { status: response.status });
     }
     const postResult = await safeJsonParse(response);
     const newId = postResult?.records?.[0]?.id || postResult?.id || 'unknown'
@@ -115,7 +115,7 @@ export async function PATCH(request: Request) {
     });
     if (!response.ok) {
       const errorData = await safeJsonParse(response);
-      return NextResponse.json({ error: "Update failed" }), { status: response.status });
+      return NextResponse.json({ error: "Update failed" }, { status: response.status });
     }
     return NextResponse.json(await safeJsonParse(response) || { success: true });
   } catch (error) {
@@ -144,7 +144,7 @@ export async function DELETE(request: Request) {
     });
     if (!response.ok) {
       const errorText = await response.text();
-      return NextResponse.json({ error: "Delete failed" }), { status: response.status });
+      return NextResponse.json({ error: "Delete failed" }, { status: response.status });
     }
     return NextResponse.json(await safeJsonParse(response) || { success: true, deletedIds: ids });
   } catch (error) {
