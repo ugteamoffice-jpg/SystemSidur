@@ -565,14 +565,15 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
       )}
       <DialogContent className="w-full h-full md:w-[95vw] md:max-w-[900px] md:h-[85vh] flex flex-col max-w-full max-h-full md:rounded-lg rounded-none" dir="rtl">
         <DialogHeader className="pb-0.5">
+          <DialogTitle className="text-base">{isEdit ? "עריכת נסיעה" : "נסיעה חדשה"}</DialogTitle>
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-base">{isEdit ? "עריכת נסיעה" : "נסיעה חדשה"}</DialogTitle>
+            <DialogDescription className="text-xs">מלא את פרטי הנסיעה. שדות * = חובה.</DialogDescription>
             {isEdit && allRides && onNavigate && (() => {
               const idx = allRides.findIndex((r: any) => r.id === initialData?.id);
               const hasPrev = idx > 0;
               const hasNext = idx >= 0 && idx < allRides.length - 1;
               return (
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 shrink-0">
                   <span className="text-xs text-muted-foreground">{idx + 1}/{allRides.length}</span>
                   <Button type="button" variant="outline" size="icon" className="h-7 w-7" disabled={!hasPrev || loading} onClick={() => handleNavigate(allRides[idx - 1])} title="נסיעה קודמת">
                     <ChevronUp className="h-4 w-4" />
@@ -584,7 +585,6 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
               );
             })()}
           </div>
-          <DialogDescription className="text-xs">מלא את פרטי הנסיעה. שדות * = חובה.</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
