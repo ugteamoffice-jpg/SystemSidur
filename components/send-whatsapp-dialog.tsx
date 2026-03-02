@@ -359,30 +359,19 @@ export function SendWhatsappDialog({
           )}
 
           {!useSelectedOnly && (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>מתאריך:</Label>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant={"outline"} className="w-full justify-start text-right">
-                    <CalendarIcon className="ml-2 h-4 w-4" />
-                    {startDate ? format(startDate, "EEEE '|' PPP", { locale: he }) : "בחר תאריך"}
+                  <Button variant={"outline"} className="w-full justify-start text-right text-sm">
+                    <CalendarIcon className="ml-2 h-4 w-4 shrink-0" />
+                    <span className="truncate">{startDate ? format(startDate, "dd/MM/yyyy") : "בחר תאריך"}</span>
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start" side="bottom">
-                  <Calendar
-                    mode="single"
-                    selected={startDate}
-                    onSelect={(date) => {
-                      setStartDate(date)
-                      if (date) setStartDateMonth(date)
-                    }}
-                    month={startDateMonth}
-                    onMonthChange={setStartDateMonth}
-                    locale={he}
-                    dir="rtl"
-                    fixedWeeks
-                  />
+                  <Calendar mode="single" selected={startDate} onSelect={(date) => { setStartDate(date); if (date) setStartDateMonth(date) }}
+                    month={startDateMonth} onMonthChange={setStartDateMonth} locale={he} dir="rtl" fixedWeeks />
                 </PopoverContent>
               </Popover>
             </div>
@@ -391,25 +380,14 @@ export function SendWhatsappDialog({
               <Label>עד תאריך:</Label>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant={"outline"} className="w-full justify-start text-right">
-                    <CalendarIcon className="ml-2 h-4 w-4" />
-                    {endDate ? format(endDate, "EEEE '|' PPP", { locale: he }) : "בחר תאריך"}
+                  <Button variant={"outline"} className="w-full justify-start text-right text-sm">
+                    <CalendarIcon className="ml-2 h-4 w-4 shrink-0" />
+                    <span className="truncate">{endDate ? format(endDate, "dd/MM/yyyy") : "בחר תאריך"}</span>
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start" side="bottom">
-                  <Calendar
-                    mode="single"
-                    selected={endDate}
-                    onSelect={(date) => {
-                      setEndDate(date)
-                      if (date) setEndDateMonth(date)
-                    }}
-                    month={endDateMonth}
-                    onMonthChange={setEndDateMonth}
-                    locale={he}
-                    dir="rtl"
-                    fixedWeeks
-                  />
+                  <Calendar mode="single" selected={endDate} onSelect={(date) => { setEndDate(date); if (date) setEndDateMonth(date) }}
+                    month={endDateMonth} onMonthChange={setEndDateMonth} locale={he} dir="rtl" fixedWeeks />
                 </PopoverContent>
               </Popover>
             </div>
@@ -417,10 +395,8 @@ export function SendWhatsappDialog({
           )}
         </div>
 
-        <DialogFooter className="flex-row-reverse gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            ביטול
-          </Button>
+        <DialogFooter className="flex flex-wrap gap-2 sm:flex-row-reverse">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>ביטול</Button>
           <Button variant="outline" onClick={handleCopy} disabled={isLoading}>
             {copied ? <Check className="ml-2 h-4 w-4" /> : <Copy className="ml-2 h-4 w-4" />}
             {copied ? "הועתק!" : "העתק הודעה"}
