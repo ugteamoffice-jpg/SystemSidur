@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getTenantFromRequest, isTenantError } from "@/lib/api-tenant-helper"
+import { validateFile } from "@/lib/file-validation"
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,6 +16,9 @@ export async function POST(request: NextRequest) {
 
     if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 })
 
+    const validation = validateFile(file)
+    if (!validation.valid) return NextResponse.json({ error: validation.error }, { status: 400 })
+
     const uploadUrl = `${config.apiUrl}/api/table/${tableId}/record/${recordId}/${fieldId}/uploadAttachment`
     const uploadFormData = new FormData()
     uploadFormData.append("file", file)
@@ -26,12 +30,11 @@ export async function POST(request: NextRequest) {
     })
 
     if (!uploadResponse.ok) {
-      const errorText = await uploadResponse.text()
-      return NextResponse.json({ error: "Upload failed", details: errorText }, { status: uploadResponse.status })
+      return NextResponse.json({ error: "Upload failed" }, { status: uploadResponse.status })
     }
     return NextResponse.json({ success: true, data: await uploadResponse.json() })
   } catch (error: any) {
     console.error("Upload error:", error)
-    return NextResponse.json({ error: "Upload failed", message: error.message }, { status: 500 })
+    return NextResponse.json({ error: "Upload failed" }, { status: 500 })
   }
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { getTenantFromRequest, isTenantError } from "@/lib/api-tenant-helper"
+import { validateFile } from "@/lib/file-validation"
 
 export async function POST(request: Request) {
   try {
@@ -13,6 +14,9 @@ export async function POST(request: Request) {
     if (!file || !recordId) {
       return NextResponse.json({ error: "Missing file or recordId" }, { status: 400 })
     }
+
+    const validation = validateFile(file)
+    if (!validation.valid) return NextResponse.json({ error: validation.error }, { status: 400 })
 
     const TABLE_ID = config.tables.WORK_SCHEDULE
     const FIELD_ID = config.fields.workSchedule.ORDER_FORM
@@ -29,12 +33,11 @@ export async function POST(request: Request) {
     })
 
     if (!uploadResponse.ok) {
-      const errorText = await uploadResponse.text()
-      return NextResponse.json({ error: "Upload failed", details: errorText }, { status: uploadResponse.status })
+      return NextResponse.json({ error: "Upload failed" }, { status: uploadResponse.status })
     }
     return NextResponse.json({ success: true, data: await uploadResponse.json() })
   } catch (error: any) {
     console.error("Replace file error:", error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: "Upload failed" }, { status: 500 })
   }
 }

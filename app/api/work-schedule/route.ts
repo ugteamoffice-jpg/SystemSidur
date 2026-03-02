@@ -20,8 +20,10 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const dateParam = searchParams.get('date');
-    const take = searchParams.get('take') || '1000';
-    const skip = searchParams.get('skip') || '0';
+    const takeRaw = parseInt(searchParams.get('take') || '1000', 10)
+    const skipRaw = parseInt(searchParams.get('skip') || '0', 10)
+    const take = Math.min(Math.max(isNaN(takeRaw) ? 1000 : takeRaw, 1), 2000)
+    const skip = Math.max(isNaN(skipRaw) ? 0 : skipRaw, 0)
 
     let endpoint = `${API_URL}/api/table/${TABLE_ID}/record?take=${take}&skip=${skip}&fieldKeyType=id`;
     if (dateParam) {
@@ -46,7 +48,7 @@ export async function GET(request: Request) {
     if (!response.ok) {
       const errText = await response.text();
       console.error('work-schedule GET failed:', response.status, errText);
-      return NextResponse.json({ error: 'Failed', details: errText }, { status: response.status });
+      return NextResponse.json({ error: 'Failed' }, { status: response.status });
     }
     const data = await safeJsonParse(response);
     console.log(`[work-schedule GET] tenant=${ctx.tenantId}, records=${data?.records?.length ?? 'N/A'}, date=${dateParam || 'all'}`)
@@ -82,7 +84,7 @@ export async function POST(request: Request) {
     if (!response.ok) {
       const errorData = await safeJsonParse(response);
       console.error(`[work-schedule POST] FAILED tenant=${ctx.tenantId}, status=${response.status}`, errorData);
-      return NextResponse.json({ error: "Teable Error", details: errorData }, { status: response.status });
+      return NextResponse.json({ error: "Request failed" }), { status: response.status });
     }
     const postResult = await safeJsonParse(response);
     const newId = postResult?.records?.[0]?.id || postResult?.id || 'unknown'
@@ -113,7 +115,7 @@ export async function PATCH(request: Request) {
     });
     if (!response.ok) {
       const errorData = await safeJsonParse(response);
-      return NextResponse.json({ error: "Update Failed", details: errorData }, { status: response.status });
+      return NextResponse.json({ error: "Update failed" }), { status: response.status });
     }
     return NextResponse.json(await safeJsonParse(response) || { success: true });
   } catch (error) {
@@ -142,7 +144,7 @@ export async function DELETE(request: Request) {
     });
     if (!response.ok) {
       const errorText = await response.text();
-      return NextResponse.json({ error: "Delete Failed", details: errorText }, { status: response.status });
+      return NextResponse.json({ error: "Delete failed" }), { status: response.status });
     }
     return NextResponse.json(await safeJsonParse(response) || { success: true, deletedIds: ids });
   } catch (error) {
