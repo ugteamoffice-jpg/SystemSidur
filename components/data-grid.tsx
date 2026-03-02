@@ -839,8 +839,8 @@ function DataGrid({ schema }: { schema?: any }) {
         { label: "ייצוא דוח לנהג", action: () => { setSelectedRecordsForExport([rec]); setExportDriverName(driverName); setShowExportPdfDialog(true); close() } },
         { label: "שלח בוואטסאפ", action: () => { setSelectedRecordsForExport([rec]); setWhatsappDriverName(driverName); setShowWhatsappDialog(true); close() } },
       ] : []),
-      { label: isSent ? "בטל שלח" : "סמן שלח", action: () => { bulkUpdateField([{ original: rec } as any], WS.SENT, !isSent); close() } },
-      { label: isApproved ? "בטל מאושר" : "סמן מאושר", action: () => { bulkUpdateField([{ original: rec } as any], WS.APPROVED, !isApproved); close() } },
+      { label: isSent ? "בטל שלח" : "סמן שלח", action: () => { bulkUpdateField([{ original: rec } as any], WS.SENT, !isSent); close() }, disabled: !hasDriver && !isSent },
+      { label: isApproved ? "בטל מאושר" : "סמן מאושר", action: () => { bulkUpdateField([{ original: rec } as any], WS.APPROVED, !isApproved); close() }, disabled: !hasDriver && !isApproved },
       { label: "שיבוץ נהג", action: () => { fetchDriversList(); setShowDriverAssignDialog(true); close() } },
       ...(hasDriver ? [{ label: "מחק נהג", action: () => { bulkUpdateField([{ original: rec } as any], WS.DRIVER, null); close() }, danger: true }] : []),
     ]
