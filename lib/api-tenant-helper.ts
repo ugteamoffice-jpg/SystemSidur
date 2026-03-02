@@ -4,6 +4,7 @@
 import { NextResponse } from "next/server"
 import { loadTenantConfigServer, getTenantApiKey } from "@/lib/tenant-config"
 import { createTeableClient } from "@/lib/teable-client-tenant"
+import { checkRateLimit } from "@/lib/rate-limit"
 import type { TenantConfig } from "@/lib/tenant-config"
 
 interface TenantContext {
@@ -13,16 +14,30 @@ interface TenantContext {
   apiKey: string
 }
 
-/**
- * שולף tenant מהבקשה (header או query param)
- * ה-middleware שם header, אבל גם אפשר לשלוח כ-query param
- */
 export async function getTenantFromRequest(
   request: Request
 ): Promise<TenantContext | NextResponse> {
   const url = new URL(request.url)
 
-  // 1. ננסה מ-header (מוגדר ע"י middleware)
+  // Rate limiting לפי IP
+  const ip =
+    (request.headers.get("x-forwarded-for") || "").split(",")[0].trim() ||
+    (request.headers.get("x-real-ip") || "") ||
+    "unknown"
+
+  const rl = checkRateLimit(ip)
+  if (!rl.allowed) {
+    return new NextResponse(JSON.stringify({ error: "Too Many Requests" }), {
+      status: 429,
+      headers: {
+        "Content-Type": "application/json",
+        "Retry-After": String(Math.ceil((rl.resetAt - Date.now()) / 1000)),
+        "X-RateLimit-Remaining": "0",
+      },
+    })
+  }
+
+  // 1. tenant מ-header (מוגדר ע"י middleware)
   let tenantId = request.headers.get("x-tenant-id") || ""
 
   // 2. fallback ל-query param
@@ -49,9 +64,6 @@ export async function getTenantFromRequest(
   return { tenantId, config, client, apiKey }
 }
 
-/**
- * בדיקה אם התוצאה היא שגיאה (NextResponse) או context תקין
- */
 export function isTenantError(
   result: TenantContext | NextResponse
 ): result is NextResponse {

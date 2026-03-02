@@ -9,11 +9,15 @@ export async function GET(request: Request) {
 
   const config = await loadTenantConfigServer(tenantId)
   if (!config) {
-    return NextResponse.json(
-      { error: `Tenant "${tenantId}" not found` },
-      { status: 404 }
-    )
+    // generic error — לא לחשוף אם tenant קיים או לא
+    return NextResponse.json({ error: "Not found" }, { status: 404 })
   }
 
-  return NextResponse.json(config)
+  // חשוף רק מה שהצד הלקוח באמת צריך — בלי table IDs, field IDs, apiUrl, apiKey
+  const safeConfig = {
+    id: config.id,
+    name: config.name,
+  }
+
+  return NextResponse.json(safeConfig)
 }

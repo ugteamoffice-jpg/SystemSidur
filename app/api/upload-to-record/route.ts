@@ -1,6 +1,17 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getTenantFromRequest, isTenantError } from "@/lib/api-tenant-helper"
 
+const ALLOWED_TYPES = [
+  "application/pdf",
+  "image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "text/plain",
+]
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+
 export async function POST(request: NextRequest) {
   try {
     const ctx = await getTenantFromRequest(request);
@@ -15,6 +26,16 @@ export async function POST(request: NextRequest) {
 
     if (!file || !tableId || !recordId || !fieldId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    }
+
+    // ולידציה על סוג קובץ
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return NextResponse.json({ error: "סוג קובץ לא מורשה" }, { status: 400 })
+    }
+
+    // ולידציה על גודל קובץ
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json({ error: "הקובץ גדול מדי (מקסימום 10MB)" }, { status: 400 })
     }
 
     const uploadFormData = new FormData()
