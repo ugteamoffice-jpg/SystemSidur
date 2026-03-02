@@ -21,9 +21,10 @@ import { useTenant } from "@/lib/tenant-context"
 
 const UserButton = dynamic(() => import("@clerk/nextjs").then(mod => mod.UserButton), { ssr: false })
 
-export type PageType = "work-schedule" | "customers" | "drivers" | "vehicles" | "recurring-rides" | "report-customer" | "report-driver" | "report-invoices" | "report-profit" | "report-general"
+export type PageType = "work-schedule" | "customers" | "drivers" | "vehicle-types" | "company-vehicles" | "recurring-rides" | "report-customer" | "report-driver" | "report-invoices" | "report-profit" | "report-general"
 
 const reportPages: PageType[] = ["report-general", "report-customer", "report-driver", "report-invoices", "report-profit"]
+const vehiclePages: PageType[] = ["vehicle-types", "company-vehicles"]
 
 interface AppHeaderProps {
   activePage: PageType
@@ -82,10 +83,15 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
     { id: "recurring-rides" as PageType, label: "נסיעות קבועות" },
     { id: "customers" as PageType, label: "לקוחות" },
     { id: "drivers" as PageType, label: "נהגים" },
-    { id: "vehicles" as PageType, label: "רכבים" },
   ]
 
   const isReportActive = reportPages.includes(activePage)
+  const isVehicleActive = vehiclePages.includes(activePage)
+
+  const vehicleLabel: Record<string, string> = {
+    "vehicle-types": "סוגי רכבים",
+    "company-vehicles": "רכבי חברה",
+  }
 
   const reportLabel: Record<string, string> = {
     "report-general": "דוח נסיעות כללי",
@@ -119,6 +125,23 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
                     {item.label}
                   </Button>
                 ))}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className={`text-sm md:text-base font-medium px-2 md:px-3 h-9 hover:bg-accent hover:text-accent-foreground ${
+                        isVehicleActive ? "bg-accent text-accent-foreground" : ""
+                      }`}
+                    >
+                      {isVehicleActive ? vehicleLabel[activePage] : "רכבים"}
+                      <ChevronDown className="h-4 w-4 mr-1" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" dir="rtl">
+                    <DropdownMenuItem onClick={() => onPageChange("vehicle-types")}>סוגי רכבים</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onPageChange("company-vehicles")}>רכבי חברה</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button

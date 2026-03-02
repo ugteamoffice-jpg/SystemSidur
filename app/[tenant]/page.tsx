@@ -6,7 +6,8 @@ import { AppHeader } from "@/components/app-header"
 import type { PageType } from "@/components/app-header"
 import { CustomersPage } from "@/components/customers-page"
 import { DriversPage } from "@/components/drivers-page"
-import { VehiclesPage } from "@/components/vehicles-page"
+import VehiclesGrid from "@/components/vehicles-grid"
+import CompanyVehiclesGrid from "@/components/company-vehicles-grid"
 import { ReportPage } from "@/components/report-page"
 import type { ReportType } from "@/components/report-page"
 import { GeneralReportPage } from "@/components/general-report-page"
@@ -35,7 +36,8 @@ export default function TenantHomePage() {
       {activePage === "recurring-rides" && <RecurringRidesPage />}
       {activePage === "customers" && <CustomersPage />}
       {activePage === "drivers" && <DriversPage />}
-      {activePage === "vehicles" && <VehiclesPage />}
+      {activePage === "vehicle-types" && <div className="flex flex-col h-full overflow-hidden"><VehiclesGrid /></div>}
+      {activePage === "company-vehicles" && <div className="flex flex-col h-full overflow-hidden"><CompanyVehiclesGrid /></div>}
       {activePage === "report-general" && <GeneralReportPage />}
       {isReport && <ReportPage key={activePage} reportType={activePage as ReportType} />}
     </div>
