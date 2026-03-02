@@ -823,8 +823,8 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
 
           <DialogFooter className="mt-1.5 pt-1.5 border-t">
             <div className="flex flex-wrap items-center justify-between w-full gap-y-2 gap-x-2">
-              {/* שלח / מאושר */}
-              <div className="flex items-center gap-3 shrink-0">
+              {/* שלח / מאושר — רק בדסקטופ */}
+              <div className="hidden md:flex items-center gap-3 shrink-0">
                 <label className="flex items-center gap-1.5 cursor-pointer text-sm">
                   <Checkbox checked={status.sent} onCheckedChange={v => setStatus(p => ({ ...p, sent: !!v }))} className="h-4 w-4" />
                   <span className="text-green-700 font-medium">שלח</span>

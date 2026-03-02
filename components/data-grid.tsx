@@ -826,10 +826,13 @@ function DataGrid({ schema }: { schema?: any }) {
     const isSent = !!f[WS.SENT]
     const isApproved = !!f[WS.APPROVED]
 
+    // Safe customer name extraction
+    const customerRaw = f[WS.CUSTOMER]
+    const customerName = Array.isArray(customerRaw) ? (customerRaw[0]?.title || "—") : (typeof customerRaw === 'object' && customerRaw !== null ? (customerRaw.title || "—") : String(customerRaw || "—"))
+
     const close = () => setMobileLongPressRecord(null)
 
     const menuItems: { label: string; action: () => void; danger?: boolean; disabled?: boolean }[] = [
-      { label: "עריכה", action: () => { setEditingRecord(rec); close() } },
       { label: "שכפול", action: () => { setBulkDuplicateRecords([]); setContextRecord(rec); setShowDuplicateDialog(true); close() } },
       { label: "פיצול", action: () => { setContextRecord(rec); handleSplit(); close() } },
       ...(hasDriver ? [
@@ -847,7 +850,7 @@ function DataGrid({ schema }: { schema?: any }) {
         <DialogContent dir="rtl" className="max-w-xs p-0 overflow-hidden" aria-describedby={undefined}>
           <DialogTitle className="sr-only">תפריט נסיעה</DialogTitle>
           <div className="p-3 border-b bg-muted/30">
-            <div className="font-bold text-sm truncate">{Array.isArray(f[WS.CUSTOMER]) ? f[WS.CUSTOMER][0]?.title : String(f[WS.CUSTOMER] || "—")}</div>
+            <div className="font-bold text-sm truncate">{customerName}</div>
             <div className="text-xs text-muted-foreground truncate">{f[WS.DESCRIPTION] || ""}</div>
           </div>
           <div className="flex flex-col py-1">
