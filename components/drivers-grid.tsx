@@ -9,15 +9,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Search, Loader2, Trash2 } from "lucide-react"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Plus, Search, Loader2, Trash2, Car, ChevronDown } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useTenantFields, useTenant } from "@/lib/tenant-context"
+import { format } from "date-fns"
 
 interface Driver {
   id: string
-  fields: {
-    [key: string]: any
-  }
+  fields: { [key: string]: any }
+}
+
+interface CompanyVehicle {
+  id: string
+  fields: { [key: string]: any }
 }
 
 export default function DriversGrid() {
@@ -28,6 +33,8 @@ export default function DriversGrid() {
   const PHONE_ID = tenantFields?.drivers.PHONE || ""
   const DRIVER_TYPE_ID = tenantFields?.drivers.DRIVER_TYPE || ""
   const CAR_NUMBER_ID = tenantFields?.drivers.CAR_NUMBER || ""
+  const CV_CAR_NUMBER = tenantFields?.companyVehicles?.CAR_NUMBER || ""
+  const CV_MAKE_MODEL = tenantFields?.companyVehicles?.MAKE_MODEL || ""
 
   const [drivers, setDrivers] = useState<Driver[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -40,12 +47,23 @@ export default function DriversGrid() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const { toast } = useToast()
 
+  // רכבי חברה
+  const [companyVehicles, setCompanyVehicles] = useState<CompanyVehicle[]>([])
+  const [vehiclePickerOpen, setVehiclePickerOpen] = useState(false)
+
+  // דיאלוג עדכון נסיעות עתידיות
+  const [futureRidesDialog, setFutureRidesDialog] = useState(false)
+  const [futureRidesCount, setFutureRidesCount] = useState(0)
+  const [futureRidesList, setFutureRidesList] = useState<any[]>([])
+  const [pendingSaveFields, setPendingSaveFields] = useState<any>(null)
+  const [isUpdatingFuture, setIsUpdatingFuture] = useState(false)
+
   const [scrollTop, setScrollTop] = useState(0)
   const [containerHeight, setContainerHeight] = useState(600)
   const tableContainerRef = useRef<HTMLDivElement>(null)
 
   const ROW_HEIGHT = 53
-  const BUFFER_SIZE = 10 
+  const BUFFER_SIZE = 10
 
   const DRIVERS_COL_SIZING_KEY = `driversColumnSizing_${tenantId}`
   const driverColumns = [
@@ -88,27 +106,52 @@ export default function DriversGrid() {
 
   useEffect(() => {
     fetchDrivers()
+    fetchCompanyVehicles()
   }, [])
 
   const fetchDrivers = async () => {
     setIsLoading(true)
     setDrivers([])
-    
     try {
       const response = await fetch(`/api/drivers?tenant=${tenantId}`);
       if (!response.ok) throw new Error("Fetch failed");
-      
       const data = await response.json();
-      const records = data.records || [];
-      
-      setDrivers(records);
-      console.log(`✅ Loaded ${records.length} drivers`);
+      setDrivers(data.records || []);
     } catch (error) {
       console.error("Error fetching drivers:", error)
       toast({ title: "שגיאה בטעינה", description: "חלק מהנתונים אולי לא נטענו", variant: "destructive" })
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const fetchCompanyVehicles = async () => {
+    try {
+      const res = await fetch(`/api/company-vehicles?tenant=${tenantId}`)
+      const data = await res.json()
+      if (!data.notConfigured) setCompanyVehicles(data.records || [])
+    } catch { /* שגיאה שקטה */ }
+  }
+
+  // שליפת נסיעות עתידיות של הנהג (מהיום והלאה)
+  const fetchFutureRidesForDriver = async (driverId: string): Promise<any[]> => {
+    try {
+      const WS_DRIVER = tenantFields?.workSchedule?.DRIVER || ""
+      const WS_DATE = tenantFields?.workSchedule?.DATE || ""
+      const today = format(new Date(), "yyyy-MM-dd")
+      // שולפים נסיעות של היום ואחריו — מסננים לפי נהג בצד הלקוח
+      const res = await fetch(`/api/work-schedule?tenant=${tenantId}&take=2000`)
+      if (!res.ok) return []
+      const data = await res.json()
+      const records: any[] = data.records || []
+      return records.filter(r => {
+        const d = r.fields[WS_DRIVER]
+        const driverMatch = Array.isArray(d) ? d.some((x: any) => x?.id === driverId) : false
+        const dateStr = r.fields[WS_DATE]
+        const rideDate = dateStr ? dateStr.split("T")[0] : ""
+        return driverMatch && rideDate >= today
+      })
+    } catch { return [] }
   }
 
   const handleCreateDriver = async () => {
@@ -132,12 +175,63 @@ export default function DriversGrid() {
         if (value !== "" && value !== undefined && value !== null) acc[key] = value
         return acc
       }, {} as any)
-      const response = await fetch(`/api/drivers?tenant=${tenantId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recordId: editingDriverId, fields: filteredFields }) })
-      if (!response.ok) throw new Error("Failed")
-      toast({ title: "הצלחה", description: "עודכן בהצלחה" })
-      setIsDialogOpen(false); setEditingDriverId(null); resetForm();
-      setDrivers(prev => prev.map(d => d.id === editingDriverId ? { ...d, fields: { ...d.fields, ...filteredFields } } : d));
+
+      // האם מספר הרכב השתנה?
+      const currentDriver = drivers.find(d => d.id === editingDriverId)
+      const oldCarNumber = currentDriver?.fields[CAR_NUMBER_ID] || ""
+      const newCarNumber = filteredFields[CAR_NUMBER_ID] || ""
+      const carChanged = newCarNumber && newCarNumber !== oldCarNumber
+
+      if (carChanged) {
+        // בדוק נסיעות עתידיות
+        const futureRides = await fetchFutureRidesForDriver(editingDriverId)
+        if (futureRides.length > 0) {
+          setFutureRidesList(futureRides)
+          setFutureRidesCount(futureRides.length)
+          setPendingSaveFields(filteredFields)
+          setFutureRidesDialog(true)
+          return // עצור — ממתין לתשובת המשתמש
+        }
+      }
+
+      // שמור ישירות
+      await saveDriverAndOptionalRides(filteredFields, [])
     } catch (error) { toast({ title: "שגיאה", description: "נכשל", variant: "destructive" }) }
+  }
+
+  const saveDriverAndOptionalRides = async (fields: any, ridesToUpdate: any[]) => {
+    try {
+      // 1. עדכן נהג
+      const res = await fetch(`/api/drivers?tenant=${tenantId}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recordId: editingDriverId, fields })
+      })
+      if (!res.ok) throw new Error("Failed")
+
+      // 2. עדכן נסיעות עתידיות אם נבחר
+      if (ridesToUpdate.length > 0) {
+        setIsUpdatingFuture(true)
+        const WS_VEHICLE_NUM = tenantFields?.workSchedule?.VEHICLE_NUM || ""
+        const newCarNumber = fields[CAR_NUMBER_ID] || ""
+        // Batch PATCH — 50 נסיעות בכל קריאה
+        const chunks = []
+        for (let i = 0; i < ridesToUpdate.length; i += 50) chunks.push(ridesToUpdate.slice(i, i + 50))
+        for (const chunk of chunks) {
+          const records = chunk.map((r: any) => ({ id: r.id, fields: { [WS_VEHICLE_NUM]: newCarNumber } }))
+          await fetch(`/api/work-schedule?tenant=${tenantId}`, {
+            method: "PATCH", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ records })
+          })
+        }
+        setIsUpdatingFuture(false)
+        toast({ title: "הצלחה", description: `הנהג ו-${ridesToUpdate.length} נסיעות עתידיות עודכנו` })
+      } else {
+        toast({ title: "הצלחה", description: "עודכן בהצלחה" })
+      }
+
+      setIsDialogOpen(false); setEditingDriverId(null); resetForm(); setFutureRidesDialog(false); setPendingSaveFields(null)
+      setDrivers(prev => prev.map(d => d.id === editingDriverId ? { ...d, fields: { ...d.fields, ...fields } } : d))
+    } catch { toast({ title: "שגיאה", description: "נכשל", variant: "destructive" }) }
   }
 
   const handlePermanentDelete = async () => {
@@ -332,11 +426,39 @@ export default function DriversGrid() {
                 </div>
                 <div className="space-y-2">
                   <Label>מספר רכב</Label>
-                  <Input 
-                    value={newDriver[CAR_NUMBER_ID] || ""} 
-                    onChange={(e) => handleCarNumberChange(e.target.value)}
-                    className={carNumberError ? "border-red-500" : ""}
-                  />
+                  <div className="flex gap-2">
+                    <Input 
+                      value={newDriver[CAR_NUMBER_ID] || ""} 
+                      onChange={(e) => handleCarNumberChange(e.target.value)}
+                      className={carNumberError ? "border-red-500" : ""}
+                    />
+                    {companyVehicles.length > 0 && (
+                      <Popover open={vehiclePickerOpen} onOpenChange={setVehiclePickerOpen}>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" size="icon" title="בחר מרכבי חברה" className="shrink-0">
+                            <Car className="h-4 w-4" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-56 p-1" dir="rtl" align="end">
+                          <div className="text-xs text-muted-foreground px-2 py-1 font-medium">רכבי חברה</div>
+                          {companyVehicles.map(v => {
+                            const num = v.fields[CV_CAR_NUMBER] || ""
+                            const model = v.fields[CV_MAKE_MODEL] || ""
+                            return (
+                              <button key={v.id} onClick={() => {
+                                setNewDriver((p: any) => ({ ...p, [CAR_NUMBER_ID]: num }))
+                                setCarNumberError("")
+                                setVehiclePickerOpen(false)
+                              }} className="w-full text-right px-2 py-1.5 text-sm hover:bg-accent rounded flex items-center justify-between gap-2">
+                                <span className="font-mono font-medium">{num}</span>
+                                {model && <span className="text-muted-foreground text-xs truncate">{model}</span>}
+                              </button>
+                            )
+                          })}
+                        </PopoverContent>
+                      </Popover>
+                    )}
+                  </div>
                   {carNumberError && <p className="text-sm text-red-500">{carNumberError}</p>}
                 </div>
             </div>
@@ -388,6 +510,41 @@ export default function DriversGrid() {
               onClick={handlePermanentDelete}
             >
               כן, מחק לצמיתות
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* דיאלוג עדכון נסיעות עתידיות */}
+      <AlertDialog open={futureRidesDialog} onOpenChange={open => { if (!open) { setFutureRidesDialog(false); setPendingSaveFields(null) } }}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>עדכון נסיעות עתידיות</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>
+                  שינית את מספר הרכב לנהג זה.<br />
+                  נמצאו <strong className="text-foreground">{futureRidesCount} נסיעות עתידיות</strong> המשובצות לנהג זה.
+                </p>
+                <p>האם לעדכן גם את מספר הרכב בנסיעות אלו?</p>
+                <p className="text-xs text-muted-foreground/70">⚠️ נסיעות שכבר בוצעו לא ישתנו.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row-reverse gap-2">
+            <AlertDialogCancel onClick={() => {
+              // שמור נהג בלבד, ללא עדכון נסיעות
+              if (pendingSaveFields) saveDriverAndOptionalRides(pendingSaveFields, [])
+            }}>
+              שמור נהג בלבד
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pendingSaveFields) saveDriverAndOptionalRides(pendingSaveFields, futureRidesList)
+              }}
+              disabled={isUpdatingFuture}
+            >
+              {isUpdatingFuture ? <><Loader2 className="h-4 w-4 animate-spin ml-2" />מעדכן...</> : `כן, עדכן ${futureRidesCount} נסיעות`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

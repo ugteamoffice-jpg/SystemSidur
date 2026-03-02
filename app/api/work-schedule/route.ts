@@ -105,16 +105,21 @@ export async function PATCH(request: Request) {
     const API_URL = config.apiUrl;
 
     const body = await request.json();
-    const { recordId, fields } = body;
     const endpoint = `${API_URL}/api/table/${TABLE_ID}/record?fieldKeyType=id`;
+
+    // תמיכה ב-bulk: אם body.records קיים, שולחים כמה records בבת אחת
+    const records = body.records
+      ? body.records
+      : [{ id: body.recordId, fields: body.fields }]
+
     const response = await fetch(endpoint, {
       method: 'PATCH',
       headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fieldKeyType: "id", typecast: true, records: [{ id: recordId, fields }] }),
+      body: JSON.stringify({ fieldKeyType: "id", typecast: true, records }),
       cache: 'no-store'
     });
     if (!response.ok) {
-      const errorData = await safeJsonParse(response);
+      await safeJsonParse(response);
       return NextResponse.json({ error: "Update failed" }, { status: response.status });
     }
     return NextResponse.json(await safeJsonParse(response) || { success: true });

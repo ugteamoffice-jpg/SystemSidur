@@ -6,7 +6,7 @@ export interface TenantConfig {
   name: string
   apiUrl: string
   baseId: string
-  clerkOrgId?: string  // Clerk Organization ID לבקרת גישה
+  clerkOrgId?: string
   tables: {
     WORK_SCHEDULE: string
     WORK_SCHEDULE_VIEW: string
@@ -14,6 +14,7 @@ export interface TenantConfig {
     CUSTOMERS: string
     VEHICLES: string
     VEHICLE_TYPES: string
+    COMPANY_VEHICLES?: string
   }
   fields: {
     workSchedule: {
@@ -66,6 +67,11 @@ export interface TenantConfig {
     }
     vehicles: {
       VEHICLE_TYPE: string
+    }
+    companyVehicles?: {
+      CAR_NUMBER: string
+      MAKE_MODEL?: string
+      NOTES?: string
     }
   }
 }
