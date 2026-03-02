@@ -849,7 +849,7 @@ function DataGrid({ schema }: { schema?: any }) {
       <Dialog open={true} onOpenChange={close}>
         <DialogContent dir="rtl" className="max-w-xs p-0 overflow-hidden" aria-describedby={undefined}>
           <DialogTitle className="sr-only">תפריט נסיעה</DialogTitle>
-          <div className="p-3 pl-10 border-b bg-muted/30">
+          <div className="p-3 pr-10 border-b bg-muted/30">
             <div className="font-bold text-sm truncate">{customerName}</div>
             <div className="text-xs text-muted-foreground truncate">{f[WS.DESCRIPTION] || ""}</div>
           </div>
