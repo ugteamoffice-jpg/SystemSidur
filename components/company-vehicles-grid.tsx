@@ -166,10 +166,14 @@ export default function CompanyVehiclesGrid() {
       const res = await fetch(`/api/vehicles?tenant=${tenantId}`)
       const data = await res.json()
       const records = data?.records || []
-      setVehicleTypesList(records.map((r: any) => ({
-        id: r.id,
-        name: r.fields?.["fldbijSftCee3DLlaFn"] || r.name || r.id
-      })).filter((t: any) => t.name))
+      setVehicleTypesList(records.map((r: any) => {
+        const val = r.fields?.["fldbijSftCee3DLlaFn"]
+        let name = ""
+        if (typeof val === "string") name = val
+        else if (Array.isArray(val)) name = val.map((x: any) => x?.title || x?.value || x).filter(Boolean).join(", ")
+        else if (val && typeof val === "object") name = val.title || val.value || ""
+        return { id: r.id, name: name || r.name || r.id }
+      }).filter((t: any) => t.name && t.name !== t.id))
     } catch {}
   }
 
@@ -240,7 +244,7 @@ export default function CompanyVehiclesGrid() {
       f[F.CAR_NUMBER] = isNaN(n) ? form.carNumber : n
     }
     if (F.VEHICLE_TYPE && form.vehicleTypeId) {
-      f[F.VEHICLE_TYPE] = [{ id: form.vehicleTypeId }]
+      f[F.VEHICLE_TYPE] = [form.vehicleTypeId]
     }
     if (F.INSURANCE_EXPIRY && dates.insuranceExpiry)              f[F.INSURANCE_EXPIRY] = dates.insuranceExpiry
     if (F.OPERATION_PERMIT_EXPIRY && dates.operationPermitExpiry) f[F.OPERATION_PERMIT_EXPIRY] = dates.operationPermitExpiry
