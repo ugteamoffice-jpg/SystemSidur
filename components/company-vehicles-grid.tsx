@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
-import { Badge } from "@/components/ui/badge"
 import { Plus, Search, Loader2, Trash2, Info, Upload, Eye, X, FileText } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useTenantFields, useTenant } from "@/lib/tenant-context"
@@ -40,8 +39,8 @@ function ExpiryBadge({ date }: { date: string | undefined }) {
   if (!date) return <span className="text-muted-foreground text-xs">—</span>
   const status = expiryStatus(date)
   const formatted = new Date(date).toLocaleDateString("he-IL")
-  if (status === "expired")  return <Badge variant="destructive" className="text-xs font-normal">{formatted} ⚠ פג</Badge>
-  if (status === "expiring") return <Badge className="text-xs font-normal bg-orange-100 text-orange-800 border-orange-300 hover:bg-orange-100">{formatted} ⚠ קרוב</Badge>
+  if (status === "expired")  return <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700 border border-red-200">{formatted} ⚠ פג</span>
+  if (status === "expiring") return <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-orange-100 text-orange-800 border border-orange-300">{formatted} ⚠ קרוב</span>
   return <span className="text-xs text-green-700 font-medium">{formatted}</span>
 }
 
