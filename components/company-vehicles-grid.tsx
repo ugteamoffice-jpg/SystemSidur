@@ -163,12 +163,12 @@ export default function CompanyVehiclesGrid() {
 
   const fetchVehicleTypes = async () => {
     try {
-      const res = await fetch(`/api/vehicle-types?tenant=${tenantId}`)
+      const res = await fetch(`/api/vehicles?tenant=${tenantId}`)
       const data = await res.json()
       const records = data?.records || []
       setVehicleTypesList(records.map((r: any) => ({
         id: r.id,
-        name: r.fields?.["fldUBeIPRhJ9JuUHXBL"] || r.name || r.id
+        name: r.fields?.["fldbijSftCee3DLlaFn"] || r.name || r.id
       })).filter((t: any) => t.name))
     } catch {}
   }
