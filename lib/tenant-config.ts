@@ -69,9 +69,15 @@ export interface TenantConfig {
       VEHICLE_TYPE: string
     }
     companyVehicles?: {
+      LABEL: string
+      VEHICLE_TYPE: string
       CAR_NUMBER: string
-      MAKE_MODEL?: string
-      NOTES?: string
+      INSURANCE_FILE: string
+      INSURANCE_EXPIRY: string
+      OPERATION_PERMIT_FILE: string
+      OPERATION_PERMIT_EXPIRY: string
+      VEHICLE_LICENSE_FILE: string
+      VEHICLE_LICENSE_EXPIRY: string
     }
   }
 }

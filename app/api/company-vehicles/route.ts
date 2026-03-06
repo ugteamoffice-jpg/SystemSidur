@@ -20,7 +20,8 @@ export async function GET(request: Request) {
       headers: { Authorization: `Bearer ${apiKey}` }, cache: 'no-store'
     })
     if (!res.ok) return NextResponse.json({ error: 'Failed' }, { status: res.status })
-    return NextResponse.json(await safeJson(res) || { records: [] })
+    const data = await safeJson(res) || { records: [] }
+    return NextResponse.json({ ...data, tableId: TABLE_ID })
   } catch {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
