@@ -322,7 +322,12 @@ export default function CompanyVehiclesGrid() {
       vehicleTypeDisplay: getLinkTitle(v, F.VEHICLE_TYPE) === "—" ? "" : getLinkTitle(v, F.VEHICLE_TYPE),
       vehicleTypeId: (() => {
         const val = gf(v, F.VEHICLE_TYPE)
-        if (Array.isArray(val) && val[0]?.id) return val[0].id
+        if (Array.isArray(val) && val.length > 0) {
+          // Could be [{ id, title }] or ["recordId"]
+          const first = val[0]
+          if (typeof first === "string") return first
+          if (first?.id) return first.id
+        }
         return ""
       })(),
     })
