@@ -111,7 +111,6 @@ export default function CompanyVehiclesGrid() {
   const CV = tenantFields?.companyVehicles as any
 
   const F = {
-    LABEL:                   CV?.LABEL || "",
     VEHICLE_TYPE:            CV?.VEHICLE_TYPE || "",
     CAR_NUMBER:              CV?.CAR_NUMBER || "",
     INSURANCE_FILE:          CV?.INSURANCE_FILE || "",
@@ -135,7 +134,7 @@ export default function CompanyVehiclesGrid() {
   const [isSaving, setIsSaving] = useState(false)
   const { toast } = useToast()
 
-  const emptyForm = () => ({ label: "", carNumber: "", vehicleTypeDisplay: "" })
+  const emptyForm = () => ({ carNumber: "", vehicleTypeDisplay: "" })
   const emptyDates = () => ({ insuranceExpiry: "", operationPermitExpiry: "", vehicleLicenseExpiry: "" })
   const emptyNewFiles = () => ({ insuranceFile: null as File | null, operationPermitFile: null as File | null, vehicleLicenseFile: null as File | null })
   const emptyExisting = () => ({ insuranceFile: [] as AttachmentEntry[], operationPermitFile: [] as AttachmentEntry[], vehicleLicenseFile: [] as AttachmentEntry[] })
@@ -167,7 +166,7 @@ export default function CompanyVehiclesGrid() {
 
   const gf = (v: CompanyVehicle, fieldId: string) => fieldId ? v.fields[fieldId] : undefined
 
-  const getLabel = (v: CompanyVehicle) => gf(v, F.LABEL) || gf(v, F.CAR_NUMBER) || "—"
+  const getLabel = (v: CompanyVehicle) => gf(v, F.CAR_NUMBER) || "—"
 
   const getAttachments = (v: CompanyVehicle, fieldId: string): AttachmentEntry[] => {
     const val = gf(v, fieldId)
@@ -211,7 +210,6 @@ export default function CompanyVehiclesGrid() {
 
   const buildFields = () => {
     const f: any = {}
-    if (F.LABEL && form.label)       f[F.LABEL] = form.label
     if (F.CAR_NUMBER && form.carNumber) {
       const n = Number(form.carNumber)
       f[F.CAR_NUMBER] = isNaN(n) ? form.carNumber : n
@@ -234,8 +232,8 @@ export default function CompanyVehiclesGrid() {
   }
 
   const handleCreate = async () => {
-    if (!form.label.trim() && !form.carNumber.trim()) {
-      toast({ title: "שגיאה", description: "יש למלא לפחות תווית או מספר רכב", variant: "destructive" })
+    if (!form.carNumber.trim()) {
+      toast({ title: "שגיאה", description: "יש למלא מספר רכב", variant: "destructive" })
       return
     }
     setIsSaving(true)
@@ -288,7 +286,6 @@ export default function CompanyVehiclesGrid() {
     setEditingId(v.id)
     const carNum = gf(v, F.CAR_NUMBER)
     setForm({
-      label: String(gf(v, F.LABEL) || ""),
       carNumber: carNum !== undefined && carNum !== null ? String(carNum) : "",
       vehicleTypeDisplay: getLinkTitle(v, F.VEHICLE_TYPE) === "—" ? "" : getLinkTitle(v, F.VEHICLE_TYPE),
     })
@@ -363,7 +360,6 @@ export default function CompanyVehiclesGrid() {
           <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
             <TableRow>
               <TableHead className="text-right pr-3 w-8"></TableHead>
-              <TableHead className="text-right pr-4">תווית</TableHead>
               <TableHead className="text-right pr-4">מספר רכב</TableHead>
               <TableHead className="text-right pr-4">סוג רכב</TableHead>
               <TableHead className="text-right pr-4">ביטוח</TableHead>
@@ -376,7 +372,7 @@ export default function CompanyVehiclesGrid() {
           </TableHeader>
           <TableBody>
             {isLoading && (
-              <TableRow><TableCell colSpan={10} className="text-center py-8">
+              <TableRow><TableCell colSpan={9} className="text-center py-8">
                 <div className="flex items-center justify-center gap-2"><Loader2 className="h-5 w-5 animate-spin" /><span className="text-muted-foreground">טוען...</span></div>
               </TableCell></TableRow>
             )}
@@ -393,7 +389,6 @@ export default function CompanyVehiclesGrid() {
                     {alert === "expired"  && <span className="inline-block w-2 h-2 rounded-full bg-red-500" title="תוקף פג" />}
                     {alert === "expiring" && <span className="inline-block w-2 h-2 rounded-full bg-orange-400" title="קרוב לפקיעה" />}
                   </TableCell>
-                  <TableCell className="font-medium pr-4">{getLabel(v)}</TableCell>
                   <TableCell className="font-mono pr-4">{String(gf(v, F.CAR_NUMBER) ?? "—")}</TableCell>
                   <TableCell className="pr-4 text-muted-foreground">{getLinkTitle(v, F.VEHICLE_TYPE)}</TableCell>
                   <TableCell className="pr-4" onClick={e => e.stopPropagation()}>
@@ -422,16 +417,9 @@ export default function CompanyVehiclesGrid() {
             <DialogTitle>{editingId ? "עריכת רכב חברה" : "רכב חברה חדש"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-5 mt-2">
-            {/* תווית + מספר רכב */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <Label>תווית <span className="text-red-500">*</span></Label>
-                <Input value={form.label} onChange={e => setForm(p => ({ ...p, label: e.target.value }))} placeholder="שם / תיאור הרכב" className="text-right" />
-              </div>
-              <div className="space-y-1">
-                <Label>מספר רכב</Label>
-                <Input value={form.carNumber} onChange={e => setForm(p => ({ ...p, carNumber: e.target.value }))} placeholder="12-345-67" className="text-right" />
-              </div>
+            <div className="space-y-1">
+              <Label>מספר רכב <span className="text-red-500">*</span></Label>
+              <Input value={form.carNumber} onChange={e => setForm(p => ({ ...p, carNumber: e.target.value }))} placeholder="12-345-67" className="text-right" />
             </div>
             {/* סוג רכב (read-only) */}
             {form.vehicleTypeDisplay && (
@@ -496,7 +484,7 @@ export default function CompanyVehiclesGrid() {
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={closeDialog} disabled={isSaving}>ביטול</Button>
-              <Button onClick={editingId ? handleUpdate : handleCreate} disabled={isSaving || (!form.label.trim() && !form.carNumber.trim())}>
+              <Button onClick={editingId ? handleUpdate : handleCreate} disabled={isSaving || !form.carNumber.trim()}>
                 {isSaving ? <><Loader2 className="h-4 w-4 animate-spin ml-2" />שומר...</> : editingId ? "שמור" : "הוסף רכב"}
               </Button>
             </div>
@@ -509,7 +497,7 @@ export default function CompanyVehiclesGrid() {
         <AlertDialogContent dir="rtl">
           <AlertDialogHeader>
             <AlertDialogTitle>מחיקת רכב חברה</AlertDialogTitle>
-            <AlertDialogDescription>האם למחוק את הרכב <strong>{form.label || form.carNumber}</strong>? פעולה זו אינה הפיכה.</AlertDialogDescription>
+            <AlertDialogDescription>האם למחוק את הרכב <strong>{form.carNumber}</strong>? פעולה זו אינה הפיכה.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-row-reverse gap-2">
             <AlertDialogCancel>ביטול</AlertDialogCancel>
