@@ -327,19 +327,20 @@ export default function CompanyVehiclesGrid() {
   const openEdit = (v: CompanyVehicle) => {
     setEditingId(v.id)
     const carNum = gf(v, F.CAR_NUMBER)
+    const vtVal = gf(v, F.VEHICLE_TYPE)
+    console.log("VEHICLE_TYPE raw value:", JSON.stringify(vtVal))
+    console.log("vehicleTypesList:", JSON.stringify(vehicleTypesList))
+    let vehicleTypeId = ""
+    if (Array.isArray(vtVal) && vtVal.length > 0) {
+      const first = vtVal[0]
+      if (typeof first === "string") vehicleTypeId = first
+      else if (first?.id) vehicleTypeId = first.id
+    }
+    console.log("parsed vehicleTypeId:", vehicleTypeId)
     setForm({
       carNumber: carNum !== undefined && carNum !== null ? String(carNum) : "",
       vehicleTypeDisplay: getLinkTitle(v, F.VEHICLE_TYPE) === "—" ? "" : getLinkTitle(v, F.VEHICLE_TYPE),
-      vehicleTypeId: (() => {
-        const val = gf(v, F.VEHICLE_TYPE)
-        if (Array.isArray(val) && val.length > 0) {
-          // Could be [{ id, title }] or ["recordId"]
-          const first = val[0]
-          if (typeof first === "string") return first
-          if (first?.id) return first.id
-        }
-        return ""
-      })(),
+      vehicleTypeId,
     })
     const toDate = (v: any) => v ? String(v).slice(0, 10) : ""
     setDates({
