@@ -381,15 +381,15 @@ export default function CompanyVehiclesGrid() {
         <Table>
           <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
             <TableRow>
-              <TableHead className="text-right pr-3 w-8"></TableHead>
-              <TableHead className="text-right pr-4">מספר רכב</TableHead>
-              <TableHead className="text-right pr-4">סוג רכב</TableHead>
-              <TableHead className="text-right pr-4">ביטוח</TableHead>
-              <TableHead className="text-right pr-4">תוקף ביטוח</TableHead>
-              <TableHead className="text-right pr-4">היתר הפעלה</TableHead>
-              <TableHead className="text-right pr-4">תוקף היתר</TableHead>
-              <TableHead className="text-right pr-4">רישיון רכב</TableHead>
-              <TableHead className="text-right pr-4">תוקף רישיון</TableHead>
+              <TableHead className="text-right pr-3 w-8 border-l"></TableHead>
+              <TableHead className="text-right pr-4 border-l">מספר רכב</TableHead>
+              <TableHead className="text-right pr-4 border-l">סוג רכב</TableHead>
+              <TableHead className="text-right pr-4 border-l">ביטוח</TableHead>
+              <TableHead className="text-right pr-4 border-l">תוקף ביטוח</TableHead>
+              <TableHead className="text-right pr-4 border-l">היתר הפעלה</TableHead>
+              <TableHead className="text-right pr-4 border-l">תוקף היתר</TableHead>
+              <TableHead className="text-right pr-4 border-l">רישיון רכב</TableHead>
+              <TableHead className="text-right pr-4 border-l">תוקף רישיון</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -406,7 +406,7 @@ export default function CompanyVehiclesGrid() {
             {!isLoading && filtered.map(v => {
               const alert = rowExpiryAlert(v)
               return (
-                <TableRow key={v.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openEdit(v)}>
+                <TableRow key={v.id} className="cursor-pointer hover:bg-muted/50 border-b" onClick={() => openEdit(v)}>
                   <TableCell className="pr-3 w-8">
                     {alert === "expired"  && <span className="inline-block w-2 h-2 rounded-full bg-red-500" title="תוקף פג" />}
                     {alert === "expiring" && <span className="inline-block w-2 h-2 rounded-full bg-orange-400" title="קרוב לפקיעה" />}
