@@ -331,10 +331,15 @@ export default function CompanyVehiclesGrid() {
     console.log("VEHICLE_TYPE raw value:", JSON.stringify(vtVal))
     console.log("vehicleTypesList:", JSON.stringify(vehicleTypesList))
     let vehicleTypeId = ""
-    if (Array.isArray(vtVal) && vtVal.length > 0) {
-      const first = vtVal[0]
-      if (typeof first === "string") vehicleTypeId = first
-      else if (first?.id) vehicleTypeId = first.id
+    if (vtVal) {
+      if (typeof vtVal === "string") vehicleTypeId = vtVal
+      else if (Array.isArray(vtVal) && vtVal.length > 0) {
+        const first = vtVal[0]
+        if (typeof first === "string") vehicleTypeId = first
+        else if (first?.id) vehicleTypeId = first.id
+      } else if (typeof vtVal === "object" && (vtVal as any).id) {
+        vehicleTypeId = (vtVal as any).id
+      }
     }
     console.log("parsed vehicleTypeId:", vehicleTypeId)
     setForm({
