@@ -161,6 +161,16 @@ export default function CompanyVehiclesGrid() {
     fetchVehicleTypes()
   }, [])
 
+  // When vehicleTypesList loads and we have a vehicleTypeId, update the display
+  useEffect(() => {
+    if (form.vehicleTypeId && vehicleTypesList.length > 0) {
+      const found = vehicleTypesList.find(t => t.id === form.vehicleTypeId)
+      if (found && form.vehicleTypeDisplay !== found.name) {
+        setForm(p => ({ ...p, vehicleTypeDisplay: found.name }))
+      }
+    }
+  }, [vehicleTypesList, form.vehicleTypeId])
+
   const fetchVehicleTypes = async () => {
     try {
       const res = await fetch(`/api/vehicles?tenant=${tenantId}`)
