@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Plus, Search, Loader2, Trash2, Info, Upload, Eye, X, FileText, Calendar as CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
@@ -140,9 +141,10 @@ export default function CompanyVehiclesGrid() {
     selected: Date | undefined
     onSelect: (d: Date | undefined) => void
   }>({ open: false, selected: undefined, onSelect: () => {} })
+  const [vehicleTypesList, setVehicleTypesList] = useState<{ id: string; name: string }[]>([])
   const { toast } = useToast()
 
-  const emptyForm = () => ({ carNumber: "", vehicleTypeDisplay: "" })
+  const emptyForm = () => ({ carNumber: "", vehicleTypeDisplay: "", vehicleTypeId: "" })
   const emptyDates = () => ({ insuranceExpiry: "", operationPermitExpiry: "", vehicleLicenseExpiry: "" })
   const emptyNewFiles = () => ({ insuranceFile: null as File | null, operationPermitFile: null as File | null, vehicleLicenseFile: null as File | null })
   const emptyExisting = () => ({ insuranceFile: [] as AttachmentEntry[], operationPermitFile: [] as AttachmentEntry[], vehicleLicenseFile: [] as AttachmentEntry[] })
@@ -154,7 +156,24 @@ export default function CompanyVehiclesGrid() {
 
   const tableContainerRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => { fetchVehicles() }, [])
+  useEffect(() => {
+    fetchVehicles()
+    fetchVehicleTypes()
+  }, [])
+
+  const fetchVehicleTypes = async () => {
+    try {
+      const res = await fetch(`/api/vehicle-types?tenant=${tenantId}`)
+      const data = await res.json()
+      const records = data?.records || []
+      // The vehicle type name field ID from tenant config
+      const nameFieldId = "fldUBeIPRhJ9JuUHXBL"
+      setVehicleTypesList(records.map((r: any) => ({
+        id: r.id,
+        name: r.fields?.[nameFieldId] || r.id
+      })))
+    } catch {}
+  }
 
   const fetchVehicles = async () => {
     setIsLoading(true)
@@ -221,6 +240,9 @@ export default function CompanyVehiclesGrid() {
     if (F.CAR_NUMBER && form.carNumber) {
       const n = Number(form.carNumber)
       f[F.CAR_NUMBER] = isNaN(n) ? form.carNumber : n
+    }
+    if (F.VEHICLE_TYPE && form.vehicleTypeId) {
+      f[F.VEHICLE_TYPE] = [{ id: form.vehicleTypeId }]
     }
     if (F.INSURANCE_EXPIRY && dates.insuranceExpiry)              f[F.INSURANCE_EXPIRY] = dates.insuranceExpiry
     if (F.OPERATION_PERMIT_EXPIRY && dates.operationPermitExpiry) f[F.OPERATION_PERMIT_EXPIRY] = dates.operationPermitExpiry
@@ -296,6 +318,11 @@ export default function CompanyVehiclesGrid() {
     setForm({
       carNumber: carNum !== undefined && carNum !== null ? String(carNum) : "",
       vehicleTypeDisplay: getLinkTitle(v, F.VEHICLE_TYPE) === "—" ? "" : getLinkTitle(v, F.VEHICLE_TYPE),
+      vehicleTypeId: (() => {
+        const val = gf(v, F.VEHICLE_TYPE)
+        if (Array.isArray(val) && val[0]?.id) return val[0].id
+        return ""
+      })(),
     })
     const toDate = (v: any) => v ? String(v).slice(0, 10) : ""
     setDates({
