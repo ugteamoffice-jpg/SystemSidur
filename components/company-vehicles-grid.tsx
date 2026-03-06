@@ -479,14 +479,27 @@ export default function CompanyVehiclesGrid() {
                 inputMode="numeric"
               />
             </div>
-            {/* סוג רכב (read-only) */}
-            {form.vehicleTypeDisplay && (
-              <div className="space-y-1">
-                <Label>סוג רכב</Label>
-                <Input value={form.vehicleTypeDisplay} readOnly className="text-right bg-muted text-muted-foreground" />
-                <p className="text-xs text-muted-foreground">שדה קישור — ניתן לשינוי ישירות ב-Teable</p>
-              </div>
-            )}
+            {/* סוג רכב */}
+            <div className="space-y-1">
+              <Label>סוג רכב</Label>
+              <Select
+                value={form.vehicleTypeId}
+                onValueChange={(val) => {
+                  const found = vehicleTypesList.find(t => t.id === val)
+                  setForm(p => ({ ...p, vehicleTypeId: val, vehicleTypeDisplay: found?.name || "" }))
+                }}
+                dir="rtl"
+              >
+                <SelectTrigger className="text-right">
+                  <SelectValue placeholder="בחר סוג רכב" />
+                </SelectTrigger>
+                <SelectContent>
+                  {vehicleTypesList.map(t => (
+                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <hr />
             {/* ביטוח */}
             <div className="grid grid-cols-2 gap-4 items-start">
