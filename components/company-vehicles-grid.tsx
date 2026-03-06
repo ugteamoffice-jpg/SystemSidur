@@ -166,12 +166,13 @@ export default function CompanyVehiclesGrid() {
       const res = await fetch(`/api/vehicle-types?tenant=${tenantId}`)
       const data = await res.json()
       const records = data?.records || []
-      // The vehicle type name field ID from tenant config
-      const nameFieldId = "fldUBeIPRhJ9JuUHXBL"
-      setVehicleTypesList(records.map((r: any) => ({
-        id: r.id,
-        name: r.fields?.[nameFieldId] || r.id
-      })))
+      setVehicleTypesList(records.map((r: any) => {
+        // Try all possible name fields
+        const fields = r.fields || {}
+        const name = Object.values(fields).find((v: any) => typeof v === "string" && v.trim()) as string
+          || r.name || r.id
+        return { id: r.id, name }
+      }).filter((t: any) => t.name && t.name !== t.id))
     } catch {}
   }
 
@@ -466,39 +467,40 @@ export default function CompanyVehiclesGrid() {
             <DialogTitle>{editingId ? "עריכת רכב חברה" : "רכב חברה חדש"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-5 mt-2">
-            <div className="space-y-1">
-              <Label>מספר רכב <span className="text-red-500">*</span></Label>
-              <Input
-                value={form.carNumber}
-                onChange={e => {
-                  const val = e.target.value
-                  if (/^[0-9\-]*$/.test(val)) setForm(p => ({ ...p, carNumber: val }))
-                }}
-                placeholder="12-345-67"
-                className="text-right"
-                inputMode="numeric"
-              />
-            </div>
-            {/* סוג רכב */}
-            <div className="space-y-1">
-              <Label>סוג רכב</Label>
-              <Select
-                value={form.vehicleTypeId}
-                onValueChange={(val) => {
-                  const found = vehicleTypesList.find(t => t.id === val)
-                  setForm(p => ({ ...p, vehicleTypeId: val, vehicleTypeDisplay: found?.name || "" }))
-                }}
-                dir="rtl"
-              >
-                <SelectTrigger className="text-right">
-                  <SelectValue placeholder="בחר סוג רכב" />
-                </SelectTrigger>
-                <SelectContent>
-                  {vehicleTypesList.map(t => (
-                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label>מספר רכב <span className="text-red-500">*</span></Label>
+                <Input
+                  value={form.carNumber}
+                  onChange={e => {
+                    const val = e.target.value
+                    if (/^[0-9\-]*$/.test(val)) setForm(p => ({ ...p, carNumber: val }))
+                  }}
+                  placeholder="12-345-67"
+                  className="text-right"
+                  inputMode="numeric"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>סוג רכב</Label>
+                <Select
+                  value={form.vehicleTypeId}
+                  onValueChange={(val) => {
+                    const found = vehicleTypesList.find(t => t.id === val)
+                    setForm(p => ({ ...p, vehicleTypeId: val, vehicleTypeDisplay: found?.name || "" }))
+                  }}
+                  dir="rtl"
+                >
+                  <SelectTrigger className="text-right">
+                    <SelectValue placeholder="בחר סוג רכב" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {vehicleTypesList.map(t => (
+                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <hr />
             {/* ביטוח */}
