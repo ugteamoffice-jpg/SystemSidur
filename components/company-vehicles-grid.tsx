@@ -7,7 +7,10 @@ import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
-import { Plus, Search, Loader2, Trash2, Info, Upload, Eye, X, FileText } from "lucide-react"
+import { Plus, Search, Loader2, Trash2, Info, Upload, Eye, X, FileText, Calendar as CalendarIcon } from "lucide-react"
+import { format } from "date-fns"
+import { he } from "date-fns/locale"
+import { Calendar } from "@/components/ui/calendar"
 import { useToast } from "@/hooks/use-toast"
 import { useTenantFields, useTenant } from "@/lib/tenant-context"
 
@@ -132,6 +135,11 @@ export default function CompanyVehiclesGrid() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [calendarModal, setCalendarModal] = useState<{
+    open: boolean
+    selected: Date | undefined
+    onSelect: (d: Date | undefined) => void
+  }>({ open: false, selected: undefined, onSelect: () => {} })
   const { toast } = useToast()
 
   const emptyForm = () => ({ carNumber: "", vehicleTypeDisplay: "" })
@@ -310,6 +318,20 @@ export default function CompanyVehiclesGrid() {
     setNewFiles(emptyNewFiles()); setExistingFiles(emptyExisting())
   }
 
+  const openCalendar = (
+    currentValue: string,
+    onSelect: (dateStr: string) => void
+  ) => {
+    const current = currentValue ? new Date(currentValue) : undefined
+    setCalendarModal({
+      open: true,
+      selected: current,
+      onSelect: (d) => {
+        if (d) onSelect(format(d, "yyyy-MM-dd"))
+      }
+    })
+  }
+
   const filtered = vehicles.filter(v => {
     if (!searchQuery) return true
     const q = searchQuery.toLowerCase()
@@ -419,7 +441,16 @@ export default function CompanyVehiclesGrid() {
           <div className="space-y-5 mt-2">
             <div className="space-y-1">
               <Label>מספר רכב <span className="text-red-500">*</span></Label>
-              <Input value={form.carNumber} onChange={e => setForm(p => ({ ...p, carNumber: e.target.value }))} placeholder="12-345-67" className="text-right" />
+              <Input
+                value={form.carNumber}
+                onChange={e => {
+                  const val = e.target.value
+                  if (/^[0-9\-]*$/.test(val)) setForm(p => ({ ...p, carNumber: val }))
+                }}
+                placeholder="12-345-67"
+                className="text-right"
+                inputMode="numeric"
+              />
             </div>
             {/* סוג רכב (read-only) */}
             {form.vehicleTypeDisplay && (
@@ -440,7 +471,11 @@ export default function CompanyVehiclesGrid() {
               />
               <div className="space-y-1">
                 <Label>תוקף ביטוח</Label>
-                <Input type="date" value={dates.insuranceExpiry} onChange={e => setDates(p => ({ ...p, insuranceExpiry: e.target.value }))} className="text-right" />
+                <Button variant="outline" className="w-full justify-start text-right h-9 text-sm" type="button"
+                  onClick={() => openCalendar(dates.insuranceExpiry, (d) => setDates(p => ({ ...p, insuranceExpiry: d })))}>
+                  <CalendarIcon className="ml-2 h-4 w-4 shrink-0" />
+                  {dates.insuranceExpiry ? format(new Date(dates.insuranceExpiry), "dd/MM/yyyy", { locale: he }) : "בחר תאריך"}
+                </Button>
                 {dates.insuranceExpiry && <ExpiryBadge date={dates.insuranceExpiry} />}
               </div>
             </div>
@@ -454,7 +489,11 @@ export default function CompanyVehiclesGrid() {
               />
               <div className="space-y-1">
                 <Label>תוקף היתר הפעלה</Label>
-                <Input type="date" value={dates.operationPermitExpiry} onChange={e => setDates(p => ({ ...p, operationPermitExpiry: e.target.value }))} className="text-right" />
+                <Button variant="outline" className="w-full justify-start text-right h-9 text-sm" type="button"
+                  onClick={() => openCalendar(dates.operationPermitExpiry, (d) => setDates(p => ({ ...p, operationPermitExpiry: d })))}>
+                  <CalendarIcon className="ml-2 h-4 w-4 shrink-0" />
+                  {dates.operationPermitExpiry ? format(new Date(dates.operationPermitExpiry), "dd/MM/yyyy", { locale: he }) : "בחר תאריך"}
+                </Button>
                 {dates.operationPermitExpiry && <ExpiryBadge date={dates.operationPermitExpiry} />}
               </div>
             </div>
@@ -468,7 +507,11 @@ export default function CompanyVehiclesGrid() {
               />
               <div className="space-y-1">
                 <Label>תוקף רישיון רכב</Label>
-                <Input type="date" value={dates.vehicleLicenseExpiry} onChange={e => setDates(p => ({ ...p, vehicleLicenseExpiry: e.target.value }))} className="text-right" />
+                <Button variant="outline" className="w-full justify-start text-right h-9 text-sm" type="button"
+                  onClick={() => openCalendar(dates.vehicleLicenseExpiry, (d) => setDates(p => ({ ...p, vehicleLicenseExpiry: d })))}>
+                  <CalendarIcon className="ml-2 h-4 w-4 shrink-0" />
+                  {dates.vehicleLicenseExpiry ? format(new Date(dates.vehicleLicenseExpiry), "dd/MM/yyyy", { locale: he }) : "בחר תאריך"}
+                </Button>
                 {dates.vehicleLicenseExpiry && <ExpiryBadge date={dates.vehicleLicenseExpiry} />}
               </div>
             </div>
@@ -505,6 +548,23 @@ export default function CompanyVehiclesGrid() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ─── Calendar Modal ─── */}
+      <Dialog open={calendarModal.open} onOpenChange={(open) => setCalendarModal(p => ({ ...p, open }))}>
+        <DialogContent dir="rtl" className="w-auto max-w-[320px] p-4 flex items-center justify-center [&>button]:hidden" aria-describedby={undefined}>
+          <DialogTitle className="sr-only">בחר תאריך</DialogTitle>
+          <Calendar
+            mode="single"
+            selected={calendarModal.selected}
+            onSelect={(date) => {
+              calendarModal.onSelect(date)
+              if (date) setCalendarModal(p => ({ ...p, open: false }))
+            }}
+            locale={he}
+            dir="rtl"
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
