@@ -117,7 +117,7 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
                   <Button
                     key={item.id}
                     variant="ghost"
-                    onClick={() => onPageChange(item.id)}
+                    onClick={() => window.open(window.location.pathname + "?page=" + item.id, "_blank")}
                     className={`text-sm md:text-base font-medium px-2 md:px-3 h-9 hover:bg-accent hover:text-accent-foreground ${
                       activePage === item.id ? "bg-accent text-accent-foreground" : ""
                     }`}
@@ -138,8 +138,8 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" dir="rtl">
-                    <DropdownMenuItem onClick={() => onPageChange("vehicle-types")}>סוגי רכבים</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onPageChange("company-vehicles")}>רכבי חברה</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => window.open(window.location.pathname + "?page=vehicle-types", "_blank")}>סוגי רכבים</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => window.open(window.location.pathname + "?page=company-vehicles", "_blank")}>רכבי חברה</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
                 <DropdownMenu>
@@ -155,11 +155,11 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" dir="rtl">
-                    <DropdownMenuItem onClick={() => onPageChange("report-general")}>דוח נסיעות כללי</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onPageChange("report-customer")}>דוח לקוח</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onPageChange("report-driver")}>דוח נהג</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onPageChange("report-invoices")}>דוח חשבוניות</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onPageChange("report-profit")}>דוח רווח והפסד</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => window.open(window.location.pathname + "?page=report-general", "_blank")}>דוח נסיעות כללי</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => window.open(window.location.pathname + "?page=report-customer", "_blank")}>דוח לקוח</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => window.open(window.location.pathname + "?page=report-driver", "_blank")}>דוח נהג</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => window.open(window.location.pathname + "?page=report-invoices", "_blank")}>דוח חשבוניות</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => window.open(window.location.pathname + "?page=report-profit", "_blank")}>דוח רווח והפסד</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </nav>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { DataGrid } from "@/components/data-grid"
 import { AppHeader } from "@/components/app-header"
 import type { PageType } from "@/components/app-header"
@@ -18,6 +18,13 @@ import { Loader2 } from "lucide-react"
 export default function TenantHomePage() {
   const { config, loading } = useTenant()
   const [activePage, setActivePage] = useState<PageType>("work-schedule")
+
+  // Read page from URL on load
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const page = params.get("page") as PageType
+    if (page) setActivePage(page)
+  }, [])
 
   if (loading || !config) {
     return (
