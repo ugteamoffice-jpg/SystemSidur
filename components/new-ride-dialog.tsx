@@ -823,17 +823,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
 
           <DialogFooter className="mt-1.5 pt-1.5 border-t">
             <div className="flex flex-wrap items-center justify-between w-full gap-y-2 gap-x-2">
-              {/* שלח / מאושר — רק בדסקטופ */}
-              <div className="hidden md:flex items-center gap-3 shrink-0">
-                <label className="flex items-center gap-1.5 cursor-pointer text-sm">
-                  <Checkbox checked={status.sent} onCheckedChange={v => setStatus(p => ({ ...p, sent: !!v }))} className="h-4 w-4" />
-                  <span className="text-green-700 font-medium">שלח</span>
-                </label>
-                <label className="flex items-center gap-1.5 cursor-pointer text-sm">
-                  <Checkbox checked={status.approved} onCheckedChange={v => setStatus(p => ({ ...p, approved: !!v }))} className="h-4 w-4" />
-                  <span className="text-orange-700 font-medium">מאושר</span>
-                </label>
-              </div>
+
               <div className="flex items-center gap-1.5 shrink-0">
                 {isEdit && (
                   <Button type="button" variant="outline" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200 h-8 w-8 p-0"
