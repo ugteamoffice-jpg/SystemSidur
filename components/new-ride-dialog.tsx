@@ -154,6 +154,10 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
   // Refs that always hold the latest state values (for save-on-navigate)
   const formRef = React.useRef(form)
   const pricesRef = React.useRef(prices)
+  const onlyNumbers = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const allowed = ["0","1","2","3","4","5","6","7","8","9",".","Backspace","Delete","ArrowLeft","ArrowRight","Tab","Enter","-"]
+    if (!allowed.includes(e.key) && !e.ctrlKey && !e.metaKey) e.preventDefault()
+  }
   const statusRef = React.useRef(status)
   const dateRef = React.useRef(date)
   const selectedIdsRef = React.useRef(selectedIds)
@@ -775,8 +779,8 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <div><Label className="text-xs text-muted-foreground">לפני מע"מ</Label><Input type="number" value={prices.ce} onChange={(e) => calculateVat(e.target.value, 'excl', 'client')} className="bg-white h-8 text-sm mt-0.5" /></div>
-                    <div><Label className="text-xs text-muted-foreground">כולל מע"מ</Label><Input type="number" value={prices.ci} onChange={(e) => calculateVat(e.target.value, 'incl', 'client')} className="bg-white h-8 text-sm font-bold mt-0.5" /></div>
+                    <div><Label className="text-xs text-muted-foreground">לפני מע"מ</Label><Input type="number" value={prices.ce} onChange={(e) => calculateVat(e.target.value, 'excl', 'client')} onKeyDown={onlyNumbers} className="bg-white h-8 text-sm mt-0.5" /></div>
+                    <div><Label className="text-xs text-muted-foreground">כולל מע"מ</Label><Input type="number" value={prices.ci} onChange={(e) => calculateVat(e.target.value, 'incl', 'client')} onKeyDown={onlyNumbers} className="bg-white h-8 text-sm font-bold mt-0.5" /></div>
                   </div>
                 </div>
                 {/* מחיר נהג */}
@@ -789,8 +793,8 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <div><Label className="text-xs text-muted-foreground">לפני מע"מ</Label><Input type="number" value={prices.de} onChange={(e) => calculateVat(e.target.value, 'excl', 'driver')} className="bg-white h-8 text-sm mt-0.5" /></div>
-                    <div><Label className="text-xs text-muted-foreground">כולל מע"מ</Label><Input type="number" value={prices.di} onChange={(e) => calculateVat(e.target.value, 'incl', 'driver')} className="bg-white h-8 text-sm font-bold mt-0.5" /></div>
+                    <div><Label className="text-xs text-muted-foreground">לפני מע"מ</Label><Input type="number" value={prices.de} onChange={(e) => calculateVat(e.target.value, 'excl', 'driver')} onKeyDown={onlyNumbers} className="bg-white h-8 text-sm mt-0.5" /></div>
+                    <div><Label className="text-xs text-muted-foreground">כולל מע"מ</Label><Input type="number" value={prices.di} onChange={(e) => calculateVat(e.target.value, 'incl', 'driver')} onKeyDown={onlyNumbers} className="bg-white h-8 text-sm font-bold mt-0.5" /></div>
                   </div>
                 </div>
                 {/* רווח */}
