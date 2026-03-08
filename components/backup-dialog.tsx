@@ -33,24 +33,17 @@ export function BackupDialog({ open, onOpenChange }: BackupDialogProps) {
       const allRecords: any[] = []
       const take = 200
       let skip = 0
-      let total = 0
 
-      // First fetch to get total
-      const first = await fetch(`/api/work-schedule?tenant=${tenantId}&take=${take}&skip=0`)
-      const firstJson = await first.json()
-      total = firstJson.total || firstJson.records?.length || 0
-      allRecords.push(...(firstJson.records || []))
-      setBackupProgress(Math.min(30, Math.round((allRecords.length / Math.max(total, 1)) * 100)))
-      skip = take
-
-      while (allRecords.length < total) {
+      // Fetch all pages until we get an empty batch
+      while (true) {
         const res = await fetch(`/api/work-schedule?tenant=${tenantId}&take=${take}&skip=${skip}`)
         const json = await res.json()
         const batch = json.records || []
         if (batch.length === 0) break
         allRecords.push(...batch)
         skip += take
-        setBackupProgress(Math.min(90, Math.round((allRecords.length / total) * 100)))
+        setBackupProgress(Math.min(90, skip))
+        if (batch.length < take) break // last page
       }
 
       setBackupProgress(95)
