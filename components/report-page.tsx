@@ -152,13 +152,6 @@ export function ReportPage({ reportType }: ReportPageProps) {
     const mkProfit = (r: WorkScheduleRecord) => (Number(r.fields[WS.PROFIT]) || 0).toLocaleString()
     const mkInvoice = (r: WorkScheduleRecord) => r.fields[INVOICE_FIELD_ID] || "-"
 
-    const mkInvRecv = (r: WorkScheduleRecord) => (invoiceReceived.has(r.id) ? "✓" : "")
-    const mkInvRecvNode = (r: WorkScheduleRecord) => (
-      <div className="flex justify-center" onClick={e => { e.stopPropagation(); toggleInvoiceReceived(r.id) }}>
-        <Checkbox checked={invoiceReceived.has(r.id)} onCheckedChange={() => toggleInvoiceReceived(r.id)} className="h-4 w-4" />
-      </div>
-    )
-
     if (reportType === "report-driver") {
       return [
         { id: "date", label: "תאריך", width: colWidths.date || 95, render: mkDate },
@@ -170,7 +163,6 @@ export function ReportPage({ reportType }: ReportPageProps) {
         { id: "vehicleNum", label: "מספר רכב", width: colWidths.vehicleNum || 85, render: mkVehicleNum },
         { id: "p3", label: 'נהג לפני מע"מ', width: colWidths.p3 || 100, render: mkP3 },
         { id: "p4", label: 'נהג כולל מע"מ', width: colWidths.p4 || 100, render: mkP4 },
-        { id: "invRecv", label: "חש' התקבלה", width: colWidths.invRecv || 90, render: mkInvRecv, renderNode: mkInvRecvNode, cls: "text-center" },
       ]
     } else if (reportType === "report-customer") {
       return [
@@ -215,25 +207,6 @@ export function ReportPage({ reportType }: ReportPageProps) {
   
   const today = new Date()
   const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
-
-  // Local-only "חש' התקבלה" state for driver report (stored in localStorage)
-  const [invoiceReceived, setInvoiceReceived] = React.useState<Set<string>>(() => {
-    if (typeof window === "undefined") return new Set()
-    try {
-      const stored = localStorage.getItem("driver_inv_recv")
-      return stored ? new Set(JSON.parse(stored)) : new Set()
-    } catch { return new Set() }
-  })
-
-  const toggleInvoiceReceived = React.useCallback((id: string) => {
-    setInvoiceReceived(prev => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      try { localStorage.setItem("driver_inv_recv", JSON.stringify([...next])) } catch {}
-      return next
-    })
-  }, [])
 
   const [filters, setFilters] = React.useState<FilterState>({
     startDate: firstOfMonth,
@@ -619,7 +592,6 @@ export function ReportPage({ reportType }: ReportPageProps) {
         { header: "מספר רכב",width:"80px",cls:"c",     getValue: mkVN },
         { header: 'נהג לפני מע"מ', width:"80px", cls:"l", getValue: mkP3, isTotalField:"p3" },
         { header: 'נהג כולל מע"מ', width:"80px", cls:"l", getValue: mkP4, isTotalField:"p4" },
-        { header: "חש' התקבלה", width:"60px", cls:"c", getValue: (f: any, r?: any) => r && invoiceReceived.has(r.id) ? "✓" : "" },
       ]
     } else if (reportType === "report-customer") {
       cols = [
@@ -663,7 +635,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
       const f = record.fields
       const cells = cols.map(col => {
         const cls = col.cls === "lprofit" ? "l profit-cell" : col.cls === "route" ? "route-cell" : (col.cls || "")
-        return `<td class="${cls}">${col.getValue(f, record)}</td>`
+        return `<td class="${cls}">${col.getValue(f)}</td>`
       }).join("")
       return `<tr><td class="c text-muted" style="width:25px">${index + 1}</td>${cells}</tr>`
     }).join("")
@@ -1277,12 +1249,8 @@ export function ReportPage({ reportType }: ReportPageProps) {
                           />
                         </TableCell>
                         {tableColumns.map(col => (
-                          <TableCell
-                            key={col.id}
-                            className={`text-right border-l truncate ${col.cls || ""}`}
-                            onClick={(col as any).renderNode ? (e: React.MouseEvent) => e.stopPropagation() : undefined}
-                          >
-                            {(col as any).renderNode ? (col as any).renderNode(record) : col.render(record)}
+                          <TableCell key={col.id} className={`text-right border-l truncate ${col.cls || ""}`}>
+                            {col.render(record)}
                           </TableCell>
                         ))}
                       </TableRow>
