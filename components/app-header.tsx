@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Moon, Sun, Settings, ChevronDown, Eye, Menu, X } from "lucide-react"
+import { Moon, Sun, Settings, ChevronDown, Eye, Menu, X, DatabaseBackup } from "lucide-react"
 import { useTheme } from "next-themes"
 import dynamic from "next/dynamic"
 import { ReportSettingsDialog } from "@/components/report-settings-dialog"
@@ -18,6 +18,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useTenant } from "@/lib/tenant-context"
+import { BackupDialog } from "@/components/backup-dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 
 const UserButton = dynamic(() => import("@clerk/nextjs").then(mod => mod.UserButton), { ssr: false })
 
@@ -34,10 +36,24 @@ interface AppHeaderProps {
 export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
   const { theme, setTheme } = useTheme()
   const [showReportSettings, setShowReportSettings] = useState(false)
+  const [showBackupDialog, setShowBackupDialog] = useState(false)
+  const [showAutoBackupPrompt, setShowAutoBackupPrompt] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { tenantId } = useTenant()
 
   const COLUMN_VISIBILITY_KEY = `workScheduleColumnVisibility_${tenantId}`
+
+  // Auto-backup: check once per day — desktop only
+  useEffect(() => {
+    if (!tenantId) return
+    if (window.innerWidth < 768) return // skip on mobile
+    const key = `lastBackup_${tenantId}`
+    const lastBackup = localStorage.getItem(key)
+    const today = new Date().toISOString().substring(0, 10)
+    if (lastBackup !== today) {
+      setShowAutoBackupPrompt(true)
+    }
+  }, [tenantId])
 
   const toggleableColumns = [
     { id: "sent", label: "שלח" },
@@ -193,6 +209,9 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
                   </PopoverContent>
                 </Popover>
               )}
+              <Button variant="outline" size="icon" className="h-8 w-8 hidden md:flex" onClick={() => setShowBackupDialog(true)} title="גיבוי ושחזור">
+                <DatabaseBackup className="h-4 w-4" />
+              </Button>
               <Button variant="outline" size="icon" className="h-8 w-8 hidden md:flex" onClick={() => setShowReportSettings(true)} title="הגדרות ייצוא דוח">
                 <Settings className="h-4 w-4" />
               </Button>
@@ -223,6 +242,34 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
         </div>
       </div>
 
+      <AlertDialog open={showAutoBackupPrompt} onOpenChange={setShowAutoBackupPrompt}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-right">גיבוי יומי</AlertDialogTitle>
+            <AlertDialogDescription className="text-right">
+              לא בוצע גיבוי היום. האם ברצונך להוריד גיבוי של כל הנסיעות?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row-reverse gap-2">
+            <AlertDialogAction onClick={() => {
+              const key = `lastBackup_${tenantId}`
+              localStorage.setItem(key, new Date().toISOString().substring(0, 10))
+              setShowAutoBackupPrompt(false)
+              setShowBackupDialog(true)
+            }}>
+              כן, הורד גיבוי
+            </AlertDialogAction>
+            <AlertDialogCancel onClick={() => {
+              const key = `lastBackup_${tenantId}`
+              localStorage.setItem(key, new Date().toISOString().substring(0, 10))
+              setShowAutoBackupPrompt(false)
+            }}>
+              לא תודה
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <BackupDialog open={showBackupDialog} onOpenChange={setShowBackupDialog} />
       <ReportSettingsDialog 
         open={showReportSettings} 
         onOpenChange={setShowReportSettings} 
