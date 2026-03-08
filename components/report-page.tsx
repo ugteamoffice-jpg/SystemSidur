@@ -1277,7 +1277,11 @@ export function ReportPage({ reportType }: ReportPageProps) {
                           />
                         </TableCell>
                         {tableColumns.map(col => (
-                          <TableCell key={col.id} className={`text-right border-l truncate ${col.cls || ""}`}>
+                          <TableCell
+                            key={col.id}
+                            className={`text-right border-l truncate ${col.cls || ""}`}
+                            onClick={(col as any).renderNode ? (e: React.MouseEvent) => e.stopPropagation() : undefined}
+                          >
                             {(col as any).renderNode ? (col as any).renderNode(record) : col.render(record)}
                           </TableCell>
                         ))}
