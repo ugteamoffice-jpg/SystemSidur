@@ -107,6 +107,29 @@ export function ReportPage({ reportType }: ReportPageProps) {
     try { localStorage.setItem(REPORT_COL_KEY, JSON.stringify(colWidths)) } catch {}
   }, [colWidths, REPORT_COL_KEY])
 
+  // Sort state
+  const [sortCol, setSortCol] = React.useState<string | null>(null)
+  const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc")
+  const handleSortCol = (colId: string) => {
+    if (sortCol === colId) setSortDir(d => d === "asc" ? "desc" : "asc")
+    else { setSortCol(colId); setSortDir("asc") }
+  }
+
+  // Column resize
+  const resizingCol = React.useRef<string | null>(null)
+  const resizeStartX = React.useRef(0)
+  const resizeStartW = React.useRef(0)
+  const startResize = React.useCallback((e: React.MouseEvent, colId: string, curWidth: number) => {
+    e.preventDefault(); e.stopPropagation()
+    resizingCol.current = colId; resizeStartX.current = e.clientX; resizeStartW.current = curWidth
+    const onMove = (ev: MouseEvent) => {
+      const diff = resizeStartX.current - ev.clientX
+      setColWidths(p => ({ ...p, [resizingCol.current!]: Math.max(50, resizeStartW.current + diff) }))
+    }
+    const onUp = () => { resizingCol.current = null; window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp) }
+    window.addEventListener("mousemove", onMove); window.addEventListener("mouseup", onUp)
+  }, [])
+
   // --- Visible table columns per report type ---
   type TableColDef = {
     id: string; label: string; width: number
@@ -370,8 +393,19 @@ export function ReportPage({ reportType }: ReportPageProps) {
     return filtered
   }, [allData, filters, globalFilter, WS])
 
+  const sortedData = React.useMemo(() => {
+    if (!sortCol) return filteredData
+    const col = tableColumns.find(c => c.id === sortCol)
+    if (!col) return filteredData
+    return [...filteredData].sort((a, b) => {
+      const av = String(col.render(a) ?? "")
+      const bv = String(col.render(b) ?? "")
+      const cmp = av.localeCompare(bv, "he")
+      return sortDir === "asc" ? cmp : -cmp
+    })
+  }, [filteredData, sortCol, sortDir, tableColumns])
+
   React.useEffect(() => {
-    // מנקה את הבחירה כשמבצעים סינון פנימי חדש (Global Filter)
     setSelectedRowIds(new Set())
   }, [filteredData])
 
@@ -460,31 +494,47 @@ export function ReportPage({ reportType }: ReportPageProps) {
   const exportToCsv = () => {
     if (filteredData.length === 0) return
 
-    const headers = [
-      "מס' חשבונית", "תאריך", "שם לקוח", "התייצבות", "מסלול", "חזור", "סוג רכב", "שם נהג", "מספר רכב",
-      'לקוח לפני מע"מ', 'לקוח כולל מע"מ', 'נהג לפני מע"מ', 'נהג כולל מע"מ', "רווח"
-    ]
+    const customerLabel = filters.customerName ? ` - ${filters.customerName}` : ""
+    const isInvoiceReport = reportType === "report-invoices"
+
+    const headers = isInvoiceReport
+      ? ["מס' חשבונית", "תאריך", "התייצבות", "מסלול", "חזור", "סוג רכב", "שם נהג", "מספר רכב", 'לקוח לפני מע"מ', 'לקוח כולל מע"מ']
+      : ["מס' חשבונית", "תאריך", "שם לקוח", "התייצבות", "מסלול", "חזור", "סוג רכב", "שם נהג", "מספר רכב", 'לקוח לפני מע"מ', 'לקוח כולל מע"מ', 'נהג לפני מע"מ', 'נהג כולל מע"מ', "רווח"]
 
     const csvRows = [
       headers.join(","),
       ...filteredData.map(record => {
         const f = record.fields
-        return [
-          `"${f[INVOICE_FIELD_ID] || ""}"`,
-          f[WS.DATE] ? format(new Date(f[WS.DATE]), "dd/MM/yyyy") : "",
-          `"${renderLinkField(f[WS.CUSTOMER]).replace(/"/g, '""')}"`,
-          `"${f[WS.PICKUP_TIME] || ""}"`,
-          `"${(f[WS.DESCRIPTION] || "").replace(/"/g, '""')}"`,
-          `"${f[WS.DROPOFF_TIME] || ""}"`,
-          `"${renderLinkField(f[WS.VEHICLE_TYPE]).replace(/"/g, '""')}"`,
-          `"${getDriverFullName(f).replace(/"/g, '""')}"`,
-          `"${f[WS.VEHICLE_NUM] || ""}"`,
-          Number(f[WS.PRICE_CLIENT_EXCL]) || 0,
-          Number(f[WS.PRICE_CLIENT_INCL]) || 0,
-          Number(f[WS.PRICE_DRIVER_EXCL]) || 0,
-          Number(f[WS.PRICE_DRIVER_INCL]) || 0,
-          Number(f[WS.PROFIT]) || 0
-        ].join(",")
+        const baseRow = isInvoiceReport
+          ? [
+              `"${f[INVOICE_FIELD_ID] || ""}"`,
+              f[WS.DATE] ? format(new Date(f[WS.DATE]), "dd/MM/yyyy") : "",
+              `"${f[WS.PICKUP_TIME] || ""}"`,
+              `"${(f[WS.DESCRIPTION] || "").replace(/"/g, '""')}"`,
+              `"${f[WS.DROPOFF_TIME] || ""}"`,
+              `"${renderLinkField(f[WS.VEHICLE_TYPE]).replace(/"/g, '""')}"`,
+              `"${getDriverFullName(f).replace(/"/g, '""')}"`,
+              `"${f[WS.VEHICLE_NUM] || ""}"`,
+              Number(f[WS.PRICE_CLIENT_EXCL]) || 0,
+              Number(f[WS.PRICE_CLIENT_INCL]) || 0,
+            ]
+          : [
+              `"${f[INVOICE_FIELD_ID] || ""}"`,
+              f[WS.DATE] ? format(new Date(f[WS.DATE]), "dd/MM/yyyy") : "",
+              `"${renderLinkField(f[WS.CUSTOMER]).replace(/"/g, '""')}"`,
+              `"${f[WS.PICKUP_TIME] || ""}"`,
+              `"${(f[WS.DESCRIPTION] || "").replace(/"/g, '""')}"`,
+              `"${f[WS.DROPOFF_TIME] || ""}"`,
+              `"${renderLinkField(f[WS.VEHICLE_TYPE]).replace(/"/g, '""')}"`,
+              `"${getDriverFullName(f).replace(/"/g, '""')}"`,
+              `"${f[WS.VEHICLE_NUM] || ""}"`,
+              Number(f[WS.PRICE_CLIENT_EXCL]) || 0,
+              Number(f[WS.PRICE_CLIENT_INCL]) || 0,
+              Number(f[WS.PRICE_DRIVER_EXCL]) || 0,
+              Number(f[WS.PRICE_DRIVER_INCL]) || 0,
+              Number(f[WS.PROFIT]) || 0,
+            ]
+        return baseRow.join(",")
       })
     ]
 
@@ -493,7 +543,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
     const url = URL.createObjectURL(blob)
     const link = document.createElement("a")
     link.href = url
-    link.download = `${reportTitles[reportType]}_${format(new Date(), "dd-MM-yyyy")}.csv`
+    link.download = `${reportTitles[reportType]}${customerLabel}_${format(new Date(), "dd-MM-yyyy")}.csv`
     link.click()
     URL.revokeObjectURL(url)
   }
@@ -556,7 +606,6 @@ export function ReportPage({ reportType }: ReportPageProps) {
     } else if (reportType === "report-invoices") {
       cols = [
         { header: "מס' חשבונית",          width:"80px", cls:"c",   getValue: (f: any) => escapeHtml(f[INVOICE_FIELD_ID] || "-") },
-        { header: "שם לקוח",              width:"100px",cls:"",    getValue: mkCust },
         { header: "תאריך",                 width:"70px", cls:"c",   getValue: mkDate },
         { header: "הלוך",                  width:"50px", cls:"c",   getValue: mkGo },
         { header: "מסלול",                             cls:"route", getValue: mkRoute },
@@ -626,6 +675,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
     const footerLine2 = settings.footerText
       ? `<div class="fc">${escapeHtml(settings.footerText)}</div>` : ""
 
+    const pdfCustomerName = reportType === "report-invoices" && filters.customerName ? filters.customerName : ""
     const reportTitle = reportTitles[reportType]
     const genDate = format(new Date(), "dd/MM/yyyy")
     const totalRec = filteredData.length
@@ -675,7 +725,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
     ${logoHtml}
     ${settings.companyName ? `<div class="company-name">${escapeHtml(settings.companyName)}</div>` : ""}
     ${companyDetailsHtml}
-    <div class="report-title">${reportTitle}${entityName ? ` עבור ${entityLabel} ${escapeHtml(entityName)}` : ""}</div>
+    <div class="report-title">${reportTitle}${entityName ? ` עבור ${entityLabel} ${escapeHtml(entityName)}` : ""}${pdfCustomerName && !entityName ? ` - ${escapeHtml(pdfCustomerName)}` : ""}</div>
     ${dateRangeStr ? `<div class="mi">${dateRangeStr}</div>` : ""}
     <div class="mi">תאריך הפקה: ${genDate} | סה"כ רשומות: ${totalRec}</div>
   </div>
@@ -1060,45 +1110,49 @@ export function ReportPage({ reportType }: ReportPageProps) {
             עדכן חשבונית
           </Button>
 
-          {/* Export Button */}
+          {/* Export Button + Search - side by side */}
           {hasSearched && filteredData.length > 0 && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="shrink-0 text-xs md:text-sm h-8 md:h-9 px-2 md:px-3">
-                  <Download className="h-3.5 w-3.5 md:h-4 md:w-4 ml-1 md:ml-2" />
-                  ייצוא דוח
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" dir="rtl">
-                <DropdownMenuItem onClick={exportToCsv} className="cursor-pointer">
-                  <FileSpreadsheet className="h-4 w-4 ml-2 text-green-600" />
-                  ייצוא לאקסל (CSV)
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={exportToPdf} className="cursor-pointer">
-                  <Printer className="h-4 w-4 ml-2 text-orange-600" />
-                  {reportType === "report-customer" ? "דוח רגיל / PDF" : "הדפסה / PDF"}
-                </DropdownMenuItem>
-                {reportType === "report-customer" && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={exportXReportPdf} className="cursor-pointer">
-                      <LayoutGrid className="h-4 w-4 ml-2 text-purple-600" />
-                      דוח איקסים / PDF
-                    </DropdownMenuItem>
-                  </>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Input
+                placeholder="חיפוש חופשי..."
+                value={globalFilter}
+                onChange={(e) => setGlobalFilter(e.target.value)}
+                className="w-[130px] md:w-[190px] h-8 md:h-9 text-xs md:text-sm"
+              />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="shrink-0 text-xs md:text-sm h-8 md:h-9 px-2 md:px-3">
+                    <Download className="h-3.5 w-3.5 md:h-4 md:w-4 ml-1 md:ml-2" />
+                    ייצוא דוח
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" dir="rtl">
+                  <DropdownMenuItem onClick={exportToCsv} className="cursor-pointer">
+                    <FileSpreadsheet className="h-4 w-4 ml-2 text-green-600" />
+                    ייצוא לאקסל (CSV)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={exportToPdf} className="cursor-pointer">
+                    <Printer className="h-4 w-4 ml-2 text-orange-600" />
+                    {reportType === "report-customer" ? "דוח רגיל / PDF" : "הדפסה / PDF"}
+                  </DropdownMenuItem>
+                  {reportType === "report-customer" && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={exportXReportPdf} className="cursor-pointer">
+                        <LayoutGrid className="h-4 w-4 ml-2 text-purple-600" />
+                        דוח איקסים / PDF
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           )}
 
           {hasSearched && (
             <div className="text-[10px] md:text-xs text-muted-foreground border rounded px-2 md:px-3 py-1 md:py-1.5 bg-muted/30 shrink-0">
               {filterSummary}
             </div>
-          )}
-
-          {hasSearched && (
-            <Input placeholder="חיפוש חופשי..." value={globalFilter} onChange={(e) => setGlobalFilter(e.target.value)} className="w-[120px] md:w-[200px] h-8 md:h-9 text-xs md:text-sm shrink-0" />
           )}
 
           {hasSearched && (
@@ -1167,14 +1221,23 @@ export function ReportPage({ reportType }: ReportPageProps) {
                     />
                   </TableHead>
                   {tableColumns.map(col => (
-                    <TableHead key={col.id} className="text-right border-l" style={{ width: col.width }}>
-                      {col.label}
+                    <TableHead key={col.id} className="relative text-right border-l select-none overflow-visible" style={{ width: col.width }}>
+                      <div className="flex items-center justify-between gap-1 cursor-pointer" onClick={() => handleSortCol(col.id)}>
+                        <span className="truncate">{col.label}</span>
+                        <span className="text-[10px] opacity-60 shrink-0">
+                          {sortCol === col.id ? (sortDir === "asc" ? "▲" : "▼") : "⇅"}
+                        </span>
+                      </div>
+                      <div
+                        className="absolute left-0 top-0 h-full w-1.5 cursor-col-resize hover:bg-primary/30 z-20"
+                        onMouseDown={(e) => startResize(e, col.id, col.width)}
+                      />
                     </TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredData.map((record) => (
+                {sortedData.map((record) => (
                   <ContextMenu key={record.id}>
                     <ContextMenuTrigger asChild>
                       <TableRow 
