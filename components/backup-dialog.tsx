@@ -104,33 +104,37 @@ export function BackupDialog({ open, onOpenChange }: BackupDialogProps) {
       const records = backup.records
       const total = records.length
 
-      // Fetch existing IDs from server
-      toast({ title: "בודק נסיעות קיימות...", description: "אנא המתן" })
-      const existingIds = new Set<string>()
+      // Fetch existing records to detect duplicates by date+route combo
+      const WS = tenantFields?.workSchedule || ({} as any)
+      const existingKeys = new Set<string>()
       let skip = 0
       const take = 200
       while (true) {
-        const res = await fetch(`/api/work-schedule?tenant=${tenantId}&take=${take}&skip=${skip}&fields=id`)
+        const res = await fetch(`/api/work-schedule?tenant=${tenantId}&take=${take}&skip=${skip}`)
         const json = await res.json()
         const batch = json.records || []
         if (batch.length === 0) break
-        batch.forEach((r: any) => existingIds.add(r.id))
+        batch.forEach((r: any) => {
+          const date = r.fields?.[WS.DATE] || ""
+          const route = r.fields?.[WS.DESCRIPTION] || ""
+          const pickup = r.fields?.[WS.PICKUP_TIME] || ""
+          existingKeys.add(`${date}__${route}__${pickup}`)
+        })
         skip += take
         if (batch.length < take) break
       }
 
-      // Only restore records not already in Teable (by backup ID match via a marker field, or just create all missing)
-      // Since Teable assigns new IDs, we use a backup_source_id field approach:
-      // Store original ID in a comment/note field, or just create all and let user manage duplicates
-      // Best approach: compare by date+customer+route combo to avoid true duplicates
-      const WS = tenantFields?.workSchedule || ({} as any)
-
       let created = 0
-      let skipped = 0  
+      let skipped = 0
       let errors = 0
 
-      const toCreate = records.filter((r: any) => !existingIds.has(r.id))
-      
+      const toCreate = records.filter((r: any) => {
+        const date = r.fields?.[WS.DATE] || ""
+        const route = r.fields?.[WS.DESCRIPTION] || ""
+        const pickup = r.fields?.[WS.PICKUP_TIME] || ""
+        return !existingKeys.has(`${date}__${route}__${pickup}`)
+      })
+
       if (toCreate.length === 0) {
         setRestoreStats({ created: 0, skipped: records.length, errors: 0 })
         toast({ title: "אין נסיעות לשחזור", description: "כל הנסיעות בגיבוי כבר קיימות במערכת" })
