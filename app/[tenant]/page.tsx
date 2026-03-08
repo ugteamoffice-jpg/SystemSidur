@@ -19,11 +19,25 @@ export default function TenantHomePage() {
   const { config, loading } = useTenant()
   const [activePage, setActivePage] = useState<PageType>("work-schedule")
 
-  // Read page from URL on load
+  // Read page from URL on load + set tab title
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const page = params.get("page") as PageType
     if (page) setActivePage(page)
+    const titles: Record<string, string> = {
+      "work-schedule": "סידור עבודה",
+      "recurring-rides": "נסיעות קבועות",
+      "customers": "לקוחות",
+      "drivers": "נהגים",
+      "vehicle-types": "סוגי רכבים",
+      "company-vehicles": "רכבי חברה",
+      "report-general": "דוח נסיעות כללי",
+      "report-customer": "דוח לקוח",
+      "report-driver": "דוח נהג",
+      "report-invoices": "דוח חשבוניות",
+      "report-profit": "דוח רווח והפסד",
+    }
+    if (page && titles[page]) document.title = titles[page]
   }, [])
 
   if (loading || !config) {
