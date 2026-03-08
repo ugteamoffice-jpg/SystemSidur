@@ -2,7 +2,6 @@
 import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { Progress } from "@/components/ui/progress"
 import { useTenant, useTenantFields } from "@/lib/tenant-context"
 import { useToast } from "@/hooks/use-toast"
 import { Download, Upload, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react"
@@ -195,7 +194,7 @@ export function BackupDialog({ open, onOpenChange }: BackupDialogProps) {
             </p>
             {isBackingUp && (
               <div className="space-y-1">
-                <Progress value={backupProgress} className="h-2" />
+                <div className="w-full bg-gray-200 rounded-full h-2"><div className="bg-blue-600 h-2 rounded-full transition-all" style={{width: `${backupProgress}%`}} /></div>
                 <p className="text-xs text-muted-foreground text-center">{backupProgress}%</p>
               </div>
             )}
@@ -220,7 +219,7 @@ export function BackupDialog({ open, onOpenChange }: BackupDialogProps) {
             </Button>
             {isRestoring && (
               <div className="space-y-1">
-                <Progress value={restoreProgress} className="h-2" />
+                <div className="w-full bg-gray-200 rounded-full h-2"><div className="bg-green-600 h-2 rounded-full transition-all" style={{width: `${restoreProgress}%`}} /></div>
                 <p className="text-xs text-muted-foreground text-center">מעלה נסיעות... {restoreProgress}%</p>
               </div>
             )}
