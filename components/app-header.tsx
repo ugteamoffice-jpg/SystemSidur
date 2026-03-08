@@ -79,7 +79,7 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
   }
   
   const navItems = [
-    { id: "work-schedule" as PageType, label: "סידור עבודה" },
+    { id: "work-schedule" as PageType, label: 'לו"ז - סידור עבודה' },
     { id: "recurring-rides" as PageType, label: "נסיעות קבועות" },
     { id: "customers" as PageType, label: "לקוחות" },
     { id: "drivers" as PageType, label: "נהגים" },

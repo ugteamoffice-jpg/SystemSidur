@@ -9,9 +9,15 @@ import { ErrorReporter } from "@/components/error-reporter"
 import "../temp.ts"
 
 export const metadata: Metadata = {
-  title: "מערכת ניהול",
+  title: 'לו"ז - סידור עבודה',
   description: "מערכת ניהול הסעות",
-  generator: 'v0.app'
+  generator: 'v0.app',
+  icons: {
+    icon: [
+      { url: "/icon-light-32x32.png", type: "image/png" },
+    ],
+    apple: "/apple-icon.png",
+  }
 }
 
 export default function RootLayout({

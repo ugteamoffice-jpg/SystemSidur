@@ -25,7 +25,7 @@ export default function TenantHomePage() {
     const page = params.get("page") as PageType
     if (page) setActivePage(page)
     const titles: Record<string, string> = {
-      "work-schedule": "סידור עבודה",
+      "work-schedule": 'לו"ז - סידור עבודה',
       "recurring-rides": "נסיעות קבועות",
       "customers": "לקוחות",
       "drivers": "נהגים",
