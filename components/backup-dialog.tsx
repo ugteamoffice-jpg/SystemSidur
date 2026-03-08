@@ -104,36 +104,40 @@ export function BackupDialog({ open, onOpenChange }: BackupDialogProps) {
       const records = backup.records
       const total = records.length
 
-      // Fetch existing records to detect duplicates by date+route combo
       const WS = tenantFields?.workSchedule || ({} as any)
-      const existingKeys = new Set<string>()
-      let skip = 0
-      const take = 200
-      while (true) {
-        const res = await fetch(`/api/work-schedule?tenant=${tenantId}&take=${take}&skip=${skip}`)
-        const json = await res.json()
-        const batch = json.records || []
-        if (batch.length === 0) break
-        batch.forEach((r: any) => {
-          const date = r.fields?.[WS.DATE] || ""
-          const route = r.fields?.[WS.DESCRIPTION] || ""
-          const pickup = r.fields?.[WS.PICKUP_TIME] || ""
-          existingKeys.add(`${date}__${route}__${pickup}`)
-        })
-        skip += take
-        if (batch.length < take) break
-      }
+      const hasWS = !!(WS.DATE && WS.DESCRIPTION)
 
       let created = 0
       let skipped = 0
       let errors = 0
+      let toCreate = records
 
-      const toCreate = records.filter((r: any) => {
-        const date = r.fields?.[WS.DATE] || ""
-        const route = r.fields?.[WS.DESCRIPTION] || ""
-        const pickup = r.fields?.[WS.PICKUP_TIME] || ""
-        return !existingKeys.has(`${date}__${route}__${pickup}`)
-      })
+      // Only do duplicate detection if we have field mappings
+      if (hasWS) {
+        const existingKeys = new Set<string>()
+        let skip = 0
+        const take = 200
+        while (true) {
+          const res = await fetch(`/api/work-schedule?tenant=${tenantId}&take=${take}&skip=${skip}`)
+          const json = await res.json()
+          const batch = json.records || []
+          if (batch.length === 0) break
+          batch.forEach((r: any) => {
+            const date = r.fields?.[WS.DATE] || ""
+            const route = r.fields?.[WS.DESCRIPTION] || ""
+            const pickup = r.fields?.[WS.PICKUP_TIME] || ""
+            existingKeys.add(`${date}||${route}||${pickup}`)
+          })
+          skip += take
+          if (batch.length < take) break
+        }
+        toCreate = records.filter((r: any) => {
+          const date = r.fields?.[WS.DATE] || ""
+          const route = r.fields?.[WS.DESCRIPTION] || ""
+          const pickup = r.fields?.[WS.PICKUP_TIME] || ""
+          return !existingKeys.has(`${date}||${route}||${pickup}`)
+        })
+      }
 
       if (toCreate.length === 0) {
         setRestoreStats({ created: 0, skipped: records.length, errors: 0 })
