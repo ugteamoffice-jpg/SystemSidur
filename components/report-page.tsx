@@ -287,8 +287,12 @@ export function ReportPage({ reportType }: ReportPageProps) {
   }, [driverOptions, tempFilters.driverName])
 
   // Fetch drivers list for assign dialog
+  const driversListRef = React.useRef<{id: string, title: string}[]>([])
   const fetchDriversList = React.useCallback(async () => {
-    if (driversList.length > 0) return
+    if (driversListRef.current.length > 0) {
+      setDriversList(driversListRef.current)
+      return
+    }
     const DRV = fields?.drivers
     if (!DRV?.FIRST_NAME) return
     try {
@@ -299,9 +303,10 @@ export function ReportPage({ reportType }: ReportPageProps) {
         id: x.id,
         title: (x.fields?.[DRV.FIRST_NAME] || "").trim()
       })).filter((d: any) => d.title)
+      driversListRef.current = items
       setDriversList(items)
     } catch {}
-  }, [driversList.length, fields, tenantId])
+  }, [fields, tenantId])
 
   const bulkUpdateField = React.useCallback(async (ids: string[], fieldKey: string, value: any) => {
     await Promise.all(ids.map(id =>
@@ -1326,44 +1331,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
                       >
                         {selectedRowIds.size > 1 ? `שיבוץ נהג ל-${selectedRowIds.size} נסיעות` : "שיבוץ / החלפת נהג"}
                       </ContextMenuItem>
-                      <div className="h-px bg-border my-1" />
-                      <ContextMenuItem
-                        onSelect={() => {
-                          const ids = selectedRowIds.size > 0 ? Array.from(selectedRowIds) : [record.id]
-                          bulkUpdateField(ids, WS.SENT, true)
-                        }}
-                        className="cursor-pointer"
-                      >
-                        {selectedRowIds.size > 1 ? `סמן שלח ל-${selectedRowIds.size} נסיעות` : "סמן שלח"}
-                      </ContextMenuItem>
-                      <ContextMenuItem
-                        onSelect={() => {
-                          const ids = selectedRowIds.size > 0 ? Array.from(selectedRowIds) : [record.id]
-                          bulkUpdateField(ids, WS.SENT, false)
-                        }}
-                        className="cursor-pointer"
-                      >
-                        {selectedRowIds.size > 1 ? `בטל שלח ל-${selectedRowIds.size} נסיעות` : "בטל שלח"}
-                      </ContextMenuItem>
-                      <div className="h-px bg-border my-1" />
-                      <ContextMenuItem
-                        onSelect={() => {
-                          const ids = selectedRowIds.size > 0 ? Array.from(selectedRowIds) : [record.id]
-                          bulkUpdateField(ids, WS.APPROVED, true)
-                        }}
-                        className="cursor-pointer"
-                      >
-                        {selectedRowIds.size > 1 ? `סמן מאושר ל-${selectedRowIds.size} נסיעות` : "סמן מאושר"}
-                      </ContextMenuItem>
-                      <ContextMenuItem
-                        onSelect={() => {
-                          const ids = selectedRowIds.size > 0 ? Array.from(selectedRowIds) : [record.id]
-                          bulkUpdateField(ids, WS.APPROVED, false)
-                        }}
-                        className="cursor-pointer"
-                      >
-                        {selectedRowIds.size > 1 ? `בטל מאושר ל-${selectedRowIds.size} נסיעות` : "בטל מאושר"}
-                      </ContextMenuItem>
+
                     </ContextMenuContent>
                   </ContextMenu>
                 ))}
