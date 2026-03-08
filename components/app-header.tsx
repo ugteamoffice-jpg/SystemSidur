@@ -45,14 +45,17 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
 
   // Auto-backup: check once per day — desktop only
   useEffect(() => {
+    if (typeof window === "undefined") return
     if (!tenantId) return
     if (window.innerWidth < 768) return // skip on mobile
     const key = `lastBackup_${tenantId}`
-    const lastBackup = localStorage.getItem(key)
-    const today = new Date().toISOString().substring(0, 10)
-    if (lastBackup !== today) {
-      setShowAutoBackupPrompt(true)
-    }
+    try {
+      const lastBackup = localStorage.getItem(key)
+      const today = new Date().toISOString().substring(0, 10)
+      if (lastBackup !== today) {
+        setShowAutoBackupPrompt(true)
+      }
+    } catch {}
   }, [tenantId])
 
   const toggleableColumns = [
