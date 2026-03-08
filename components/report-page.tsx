@@ -697,26 +697,26 @@ export function ReportPage({ reportType }: ReportPageProps) {
   <style>
     @page { size: A4 landscape; margin: 12mm; }
     * { box-sizing: border-box; }
-    body { font-family: "Varela Round", system-ui, sans-serif; direction: rtl; padding: 10px 20px; font-size: 11px; color: #1e293b; line-height: 1.4; background: #fff; }
+    body { font-family: "Varela Round", sans-serif; direction: rtl; padding: 10px 20px; font-size: 13px; color: #1e293b; line-height: 1.5; background: #fff; }
     .hdr { text-align:center; margin-bottom:20px; border-bottom:2px solid #e2e8f0; padding-bottom:15px; }
     .logo { max-height:65px; max-width:180px; object-fit:contain; margin:0 auto 8px; display:block; }
-    .company-name { margin:0 0 4px 0; font-size:22px; color:#0f172a; font-weight:800; }
-    .cd { font-size:11px; color:#64748b; margin-bottom:8px; }
-    .report-title { margin:8px 0 4px 0; font-size:18px; color:#0f172a; font-weight:700; }
-    .me { font-size:14px; color:#1e40af; font-weight:700; margin-bottom:4px; }
-    .mi { font-size:11px; color:#475569; margin-bottom:3px; }
-    .mf { font-size:10px; color:#64748b; max-width:400px; line-height:1.3; margin:4px auto 0; }
-    table { width:100%; border-collapse:collapse; margin-bottom:20px; }
-    th { background:#f8fafc; color:#334155; font-weight:600; padding:10px 6px; text-align:right; border-bottom:2px solid #cbd5e1; white-space:nowrap; }
-    td { padding:8px 6px; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
+    .company-name { margin:0 0 4px 0; font-size:24px; color:#0f172a; font-weight:800; font-family:"Varela Round",sans-serif; }
+    .cd { font-size:13px; color:#64748b; margin-bottom:8px; font-family:"Varela Round",sans-serif; }
+    .report-title { margin:8px 0 4px 0; font-size:20px; color:#0f172a; font-weight:700; font-family:"Varela Round",sans-serif; }
+    .me { font-size:15px; color:#1e40af; font-weight:700; margin-bottom:4px; }
+    .mi { font-size:13px; color:#475569; margin-bottom:3px; font-family:"Varela Round",sans-serif; }
+    .mf { font-size:12px; color:#64748b; max-width:400px; line-height:1.3; margin:4px auto 0; }
+    table { width:100%; border-collapse:collapse; margin-bottom:20px; font-family:"Varela Round",sans-serif; }
+    th { background:#f8fafc; color:#334155; font-weight:700; padding:11px 7px; text-align:right; border-bottom:2px solid #cbd5e1; white-space:nowrap; font-size:13px; font-family:"Varela Round",sans-serif; }
+    td { padding:9px 7px; border-bottom:1px solid #f1f5f9; vertical-align:middle; font-size:13px; font-family:"Varela Round",sans-serif; }
     tr:nth-child(even) td { background:#fdfdfd; }
     .c { text-align:center; } .l { text-align:left; }
     .text-muted { color:#94a3b8; }
     .route-cell { max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .profit-cell { color:#16a34a; font-weight:600; }
-    tr.total td { background:#f1f5f9; font-weight:700; border-top:2px solid #94a3b8; border-bottom:none; padding:12px 6px; color:#0f172a; }
-    .ftr { margin-top:30px; text-align:center; font-size:10px; color:#94a3b8; border-top:1px solid #e2e8f0; padding-top:15px; }
-    .fc { margin-top:5px; color:#64748b; }
+    tr.total td { background:#f1f5f9; font-weight:700; border-top:2px solid #94a3b8; border-bottom:none; padding:13px 7px; color:#0f172a; font-size:14px; }
+    .ftr { margin-top:30px; text-align:center; font-size:12px; color:#94a3b8; border-top:1px solid #e2e8f0; padding-top:15px; font-family:"Varela Round",sans-serif; }
+    .fc { margin-top:5px; color:#64748b; font-family:"Varela Round",sans-serif; }
     @media print { body { padding:0; } }
   </style>
 </head>
@@ -733,7 +733,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
     <thead><tr>${theadCells}</tr></thead>
     <tbody>${tableRows}${totalsRow}</tbody>
   </table>
-  <div class="ftr">${footerLine2}<div style="font-weight:800;font-size:11px;color:#1e293b;margin-top:4px;">הופק באמצעות מערכת לו&quot;ז - ניהול סידור עבודה</div></div>
+  <div class="ftr">${footerLine2}<div style="font-weight:800;font-size:14px;color:#1e293b;margin-top:6px;font-family:'Varela Round',sans-serif;">הופק באמצעות מערכת לו&quot;ז - ניהול סידור עבודה</div></div>
   <script>window.onload=function(){setTimeout(function(){window.print();},500);}</script>
 </body>
 </html>`
@@ -835,26 +835,26 @@ export function ReportPage({ reportType }: ReportPageProps) {
   <style>
     @page { size: A4 landscape; margin: 8mm; }
     * { box-sizing: border-box; }
-    body { font-family: "Varela Round", system-ui, sans-serif; direction: rtl; padding: 5px 10px; font-size: 9px; color: #1e293b; line-height: 1.2; background: #fff; }
+    body { font-family: "Varela Round", sans-serif; direction: rtl; padding: 5px 10px; font-size: 11px; color: #1e293b; line-height: 1.4; background: #fff; }
     .hdr { text-align:center; margin-bottom:10px; border-bottom:2px solid #e2e8f0; padding-bottom:8px; }
     .logo { max-height:50px; max-width:140px; object-fit:contain; margin:0 auto 5px; display:block; }
-    .company-name { margin:0 0 2px 0; font-size:18px; color:#0f172a; font-weight:800; }
-    .cd { font-size:9px; color:#64748b; margin-bottom:5px; }
-    .report-title { margin:5px 0 3px 0; font-size:14px; color:#0f172a; font-weight:700; }
-    .mi { font-size:9px; color:#475569; margin-bottom:2px; }
-    table { width:100%; border-collapse:collapse; margin-bottom:10px; }
-    th, td { border: 1px solid #cbd5e1; padding: 3px 2px; text-align: center; vertical-align: middle; }
-    th { background:#f1f5f9; color:#334155; font-weight:700; font-size:8px; white-space:nowrap; }
-    .day-col { width: 22px; min-width: 22px; max-width: 22px; font-size: 9px; }
-    .x-mark { font-weight: 800; color: #000000; font-size: 10px; }
-    .route-name { text-align: right; padding: 3px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; font-size: 9px; font-weight: 500; }
-    .idx { width: 22px; color: #94a3b8; font-size: 8px; }
-    .summary-col { font-weight: 600; font-size: 9px; background: #f8fafc; min-width: 55px; }
+    .company-name { margin:0 0 2px 0; font-size:20px; color:#0f172a; font-weight:800; font-family:"Varela Round",sans-serif; }
+    .cd { font-size:11px; color:#64748b; margin-bottom:5px; font-family:"Varela Round",sans-serif; }
+    .report-title { margin:5px 0 3px 0; font-size:15px; color:#0f172a; font-weight:700; font-family:"Varela Round",sans-serif; }
+    .mi { font-size:11px; color:#475569; margin-bottom:2px; font-family:"Varela Round",sans-serif; }
+    table { width:100%; border-collapse:collapse; margin-bottom:10px; font-family:"Varela Round",sans-serif; }
+    th, td { border: 1px solid #cbd5e1; padding: 4px 3px; text-align: center; vertical-align: middle; font-family:"Varela Round",sans-serif; }
+    th { background:#f1f5f9; color:#334155; font-weight:700; font-size:11px; white-space:nowrap; }
+    .day-col { width: 24px; min-width: 24px; max-width: 24px; font-size: 11px; }
+    .x-mark { font-weight: 800; color: #000000; font-size: 12px; }
+    .route-name { text-align: right; padding: 4px 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; font-size: 11px; font-weight: 500; }
+    .idx { width: 24px; color: #94a3b8; font-size: 10px; }
+    .summary-col { font-weight: 600; font-size: 11px; background: #f8fafc; min-width: 60px; }
     .total-col { color: #0f172a; }
-    tr.totals-row td { background: #e2e8f0; font-weight: 800; border-top: 2px solid #94a3b8; font-size: 9px; }
-    .total-day { font-size: 8px; color: #475569; }
-    .ftr { margin-top:15px; text-align:center; font-size:8px; color:#94a3b8; border-top:1px solid #e2e8f0; padding-top:8px; }
-    .fc { margin-top:3px; color:#64748b; }
+    tr.totals-row td { background: #e2e8f0; font-weight: 800; border-top: 2px solid #94a3b8; font-size: 11px; }
+    .total-day { font-size: 10px; color: #475569; }
+    .ftr { margin-top:15px; text-align:center; font-size:11px; color:#94a3b8; border-top:1px solid #e2e8f0; padding-top:8px; font-family:"Varela Round",sans-serif; }
+    .fc { margin-top:3px; color:#64748b; font-family:"Varela Round",sans-serif; }
     @media print { body { padding:0; } }
   </style>
 </head>
@@ -888,7 +888,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
       </tr>
     </tbody>
   </table>
-  <div class="ftr">${footerLine2}<div style="font-weight:800;font-size:11px;color:#1e293b;margin-top:4px;">הופק באמצעות מערכת לו&quot;ז - ניהול סידור עבודה</div></div>
+  <div class="ftr">${footerLine2}<div style="font-weight:800;font-size:14px;color:#1e293b;margin-top:6px;font-family:'Varela Round',sans-serif;">הופק באמצעות מערכת לו&quot;ז - ניהול סידור עבודה</div></div>
   <script>window.onload=function(){setTimeout(function(){window.print();},500);}</script>
 </body>
 </html>`
