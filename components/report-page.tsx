@@ -733,7 +733,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
     <thead><tr>${theadCells}</tr></thead>
     <tbody>${tableRows}${totalsRow}</tbody>
   </table>
-  <div class="ftr">${footerLine2}<div>\u05d4\u05d5\u05e4\u05e7 \u05d1\u05d0\u05de\u05e6\u05e2\u05d5\u05ea \u05de\u05e2\u05e8\u05db\u05ea \u05e1\u05d9\u05d3\u05d5\u05e8 \u05e2\u05d1\u05d5\u05d3\u05d4</div></div>
+  <div class="ftr">${footerLine2}<div style="font-weight:800;font-size:11px;color:#1e293b;margin-top:4px;">הופק באמצעות מערכת לו&quot;ז - ניהול סידור עבודה</div></div>
   <script>window.onload=function(){setTimeout(function(){window.print();},500);}</script>
 </body>
 </html>`
@@ -888,7 +888,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
       </tr>
     </tbody>
   </table>
-  <div class="ftr">${footerLine2}<div>הופק באמצעות מערכת סידור עבודה</div></div>
+  <div class="ftr">${footerLine2}<div style="font-weight:800;font-size:11px;color:#1e293b;margin-top:4px;">הופק באמצעות מערכת לו&quot;ז - ניהול סידור עבודה</div></div>
   <script>window.onload=function(){setTimeout(function(){window.print();},500);}</script>
 </body>
 </html>`
