@@ -724,7 +724,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
     ${logoHtml}
     ${settings.companyName ? `<div class="company-name">${escapeHtml(settings.companyName)}</div>` : ""}
     ${companyDetailsHtml}
-    <div class="report-title">${reportTitle}${entityName ? ` עבור ${entityLabel} ${escapeHtml(entityName)}` : ""}${pdfCustomerName && !entityName ? ` - ${escapeHtml(pdfCustomerName)}` : ""}</div>
+    <div class="report-title">${reportTitle}${entityName ? ` עבור ${escapeHtml(entityName)}` : ""}${pdfCustomerName && !entityName ? ` - ${escapeHtml(pdfCustomerName)}` : ""}</div>
     ${dateRangeStr ? `<div class="mi">${dateRangeStr}</div>` : ""}
     <div class="mi">תאריך הפקה: ${genDate} | סה"כ רשומות: ${totalRec}</div>
   </div>
