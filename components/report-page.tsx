@@ -693,7 +693,14 @@ export function ReportPage({ reportType }: ReportPageProps) {
 <head>
   <meta charset="UTF-8"/>
   <title>${reportTitle}${entityName ? ` - ${entityName}` : ""}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Varela+Round&display=swap" rel="stylesheet"/>
+  <style>
+    @font-face {
+      font-family: "Varela Round";
+      src: url("https://fonts.gstatic.com/s/varelaround/v20/w8gdH283wIZDqBns_Runder81.woff2") format("woff2");
+      font-weight: normal;
+      font-style: normal;
+    }
+  </style>
   <style>
     @page { size: A4 landscape; margin: 12mm; }
     * { box-sizing: border-box; }
@@ -831,7 +838,14 @@ export function ReportPage({ reportType }: ReportPageProps) {
 <head>
   <meta charset="UTF-8"/>
   <title>פירוט הסעות - ${customerName}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Varela+Round&display=swap" rel="stylesheet"/>
+  <style>
+    @font-face {
+      font-family: "Varela Round";
+      src: url("https://fonts.gstatic.com/s/varelaround/v20/w8gdH283wIZDqBns_Runder81.woff2") format("woff2");
+      font-weight: normal;
+      font-style: normal;
+    }
+  </style>
   <style>
     @page { size: A4 landscape; margin: 8mm; }
     * { box-sizing: border-box; }
