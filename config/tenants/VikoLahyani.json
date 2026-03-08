@@ -10,7 +10,8 @@
     "DRIVERS": "tblGjeRbcY1V2wlVNmx",
     "CUSTOMERS": "tblxV5qkqbqSkJdLgIx",
     "VEHICLES": "tbllTfcJiyONTqUNC0e",
-    "VEHICLE_TYPES": "tbllTfcJiyONTqUNC0e"
+    "VEHICLE_TYPES": "tbllTfcJiyONTqUNC0e",
+    "COMPANY_VEHICLES": "tbl0g0JjoX6BEITlqPY"
   },
   "fields": {
     "workSchedule": {
@@ -63,6 +64,17 @@
     },
     "vehicles": {
       "VEHICLE_TYPE": "fldiX4aKjQnFE0DDgLL"
+    },
+    "companyVehicles": {
+      "CAR_NUMBER": "fldZPprKHHE07M0tgxl",
+      "VEHICLE_TYPE": "fldJ9CqMgNS8NRCYklF",
+      "YEAR": "fldkV4iAuQEPpYPTU9u",
+      "INSURANCE": "fldIBUDuL0oPcqOAzwb",
+      "INSURANCE_EXPIRY": "fldeoH34WgO6CAgwvDf",
+      "OPERATION_PERMIT": "fldoQwBlq1oFmJj8G3T",
+      "OPERATION_PERMIT_EXPIRY": "fld9nRzOi6kzkTXpWsG",
+      "VEHICLE_LICENSE": "fld7HCVMnjmoeOKhrFX",
+      "VEHICLE_LICENSE_EXPIRY": "fldppqOyxQLGNWAao51"
     }
   }
 }
