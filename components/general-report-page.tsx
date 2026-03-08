@@ -200,7 +200,16 @@ export function GeneralReportPage() {
     if (!filters.withoutClientPrice) d = d.filter(r => Number(r.fields[WS.PRICE_CLIENT_EXCL]) > 0)
     if (!filters.withDriverPrice) d = d.filter(r => !(Number(r.fields[WS.PRICE_DRIVER_EXCL]) > 0))
     if (!filters.withoutDriverPrice) d = d.filter(r => Number(r.fields[WS.PRICE_DRIVER_EXCL]) > 0)
-    if (globalFilter.trim()) { const q = globalFilter.toLowerCase(); d = d.filter(r => Object.values(r.fields).some(v => String(v || "").toLowerCase().includes(q))) }
+    if (globalFilter.trim()) {
+      const q = globalFilter.toLowerCase()
+      const stringify = (v: any): string => {
+        if (!v) return ""
+        if (Array.isArray(v)) return v.map((x: any) => (typeof x === "object" ? x?.title || "" : String(x))).join(" ")
+        if (typeof v === "object") return v?.title || ""
+        return String(v)
+      }
+      d = d.filter(r => Object.values(r.fields).some(v => stringify(v).toLowerCase().includes(q)))
+    }
     return d
   }, [allData, filters, globalFilter, WS])
 
