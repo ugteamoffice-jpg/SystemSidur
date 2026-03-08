@@ -293,7 +293,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
       setDriversList(driversListRef.current)
       return
     }
-    const DRV = fields?.drivers
+    const DRV = tenantFields?.drivers
     if (!DRV?.FIRST_NAME) return
     try {
       const res = await fetch(`/api/drivers?tenant=${tenantId}`)

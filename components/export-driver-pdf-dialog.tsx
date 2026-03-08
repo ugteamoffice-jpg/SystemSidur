@@ -204,7 +204,6 @@ export function ExportDriverPdfDialog({
 <head>
   <meta charset="UTF-8"/>
   <title>דוח עבודה - ${escapeHtml(initialDriverName)}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Varela+Round&display=swap" rel="stylesheet"/>
   <style>
     @page {
       size: A4 landscape;
