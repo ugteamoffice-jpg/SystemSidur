@@ -439,6 +439,7 @@ export default function CompanyVehiclesGrid() {
               <TableHead className="text-right pr-3 w-8 border-l"></TableHead>
               <TableHead className="text-right pr-4 border-l">מספר רכב</TableHead>
               <TableHead className="text-right pr-4 border-l">סוג רכב</TableHead>
+              <TableHead className="text-right pr-4 border-l">שנה</TableHead>
               <TableHead className="text-right pr-4 border-l">ביטוח</TableHead>
               <TableHead className="text-right pr-4 border-l">תוקף ביטוח</TableHead>
               <TableHead className="text-right pr-4 border-l">היתר הפעלה</TableHead>
@@ -449,7 +450,7 @@ export default function CompanyVehiclesGrid() {
           </TableHeader>
           <TableBody>
             {isLoading && (
-              <TableRow><TableCell colSpan={9} className="text-center py-8">
+              <TableRow><TableCell colSpan={10} className="text-center py-8">
                 <div className="flex items-center justify-center gap-2"><Loader2 className="h-5 w-5 animate-spin" /><span className="text-muted-foreground">טוען...</span></div>
               </TableCell></TableRow>
             )}
@@ -468,6 +469,7 @@ export default function CompanyVehiclesGrid() {
                   </TableCell>
                   <TableCell className="font-mono pr-4">{String(gf(v, F.CAR_NUMBER) ?? "—")}</TableCell>
                   <TableCell className="pr-4 text-muted-foreground">{getLinkTitle(v, F.VEHICLE_TYPE)}</TableCell>
+                  <TableCell className="pr-4 text-muted-foreground">{gf(v, F.YEAR) ? String(gf(v, F.YEAR)) : "—"}</TableCell>
                   <TableCell className="pr-4" onClick={e => e.stopPropagation()}>
                     <FileCell attachments={getAttachments(v, F.INSURANCE_FILE)} onView={viewAttachment} />
                   </TableCell>
