@@ -116,6 +116,7 @@ export default function CompanyVehiclesGrid() {
 
   const F = {
     VEHICLE_TYPE:            CV?.VEHICLE_TYPE || "",
+    YEAR:                    CV?.YEAR || "",
     CAR_NUMBER:              CV?.CAR_NUMBER || "",
     INSURANCE_FILE:          CV?.INSURANCE_FILE || "",
     INSURANCE_EXPIRY:        CV?.INSURANCE_EXPIRY || "",
@@ -144,7 +145,7 @@ export default function CompanyVehiclesGrid() {
   const [vehicleTypesList, setVehicleTypesList] = useState<{ id: string; name: string }[]>([])
   const { toast } = useToast()
 
-  const emptyForm = () => ({ carNumber: "", vehicleTypeDisplay: "", vehicleTypeId: "" })
+  const emptyForm = () => ({ carNumber: "", vehicleTypeDisplay: "", vehicleTypeId: "", year: "" })
   const emptyDates = () => ({ insuranceExpiry: "", operationPermitExpiry: "", vehicleLicenseExpiry: "" })
   const emptyNewFiles = () => ({ insuranceFile: null as File | null, operationPermitFile: null as File | null, vehicleLicenseFile: null as File | null })
   const emptyExisting = () => ({ insuranceFile: [] as AttachmentEntry[], operationPermitFile: [] as AttachmentEntry[], vehicleLicenseFile: [] as AttachmentEntry[] })
@@ -256,6 +257,9 @@ export default function CompanyVehiclesGrid() {
     if (F.VEHICLE_TYPE && form.vehicleTypeId) {
       f[F.VEHICLE_TYPE] = [form.vehicleTypeId]
     }
+    if (F.YEAR && form.year) {
+      f[F.YEAR] = Number(form.year)
+    }
     if (F.INSURANCE_EXPIRY && dates.insuranceExpiry)              f[F.INSURANCE_EXPIRY] = dates.insuranceExpiry
     if (F.OPERATION_PERMIT_EXPIRY && dates.operationPermitExpiry) f[F.OPERATION_PERMIT_EXPIRY] = dates.operationPermitExpiry
     if (F.VEHICLE_LICENSE_EXPIRY && dates.vehicleLicenseExpiry)   f[F.VEHICLE_LICENSE_EXPIRY] = dates.vehicleLicenseExpiry
@@ -346,6 +350,7 @@ export default function CompanyVehiclesGrid() {
       carNumber: carNum !== undefined && carNum !== null ? String(carNum) : "",
       vehicleTypeDisplay: getLinkTitle(v, F.VEHICLE_TYPE) === "—" ? "" : getLinkTitle(v, F.VEHICLE_TYPE),
       vehicleTypeId,
+      year: (() => { const y = gf(v, F.YEAR); return y ? String(y) : "" })(),
     })
     const toDate = (v: any) => v ? String(v).slice(0, 10) : ""
     setDates({
@@ -489,7 +494,7 @@ export default function CompanyVehiclesGrid() {
             <DialogTitle>{editingId ? "עריכת רכב חברה" : "רכב חברה חדש"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-5 mt-2">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1">
                 <Label>מספר רכב <span className="text-red-500">*</span></Label>
                 <Input
@@ -522,6 +527,23 @@ export default function CompanyVehiclesGrid() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>שנה</Label>
+                <Input
+                  value={form.year}
+                  onChange={e => {
+                    const val = e.target.value
+                    if (/^[0-9]{0,4}$/.test(val)) setForm(p => ({ ...p, year: val }))
+                  }}
+                  placeholder="2024"
+                  className="text-right"
+                  inputMode="numeric"
+                  maxLength={4}
+                />
+                {form.year && (form.year.length !== 4 || Number(form.year) < 1900 || Number(form.year) > 2100) && (
+                  <p className="text-xs text-red-500">שנה לא תקינה</p>
+                )}
               </div>
             </div>
             <hr />

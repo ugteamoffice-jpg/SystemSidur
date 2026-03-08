@@ -70,6 +70,7 @@ export interface TenantConfig {
     }
     companyVehicles?: {
       LABEL: string
+      YEAR: string
       VEHICLE_TYPE: string
       CAR_NUMBER: string
       INSURANCE_FILE: string
