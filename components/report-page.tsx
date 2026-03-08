@@ -88,6 +88,11 @@ export function ReportPage({ reportType }: ReportPageProps) {
   const [showInvoiceDialog, setShowInvoiceDialog] = React.useState(false)
   const [bulkInvoiceNum, setBulkInvoiceNum] = React.useState("")
   const [isUpdatingInvoice, setIsUpdatingInvoice] = React.useState(false)
+  // Driver assign
+  const [showDriverAssignDialog, setShowDriverAssignDialog] = React.useState(false)
+  const [driversList, setDriversList] = React.useState<{id: string, title: string}[]>([])
+  const [selectedDriverId, setSelectedDriverId] = React.useState("")
+  const [driverSearch, setDriverSearch] = React.useState("")
 
   // Column resizing with localStorage persistence
   const REPORT_COL_KEY = `reportColumnWidths_${tenantId}_${reportType}`
@@ -280,6 +285,48 @@ export function ReportPage({ reportType }: ReportPageProps) {
     if (!tempFilters.driverName.trim()) return driverOptions.slice(0, 15)
     return driverOptions.filter(n => n.toLowerCase().includes(tempFilters.driverName.toLowerCase())).slice(0, 15)
   }, [driverOptions, tempFilters.driverName])
+
+  // Fetch drivers list for assign dialog
+  const fetchDriversList = React.useCallback(async () => {
+    if (driversList.length > 0) return
+    const DRV = fields?.drivers
+    if (!DRV?.FIRST_NAME) return
+    try {
+      const res = await fetch(`/api/drivers?tenant=${tenantId}`)
+      const json = await res.json()
+      if (!json.records) return
+      const items = json.records.map((x: any) => ({
+        id: x.id,
+        title: (x.fields?.[DRV.FIRST_NAME] || "").trim()
+      })).filter((d: any) => d.title)
+      setDriversList(items)
+    } catch {}
+  }, [driversList.length, fields, tenantId])
+
+  const bulkUpdateField = React.useCallback(async (ids: string[], fieldKey: string, value: any) => {
+    await Promise.all(ids.map(id =>
+      requestQueue.add(async () => {
+        const res = await fetch(`/api/work-schedule/${id}?tenant=${tenantId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fields: { [fieldKey]: value } })
+        })
+        if (!res.ok) throw new Error(`PATCH failed`)
+      }).catch(() => {})
+    ))
+    // Update local data
+    setAllData(prev => prev.map(r => ids.includes(r.id) ? { ...r, fields: { ...r.fields, [fieldKey]: value } } : r))
+  }, [tenantId])
+
+  const handleAssignDriver = React.useCallback(async () => {
+    const driver = driversList.find(d => d.id === selectedDriverId)
+    if (!driver) return
+    const ids = Array.from(selectedRowIds)
+    await bulkUpdateField(ids, WS.DRIVER, [{ id: driver.id, title: driver.title }])
+    setShowDriverAssignDialog(false)
+    setSelectedDriverId("")
+    setDriverSearch("")
+  }, [driversList, selectedDriverId, selectedRowIds, bulkUpdateField, WS.DRIVER])
 
   const openFilterDialog = () => {
     setTempFilters(filters)
@@ -1255,20 +1302,67 @@ export function ReportPage({ reportType }: ReportPageProps) {
                         ))}
                       </TableRow>
                     </ContextMenuTrigger>
-                    <ContextMenuContent dir="rtl" className="w-48">
+                    <ContextMenuContent dir="rtl" className="w-52">
                       <ContextMenuItem onSelect={() => setEditingRecord(record)} className="cursor-pointer">
                         עריכת נסיעה
                       </ContextMenuItem>
-                      <ContextMenuItem 
+                      <ContextMenuItem
                         onSelect={() => {
-                          if (!selectedRowIds.has(record.id)) {
-                            setSelectedRowIds(new Set([record.id]))
-                          }
+                          if (!selectedRowIds.has(record.id)) setSelectedRowIds(new Set([record.id]))
                           setShowInvoiceDialog(true)
                         }}
                         className="cursor-pointer"
                       >
                         עדכון מס' חשבונית
+                      </ContextMenuItem>
+                      <div className="h-px bg-border my-1" />
+                      <ContextMenuItem
+                        onSelect={() => {
+                          if (!selectedRowIds.has(record.id)) setSelectedRowIds(new Set([record.id]))
+                          fetchDriversList()
+                          setShowDriverAssignDialog(true)
+                        }}
+                        className="cursor-pointer"
+                      >
+                        {selectedRowIds.size > 1 ? `שיבוץ נהג ל-${selectedRowIds.size} נסיעות` : "שיבוץ / החלפת נהג"}
+                      </ContextMenuItem>
+                      <div className="h-px bg-border my-1" />
+                      <ContextMenuItem
+                        onSelect={() => {
+                          const ids = selectedRowIds.size > 0 ? Array.from(selectedRowIds) : [record.id]
+                          bulkUpdateField(ids, WS.SENT, true)
+                        }}
+                        className="cursor-pointer"
+                      >
+                        {selectedRowIds.size > 1 ? `סמן שלח ל-${selectedRowIds.size} נסיעות` : "סמן שלח"}
+                      </ContextMenuItem>
+                      <ContextMenuItem
+                        onSelect={() => {
+                          const ids = selectedRowIds.size > 0 ? Array.from(selectedRowIds) : [record.id]
+                          bulkUpdateField(ids, WS.SENT, false)
+                        }}
+                        className="cursor-pointer"
+                      >
+                        {selectedRowIds.size > 1 ? `בטל שלח ל-${selectedRowIds.size} נסיעות` : "בטל שלח"}
+                      </ContextMenuItem>
+                      <div className="h-px bg-border my-1" />
+                      <ContextMenuItem
+                        onSelect={() => {
+                          const ids = selectedRowIds.size > 0 ? Array.from(selectedRowIds) : [record.id]
+                          bulkUpdateField(ids, WS.APPROVED, true)
+                        }}
+                        className="cursor-pointer"
+                      >
+                        {selectedRowIds.size > 1 ? `סמן מאושר ל-${selectedRowIds.size} נסיעות` : "סמן מאושר"}
+                      </ContextMenuItem>
+                      <ContextMenuItem
+                        onSelect={() => {
+                          const ids = selectedRowIds.size > 0 ? Array.from(selectedRowIds) : [record.id]
+                          bulkUpdateField(ids, WS.APPROVED, false)
+                        }}
+                        className="cursor-pointer"
+                      >
+                        {selectedRowIds.size > 1 ? `בטל מאושר ל-${selectedRowIds.size} נסיעות` : "בטל מאושר"}
                       </ContextMenuItem>
                     </ContextMenuContent>
                   </ContextMenu>
@@ -1278,6 +1372,44 @@ export function ReportPage({ reportType }: ReportPageProps) {
           )}
         </div>
       </div>
+
+      {/* Dialog שיבוץ נהג */}
+      <Dialog open={showDriverAssignDialog} onOpenChange={(open) => { setShowDriverAssignDialog(open); if (!open) { setSelectedDriverId(""); setDriverSearch(""); } }}>
+        <DialogContent className="sm:max-w-[400px] h-[420px] flex flex-col" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right">
+              {selectedRowIds.size > 1 ? `שיבוץ נהג ל-${selectedRowIds.size} נסיעות` : "שיבוץ / החלפת נהג"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 flex flex-col min-h-0 py-2">
+            <Input
+              placeholder="חיפוש נהג..."
+              value={driverSearch}
+              onChange={(e) => setDriverSearch(e.target.value)}
+              className="mb-2 text-right flex-none"
+              dir="rtl"
+            />
+            <div className="flex-1 overflow-auto border rounded-md min-h-0">
+              {driversList.filter(d => d.title.includes(driverSearch)).map(d => (
+                <button
+                  key={d.id}
+                  className={`w-full text-right px-3 py-2 text-sm hover:bg-accent transition-colors ${selectedDriverId === d.id ? "bg-accent font-bold" : ""}`}
+                  onClick={() => setSelectedDriverId(d.id)}
+                >
+                  {d.title}
+                </button>
+              ))}
+              {driversList.filter(d => d.title.includes(driverSearch)).length === 0 && (
+                <div className="text-center text-sm text-muted-foreground py-4">לא נמצאו נהגים</div>
+              )}
+            </div>
+          </div>
+          <DialogFooter className="flex-row-reverse gap-2">
+            <Button variant="outline" onClick={() => setShowDriverAssignDialog(false)}>ביטול</Button>
+            <Button onClick={handleAssignDriver} disabled={!selectedDriverId}>שבץ נהג</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <RideDialog 
         open={!!editingRecord} 
