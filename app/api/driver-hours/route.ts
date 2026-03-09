@@ -23,8 +23,7 @@ export async function GET(request: Request) {
     const dateTo = searchParams.get('dateTo');
     const filterSet: any[] = [];
     if (driverId) filterSet.push({ fieldId: DH.DRIVER, operator: "contains", value: driverId });
-    if (dateFrom) filterSet.push({ fieldId: DH.DATE, operator: "isAfter", value: { mode: "exactDate", exactDate: `${dateFrom}T00:00:00.000Z`, timeZone: "Asia/Jerusalem" } });
-    if (dateTo) filterSet.push({ fieldId: DH.DATE, operator: "isBefore", value: { mode: "exactDate", exactDate: `${dateTo}T23:59:59.000Z`, timeZone: "Asia/Jerusalem" } });
+    // Date filters use "is" per day only - range filter causes 400. Filter by date client-side.
     let endpoint = `${API_URL}/api/table/${TABLE_ID}/record?take=1000&fieldKeyType=id`;
     if (filterSet.length > 0) endpoint += `&filter=${encodeURIComponent(JSON.stringify({ conjunction: "and", filterSet }))}`;
     const response = await fetch(endpoint, { headers: { 'Authorization': `Bearer ${apiKey}` }, cache: 'no-store' });

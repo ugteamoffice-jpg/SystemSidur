@@ -178,7 +178,7 @@ export function DriverHoursPage() {
       const hoursMap = new Map<string, any>()
       ;(hoursJson.records || []).forEach((r: any) => {
         const date = r.fields?.[DH.DATE]?.substring(0, 10)
-        if (date) hoursMap.set(date, r)
+        if (date && date >= dateFrom && date <= dateTo) hoursMap.set(date, r)
       })
 
       const ridesMap = new Map<string, RideRecord[]>()
@@ -205,7 +205,8 @@ export function DriverHoursPage() {
         })
 
       // DEBUG
-      console.log("DEBUG | sample DRIVER field raw:", JSON.stringify(allRides[0]?.fields?.[WS.DRIVER]))
+      console.log("DEBUG | sample ride fields:", JSON.stringify(Object.entries(allRides[0]?.fields || {}).slice(0,6)))
+      console.log("DEBUG | WS field ids:", JSON.stringify({DRIVER: WS.DRIVER, DATE: WS.DATE, PICKUP_TIME: WS.PICKUP_TIME, DESCRIPTION: WS.DESCRIPTION}))
 
       const allDates = new Set<string>([...hoursMap.keys(), ...ridesMap.keys()])
       const driver = drivers.find(d => d.id === driverId)
@@ -251,10 +252,14 @@ export function DriverHoursPage() {
     try {
       const DH = (tenantFields as any).driverHours
       const fields: any = {
-        [DH.DATE]: editDate ? `${editDate}T00:00:00.000Z` : undefined,
-        [DH.START_TIME]: editStart, [DH.END_TIME]: editEnd,
-        [DH.NOTES]: editNotes, [DH.DRIVER]: [appliedDriverId]
+        [DH.DATE]: editDate ? `${editDate}T00:00:00.000Z` : null,
+        [DH.START_TIME]: editStart || null,
+        [DH.END_TIME]: editEnd || null,
+        [DH.NOTES]: editNotes || null,
+        [DH.DRIVER]: [{ id: appliedDriverId }]
       }
+      // Remove null fields
+      Object.keys(fields).forEach(k => { if (fields[k] === null) delete fields[k] })
       if (editRecord?.id) {
         await fetch(`/api/driver-hours?tenant=${tenantId}&id=${editRecord.id}`, {
           method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fields })
@@ -434,13 +439,16 @@ export function DriverHoursPage() {
                     </TableCell>
                   </TableRow>
                   {expandedRows.has(row.date) && row.rides.map(ride => (
-                    <TableRow key={ride.id} className="bg-muted/40">
-                      <TableCell /><TableCell />
-                      <TableCell className="text-xs text-muted-foreground">{ride.pickupTime}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{ride.dropoffTime}</TableCell>
-                      <TableCell />{config && <TableCell />}
-                      <TableCell className="text-xs" colSpan={2}>{ride.description}{ride.vehicleType && <span className="text-muted-foreground"> • {ride.vehicleType}</span>}</TableCell>
-                      <TableCell />
+                    <TableRow key={ride.id} className="bg-muted/40 text-xs">
+                      <TableCell className="text-muted-foreground pr-6">
+                        <div className="flex flex-col">
+                          <span>{ride.description}</span>
+                          {ride.vehicleType && <span className="text-muted-foreground/70">{ride.vehicleType}</span>}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{ride.pickupTime}</TableCell>
+                      <TableCell className="text-muted-foreground">{ride.dropoffTime}</TableCell>
+                      <TableCell colSpan={config ? 5 : 4} />
                     </TableRow>
                   ))}
                 </React.Fragment>
