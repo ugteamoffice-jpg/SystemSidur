@@ -437,23 +437,26 @@ export function DriverHoursPage() {
                       </div>
                     </TableCell>
                   </TableRow>
-                  {expandedRows.has(row.date) && row.rides.map((ride, idx) => (
-                    <TableRow key={ride.id} className="bg-muted/30 text-xs border-b border-muted/50">
-                      <TableCell />
-                      <TableCell className="text-muted-foreground text-center">{idx + 1}</TableCell>
-                      <TableCell colSpan={config ? 6 : 5}>
-                        <div className="flex items-center gap-2 text-xs">
-                          <span className="text-muted-foreground min-w-[60px]">{ride.pickupTime}</span>
-                          <span className="text-muted-foreground">←</span>
-                          <span className="flex-1 font-medium">{ride.description}</span>
-                          <span className="text-muted-foreground">←</span>
-                          <span className="text-muted-foreground min-w-[60px] text-left">{ride.dropoffTime}</span>
-                          {ride.vehicleType && <span className="text-muted-foreground/60 text-[11px]">({ride.vehicleType})</span>}
-                        </div>
-                      </TableCell>
-                      <TableCell />
-                    </TableRow>
-                  ))}
+                  {expandedRows.has(row.date) && (
+                    <>
+                      <TableRow className="bg-muted/20">
+                        <TableCell />
+                        <TableCell className="text-[11px] font-semibold text-muted-foreground">הלוך</TableCell>
+                        <TableCell className="text-[11px] font-semibold text-muted-foreground" colSpan={2}>מסלול</TableCell>
+                        <TableCell className="text-[11px] font-semibold text-muted-foreground" colSpan={config ? 3 : 2}>חזור</TableCell>
+                        <TableCell colSpan={2} />
+                      </TableRow>
+                      {row.rides.map((ride) => (
+                        <TableRow key={ride.id} className="bg-muted/10 text-xs border-b border-muted/30">
+                          <TableCell />
+                          <TableCell className="text-muted-foreground">{ride.pickupTime}</TableCell>
+                          <TableCell className="font-medium" colSpan={2}>{ride.description}</TableCell>
+                          <TableCell className="text-muted-foreground" colSpan={config ? 3 : 2}>{ride.dropoffTime}</TableCell>
+                          <TableCell colSpan={2} />
+                        </TableRow>
+                      ))}
+                    </>
+                  )}
                 </React.Fragment>
               ))}
             </TableBody>
