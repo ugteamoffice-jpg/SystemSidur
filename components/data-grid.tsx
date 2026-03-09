@@ -285,6 +285,7 @@ function DataGrid({ schema }: { schema?: any }) {
   const tableScrollRef = React.useRef<HTMLDivElement>(null)
   const [dateFilter, setDateFilter] = React.useState<Date>(new Date())
   const dateFilterRef = React.useRef<Date>(new Date())
+  const fetchAbortRef = React.useRef<AbortController | null>(null)
   const [currentMonth, setCurrentMonth] = React.useState<Date>(new Date())
   
   // טעינת רוחב עמודות מ-localStorage
@@ -443,21 +444,32 @@ function DataGrid({ schema }: { schema?: any }) {
   }
 
   const fetchData = async () => {
+    // Cancel any in-flight request
+    if (fetchAbortRef.current) {
+      fetchAbortRef.current.abort()
+    }
+    const controller = new AbortController()
+    fetchAbortRef.current = controller
+
     try {
-      // Ensure drivers are loaded first for full name display
       await loadDriversIfNeeded()
       const dateStr = format(dateFilterRef.current, "yyyy-MM-dd")
       const url = `/api/work-schedule?tenant=${tenantId}&date=${dateStr}&_t=${Date.now()}`
       const response = await fetch(url, {
+        signal: controller.signal,
         cache: 'no-store',
         headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
-      }) 
+      })
       const json = await response.json()
-      if (json.records) {
+      // Only update state if this request wasn't aborted
+      if (!controller.signal.aborted && json.records) {
         const records = json.records.map((record: any) => ({ ...record, fields: { ...record.fields } }))
         setData(enrichDriverNames(records))
       }
-    } catch (error) { console.error("[fetchData] Exception:", error) }
+    } catch (error: any) {
+      if (error?.name === 'AbortError') return // request was superseded - ignore
+      console.error("[fetchData] Exception:", error)
+    }
   }
 
   const updateRecordField = async (recordId: string, fieldKey: string, value: any) => {
