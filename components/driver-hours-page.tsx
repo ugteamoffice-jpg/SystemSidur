@@ -19,6 +19,7 @@ interface SalaryTier { upToHours: number | null; ratePerHour: number; label: str
 interface SalaryConfig {
   type: "hourly" | "flat_hourly" | "daily_fixed"
   grossOrNet: "gross" | "net"
+  baseRate: number
   baseHours: number
   minimumHours: number
   tiers: SalaryTier[]
@@ -40,25 +41,28 @@ function calcHours(start: string, end: string): number {
   return Math.round(mins / 60 * 100) / 100
 }
 
-function calcPay(hours: number, config: SalaryConfig, isShabbat: boolean): number {
+function calcPay(hours: number, config: any, isShabbat: boolean): number {
   if (!config) return 0
   const effectiveHours = config.minimumHours > 0 ? Math.max(hours, config.minimumHours) : hours
+  const baseRate = config.baseRate || 0
   let pay = 0
   if (config.type === "daily_fixed") {
     pay = config.dailyFixedRate
   } else if (config.type === "flat_hourly") {
-    pay = effectiveHours * (config.tiers[0]?.ratePerHour || 0)
+    pay = effectiveHours * baseRate
   } else {
+    // hourly with tiers using percentage
     let remaining = effectiveHours
-    for (const tier of config.tiers) {
+    for (const tier of (config.tiers || [])) {
       if (remaining <= 0) break
       const h = tier.upToHours !== null ? Math.min(remaining, tier.upToHours) : remaining
-      pay += h * tier.ratePerHour
+      const rate = baseRate * ((tier.percentage ?? tier.ratePerHour / baseRate * 100) / 100)
+      pay += h * rate
       remaining -= h
     }
   }
   if (isShabbat && config.shabbatMultiplier > 1) pay *= config.shabbatMultiplier
-  pay += config.travelAllowance
+  pay += (config.travelAllowance || 0)
   return Math.round(pay * 100) / 100
 }
 
@@ -337,7 +341,7 @@ export function DriverHoursPage() {
       )}
       {config && (
         <div className="bg-blue-50 border-b border-blue-200 px-4 py-2 text-sm text-blue-800 flex gap-4 flex-wrap">
-          <span>מודל: <b>{config.type === "daily_fixed" ? "יום קבוע" : config.type === "flat_hourly" ? "שעתי שטוח" : "שעתי עם שכבות"}</b></span>
+          <span>מודל: <b>{config.type === "daily_fixed" ? "יומית" : config.type === "flat_hourly" ? "שעתי קבוע" : "שעתי בסיס"}</b></span>
           {config.type !== "daily_fixed" && <span>בסיס: <b>{config.baseHours} שעות</b></span>}
           {config.minimumHours > 0 && <span>מינימום: <b>{config.minimumHours} שעות</b></span>}
           {config.shabbatMultiplier > 1 && <span>שבת/חג: <b>×{config.shabbatMultiplier}</b></span>}

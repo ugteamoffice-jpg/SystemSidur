@@ -42,9 +42,14 @@ export default function DriversGrid() {
   const defaultSalaryConfig = () => ({
     type: "hourly",
     grossOrNet: "gross",
+    baseRate: 45,
     baseHours: 8,
     minimumHours: 0,
-    tiers: [{ upToHours: 8, ratePerHour: 45, label: "עד 8 שעות" }],
+    tiers: [
+      { upToHours: 8,   percentage: 100, label: "שעות בסיס" },
+      { upToHours: 2,   percentage: 125, label: "שעות נוספות" },
+      { upToHours: null, percentage: 150, label: "מעל הכל" }
+    ],
     dailyFixedRate: 0,
     shabbatMultiplier: 1.5,
     travelAllowance: 0
@@ -510,9 +515,9 @@ export default function DriversGrid() {
                         <Select value={salaryConfig.type} onValueChange={v => setSalaryConfig((p: any) => ({...p, type: v}))}>
                           <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="hourly">שעתי עם שכבות</SelectItem>
-                            <SelectItem value="flat_hourly">שעתי שטוח</SelectItem>
-                            <SelectItem value="daily_fixed">יום קבוע</SelectItem>
+                            <SelectItem value="hourly">שעתי בסיס</SelectItem>
+                            <SelectItem value="flat_hourly">שעתי קבוע</SelectItem>
+                            <SelectItem value="daily_fixed">יומית</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -554,35 +559,47 @@ export default function DriversGrid() {
                         </div>
 
                         {/* Tiers */}
+                        {/* Base rate - for both hourly types */}
+                        <div className="space-y-1">
+                          <Label className="text-xs">תעריף בסיס לשעה (₪)</Label>
+                          <Input type="number" className="h-8 text-xs"
+                            value={salaryConfig.baseRate || 0}
+                            onChange={e => setSalaryConfig((p: any) => ({...p, baseRate: +e.target.value}))} />
+                        </div>
+
                         {salaryConfig.type === "hourly" && (
                           <div className="space-y-2">
                             <Label className="text-xs font-bold">שכבות תשלום</Label>
-                            {salaryConfig.tiers.map((tier: any, i: number) => (
+                            {/* Header */}
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground px-1">
+                              <span className="flex-1">תיאור</span>
+                              <span className="w-16 text-center">שעות</span>
+                              <span className="w-16 text-center">אחוז</span>
+                              <span className="w-16 text-center">₪/שעה</span>
+                              <span className="w-4"></span>
+                            </div>
+                            {salaryConfig.tiers.map((tier: any, i: number) => {
+                              const rate = Math.round((salaryConfig.baseRate || 0) * (tier.percentage || 100) / 100 * 100) / 100
+                              return (
                               <div key={i} className="flex items-center gap-2">
                                 <Input placeholder="תיאור" className="h-7 text-xs flex-1" value={tier.label}
                                   onChange={e => setSalaryConfig((p: any) => { const t = [...p.tiers]; t[i] = {...t[i], label: e.target.value}; return {...p, tiers: t} })} />
-                                <Input type="number" placeholder="שעות" className="h-7 text-xs w-16"
-                                  value={tier.upToHours ?? ""} placeholder="∞"
+                                <Input type="number" placeholder="∞" className="h-7 text-xs w-16 text-center"
+                                  value={tier.upToHours ?? ""}
                                   onChange={e => setSalaryConfig((p: any) => { const t = [...p.tiers]; t[i] = {...t[i], upToHours: e.target.value === "" ? null : +e.target.value}; return {...p, tiers: t} })} />
-                                <Input type="number" placeholder="₪/שעה" className="h-7 text-xs w-20" value={tier.ratePerHour}
-                                  onChange={e => setSalaryConfig((p: any) => { const t = [...p.tiers]; t[i] = {...t[i], ratePerHour: +e.target.value}; return {...p, tiers: t} })} />
+                                <Input type="number" placeholder="%" className="h-7 text-xs w-16 text-center" value={tier.percentage ?? 100}
+                                  onChange={e => setSalaryConfig((p: any) => { const t = [...p.tiers]; t[i] = {...t[i], percentage: +e.target.value}; return {...p, tiers: t} })} />
+                                <div className="h-7 w-16 flex items-center justify-center text-xs text-muted-foreground bg-muted/40 rounded border">
+                                  ₪{rate}
+                                </div>
                                 <button onClick={() => setSalaryConfig((p: any) => ({...p, tiers: p.tiers.filter((_: any, j: number) => j !== i)}))}
                                   className="text-red-400 hover:text-red-600"><X className="h-3.5 w-3.5" /></button>
                               </div>
-                            ))}
+                            )})}
                             <Button size="sm" variant="outline" className="h-7 text-xs w-full"
-                              onClick={() => setSalaryConfig((p: any) => ({...p, tiers: [...p.tiers, {upToHours: null, ratePerHour: 0, label: ""}]}))}>
+                              onClick={() => setSalaryConfig((p: any) => ({...p, tiers: [...p.tiers, {upToHours: null, percentage: 100, label: ""}]}))}>
                               <Plus className="h-3 w-3 ml-1" /> הוסף שכבה
                             </Button>
-                          </div>
-                        )}
-
-                        {salaryConfig.type === "flat_hourly" && (
-                          <div className="space-y-1">
-                            <Label className="text-xs">תעריף לשעה (₪)</Label>
-                            <Input type="number" className="h-8 text-xs"
-                              value={salaryConfig.tiers[0]?.ratePerHour || 0}
-                              onChange={e => setSalaryConfig((p: any) => ({...p, tiers: [{...p.tiers[0], ratePerHour: +e.target.value}]}))} />
                           </div>
                         )}
                       </>
