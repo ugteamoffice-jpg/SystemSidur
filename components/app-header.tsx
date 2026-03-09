@@ -74,15 +74,14 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
     { id: "price4", label: "מחיר נהג כולל מע״מ" },
   ]
 
-  const [colVisibility, setColVisibility] = useState<Record<string, boolean>>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem(COLUMN_VISIBILITY_KEY)
-        if (saved) return JSON.parse(saved)
-      } catch {}
-    }
-    return {}
-  })
+  const [colVisibility, setColVisibility] = useState<Record<string, boolean>>({})
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(COLUMN_VISIBILITY_KEY)
+      if (saved) setColVisibility(JSON.parse(saved))
+    } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [COLUMN_VISIBILITY_KEY])
 
   const updateVisibility = (colId: string, visible: boolean) => {
     const updated = { ...colVisibility, [colId]: visible }

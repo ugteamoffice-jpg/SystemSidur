@@ -91,18 +91,22 @@ export function GeneralReportPage() {
   // Column order
   const COL_ORDER_KEY = `generalReportColOrder_${tenantId}`
   const defaultColOrder = ["sel","date","customer","pickup","route","dropoff","vehicleType","driver","vehicleNum","p1","p2","p3","p4"]
-  const [columnOrder, setColumnOrder] = React.useState<string[]>(() => {
-    try { const s = localStorage.getItem(COL_ORDER_KEY); return s ? JSON.parse(s) : defaultColOrder } catch { return defaultColOrder }
-  })
-  React.useEffect(() => { try { localStorage.setItem(COL_ORDER_KEY, JSON.stringify(columnOrder)) } catch {} }, [columnOrder])
+  const [columnOrder, setColumnOrder] = React.useState<string[]>(defaultColOrder)
+  React.useEffect(() => {
+    try { const s = localStorage.getItem(COL_ORDER_KEY); if (s) setColumnOrder(JSON.parse(s)) } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [COL_ORDER_KEY])
+  React.useEffect(() => { try { localStorage.setItem(COL_ORDER_KEY, JSON.stringify(columnOrder)) } catch {} }, [columnOrder, COL_ORDER_KEY])
   const [draggedCol, setDraggedCol] = React.useState<string | null>(null)
 
   const COL_KEY = `generalReportColWidths_${tenantId}`
   const defaultWidths: Record<string, number> = { sel:45, date:95, customer:140, pickup:75, route:200, dropoff:75, vehicleType:100, driver:120, vehicleNum:90, p1:105, p2:115, p3:105, p4:115 }
-  const [colWidths, setColWidths] = React.useState<Record<string, number>>(() => {
-    try { const s = localStorage.getItem(COL_KEY); return s ? { ...defaultWidths, ...JSON.parse(s) } : defaultWidths } catch { return defaultWidths }
-  })
-  React.useEffect(() => { try { localStorage.setItem(COL_KEY, JSON.stringify(colWidths)) } catch {} }, [colWidths])
+  const [colWidths, setColWidths] = React.useState<Record<string, number>>(defaultWidths)
+  React.useEffect(() => {
+    try { const s = localStorage.getItem(COL_KEY); if (s) setColWidths(prev => ({ ...prev, ...JSON.parse(s) })) } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [COL_KEY])
+  React.useEffect(() => { try { localStorage.setItem(COL_KEY, JSON.stringify(colWidths)) } catch {} }, [colWidths, COL_KEY])
 
   const handleResizeStart = (colId: string, e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation()
