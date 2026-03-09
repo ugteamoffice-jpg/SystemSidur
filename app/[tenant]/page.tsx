@@ -1,20 +1,22 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { DataGrid } from "@/components/data-grid"
-import { AppHeader } from "@/components/app-header"
+import dynamic from "next/dynamic"
 import type { PageType } from "@/components/app-header"
+import type { ReportType } from "@/components/report-page"
 import { CustomersPage } from "@/components/customers-page"
 import { DriversPage } from "@/components/drivers-page"
 import VehiclesGrid from "@/components/vehicles-grid"
 import CompanyVehiclesGrid from "@/components/company-vehicles-grid"
-import { ReportPage } from "@/components/report-page"
-import type { ReportType } from "@/components/report-page"
 import { GeneralReportPage } from "@/components/general-report-page"
 import { RecurringRidesPage } from "@/components/recurring-rides-page"
-import { DriverHoursPage } from "@/components/driver-hours-page"
 import { useTenant } from "@/lib/tenant-context"
 import { Loader2 } from "lucide-react"
+
+const DataGrid = dynamic(() => import("@/components/data-grid").then(m => ({ default: m.DataGrid })), { ssr: false })
+const AppHeader = dynamic(() => import("@/components/app-header").then(m => ({ default: m.AppHeader })), { ssr: false })
+const ReportPage = dynamic(() => import("@/components/report-page").then(m => ({ default: m.ReportPage })), { ssr: false })
+const DriverHoursPage = dynamic(() => import("@/components/driver-hours-page").then(m => ({ default: m.DriverHoursPage })), { ssr: false })
 
 export default function TenantHomePage() {
   const { config, loading } = useTenant()

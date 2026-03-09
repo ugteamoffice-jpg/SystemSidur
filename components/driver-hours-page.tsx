@@ -77,7 +77,6 @@ export function DriverHoursPage() {
 
   const [drivers, setDrivers] = React.useState<DriverRecord[]>([])
   const [showFilterDialog, setShowFilterDialog] = React.useState(false)
-  const [mounted, setMounted] = React.useState(false)
 
   // Temp filter state (inside dialog)
   const [tempDriverId, setTempDriverId] = React.useState("")
@@ -111,9 +110,7 @@ export function DriverHoursPage() {
 
   const selectedDriver = drivers.find(d => d.id === appliedDriverId) || null
 
-  // Mount guard - prevents SSR/client hydration mismatch
   React.useEffect(() => {
-    setMounted(true)
     setShowFilterDialog(true)
   }, [])
 
@@ -280,7 +277,6 @@ export function DriverHoursPage() {
   const config = selectedDriver?.salaryConfig
 
 
-  if (!mounted) return null
   return (
     <div className="flex flex-col h-full" dir="rtl">
 
