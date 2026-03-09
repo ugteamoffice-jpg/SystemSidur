@@ -40,24 +40,18 @@ export async function GET(request: Request) {
     if (dateFrom) {
       filterSet.push({
         fieldId: DATE_FIELD_ID,
-        operator: "isOnOrAfter",
+        operator: "isAfter",
         value: { mode: "exactDate", exactDate: `${dateFrom}T00:00:00.000Z`, timeZone: "Asia/Jerusalem" }
       });
     }
     if (dateTo) {
       filterSet.push({
         fieldId: DATE_FIELD_ID,
-        operator: "isOnOrBefore",
+        operator: "isBefore",
         value: { mode: "exactDate", exactDate: `${dateTo}T23:59:59.000Z`, timeZone: "Asia/Jerusalem" }
       });
     }
-    if (driverIdParam) {
-      filterSet.push({
-        fieldId: config.fields.workSchedule.DRIVER,
-        operator: "contains",
-        value: driverIdParam
-      });
-    }
+    // Driver filter is handled client-side (link fields don't support contains filter)
 
     let endpoint = `${API_URL}/api/table/${TABLE_ID}/record?take=${take}&skip=${skip}&fieldKeyType=id`;
     if (filterSet.length > 0) {

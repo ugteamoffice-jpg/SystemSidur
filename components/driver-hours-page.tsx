@@ -80,8 +80,13 @@ export function DriverHoursPage() {
 
   // Temp filter state (inside dialog)
   const [tempDriverId, setTempDriverId] = React.useState("")
-  const [tempDateFrom, setTempDateFrom] = React.useState<Date | undefined>(() => { const d = new Date(); d.setDate(1); return d })
-  const [tempDateTo, setTempDateTo] = React.useState<Date | undefined>(new Date())
+  const [tempDateFrom, setTempDateFrom] = React.useState<Date | undefined>(undefined)
+  const [tempDateTo, setTempDateTo] = React.useState<Date | undefined>(undefined)
+  React.useEffect(() => {
+    const d = new Date(); d.setDate(1)
+    setTempDateFrom(d)
+    setTempDateTo(new Date())
+  }, [])
   const [startCalOpen, setStartCalOpen] = React.useState(false)
   const [endCalOpen, setEndCalOpen] = React.useState(false)
 
@@ -146,7 +151,7 @@ export function DriverHoursPage() {
 
       const [hoursRes, ridesRes] = await Promise.all([
         fetch(`/api/driver-hours?tenant=${tenantId}&driverId=${driverId}&dateFrom=${dateFrom}&dateTo=${dateTo}`),
-        fetch(`/api/work-schedule?tenant=${tenantId}&take=2000&dateFrom=${dateFrom}&dateTo=${dateTo}&driverId=${driverId}`)
+        fetch(`/api/work-schedule?tenant=${tenantId}&take=2000&dateFrom=${dateFrom}&dateTo=${dateTo}`)
       ])
       const hoursJson = await hoursRes.json()
       const ridesJson = await ridesRes.json()
@@ -159,6 +164,10 @@ export function DriverHoursPage() {
 
       const ridesMap = new Map<string, RideRecord[]>()
       ;(ridesJson.records || [])
+        .filter((r: any) => {
+          const drvs = r.fields?.[WS.DRIVER]
+          return Array.isArray(drvs) && drvs.some((x: any) => x.id === driverId)
+        })
         .forEach((r: any) => {
           const date = r.fields?.[WS.DATE]?.substring(0, 10)
           if (!ridesMap.has(date)) ridesMap.set(date, [])
