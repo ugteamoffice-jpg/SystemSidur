@@ -178,6 +178,7 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
                     <DropdownMenuItem onClick={() => window.open(window.location.pathname + "?page=report-driver", "_blank")}>דוח נהג</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => window.open(window.location.pathname + "?page=report-invoices", "_blank")}>דוח חשבוניות</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => window.open(window.location.pathname + "?page=report-profit", "_blank")}>דוח רווח והפסד</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => window.open(window.location.pathname + "?page=driver-hours", "_blank")}>חישוב שעות נהג</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </nav>

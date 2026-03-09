@@ -12,6 +12,7 @@ import { ReportPage } from "@/components/report-page"
 import type { ReportType } from "@/components/report-page"
 import { GeneralReportPage } from "@/components/general-report-page"
 import { RecurringRidesPage } from "@/components/recurring-rides-page"
+import { DriverHoursPage } from "@/components/driver-hours-page"
 import { useTenant } from "@/lib/tenant-context"
 import { Loader2 } from "lucide-react"
 
@@ -32,6 +33,7 @@ export default function TenantHomePage() {
       "vehicle-types": "סוגי רכבים",
       "company-vehicles": "רכבי חברה",
       "report-general": "דוח נסיעות כללי",
+      "driver-hours": "חישוב שעות נהג",
       "report-customer": "דוח לקוח",
       "report-driver": "דוח נהג",
       "report-invoices": "דוח חשבוניות",
@@ -60,6 +62,7 @@ export default function TenantHomePage() {
       {activePage === "vehicle-types" && <div className="flex flex-col h-full overflow-hidden"><VehiclesGrid /></div>}
       {activePage === "company-vehicles" && <div className="flex flex-col h-full overflow-hidden"><CompanyVehiclesGrid /></div>}
       {activePage === "report-general" && <GeneralReportPage />}
+      {activePage === "driver-hours" && <DriverHoursPage />}
       {isReport && <ReportPage key={activePage} reportType={activePage as ReportType} />}
     </div>
   )

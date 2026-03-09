@@ -11,7 +11,8 @@
     "CUSTOMERS": "tblmUkwbvrUmxI3q1gd",
     "VEHICLES": "tblbRTqAuL4OMkNnUu7",
     "VEHICLE_TYPES": "tblRSYoKFHCaDyivO9k",
-    "COMPANY_VEHICLES": "tblehDPf7Dz661JPunn"
+    "COMPANY_VEHICLES": "tblehDPf7Dz661JPunn",
+    "DRIVER_HOURS": "tblmey5dtTEiApeasya"
   },
   "fields": {
     "workSchedule": {
@@ -48,7 +49,8 @@
       "PHONE": "fldnGgcmCUrVXHKBSWU",
       "DRIVER_TYPE": "fldkfxdV3js9C4FqzRz",
       "CAR_NUMBER": "fldGDDFoTTLlZIU88jx",
-      "STATUS": "fldWtWElfp9ZeIF3MP9"
+      "STATUS": "fldWtWElfp9ZeIF3MP9",
+      "SALARY_CONFIG": "fldJeO0lovwdedk0shv"
     },
     "customers": {
       "NAME": "fldqRepgE2c9hH2qJid",
@@ -76,6 +78,13 @@
       "VEHICLE_LICENSE_FILE": "fldOCJAQGyJ7iUnnz1H",
       "VEHICLE_LICENSE_EXPIRY": "fldkTSCmJFdv8aTxJgF",
       "YEAR": "fldkQ6YzAIk6wMRESBZ"
+    },
+    "driverHours": {
+      "DRIVER": "fldVnMjWJZTHHysvVGM",
+      "DATE": "fldDXe6fdEQK2dOlfjo",
+      "START_TIME": "fld0D6otXfXOMprtqgr",
+      "END_TIME": "fldZcbIiQ9EXmf4oyOX",
+      "NOTES": "fldW7CSVE2gN8psAvOz"
     }
   }
 }
