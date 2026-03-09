@@ -186,8 +186,10 @@ export function DriverHoursPage() {
         .filter((r: any) => {
           const d = r.fields?.[WS.DATE]?.substring(0, 10)
           const drvs = r.fields?.[WS.DRIVER]
-          return d && d >= dateFrom && d <= dateTo &&
-            Array.isArray(drvs) && drvs.some((x: any) => x.id === driverId)
+          const driverMatch = Array.isArray(drvs)
+            ? drvs.some((x: any) => x.id === driverId || x === driverId)
+            : (typeof drvs === 'string' ? drvs === driverId : drvs?.id === driverId)
+          return d && d >= dateFrom && d <= dateTo && driverMatch
         })
         .forEach((r: any) => {
           const date = r.fields?.[WS.DATE]?.substring(0, 10)
@@ -203,17 +205,7 @@ export function DriverHoursPage() {
         })
 
       // DEBUG
-      const sampleDriverField = allRides[0]?.fields?.[WS.DRIVER]
-      const sampleDriverId = Array.isArray(sampleDriverField) ? sampleDriverField[0]?.id : "not array"
-      console.log("DEBUG | driverId we filter by:", driverId)
-      console.log("DEBUG | dateFrom:", dateFrom, "dateTo:", dateTo)
-      console.log("DEBUG | hoursRecords:", hoursJson.records?.length ?? 0)
-      console.log("DEBUG | totalRidesFetched:", allRides.length)
-      console.log("DEBUG | sample ride driver id from API:", sampleDriverId)
-      console.log("DEBUG | ridesMap size after filter:", ridesMap.size)
-      console.log("DEBUG | hoursMap size:", hoursMap.size)
-      console.log("DEBUG | WS.DRIVER field id:", WS.DRIVER)
-      console.log("DEBUG | DH fields:", JSON.stringify(DH))
+      console.log("DEBUG | sample DRIVER field raw:", JSON.stringify(allRides[0]?.fields?.[WS.DRIVER]))
 
       const allDates = new Set<string>([...hoursMap.keys(), ...ridesMap.keys()])
       const driver = drivers.find(d => d.id === driverId)
