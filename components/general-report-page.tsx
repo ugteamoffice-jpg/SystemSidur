@@ -704,7 +704,7 @@ export function GeneralReportPage() {
                       <TableCell key={col.id} className="border-l truncate text-right text-sm" style={{ width: col.width }}
                         onClick={col.id === "sel" ? e => e.stopPropagation() : undefined}>
                         {col.id === "sel"
-                          ? <Checkbox checked={selectedIds.has(rec.id)} onCheckedChange={() => toggleRow(rec.id)} />
+                          ? <div className="flex items-center justify-center"><Checkbox checked={selectedIds.has(rec.id)} onCheckedChange={() => toggleRow(rec.id)} /></div>
                           : renderCell(col.id, rec)}
                       </TableCell>
                     ))}
