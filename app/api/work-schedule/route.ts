@@ -48,8 +48,8 @@ export async function GET(request: Request) {
     const response = await fetch(endpoint, { headers: { 'Authorization': `Bearer ${apiKey}` }, cache: 'no-store' });
     if (!response.ok) {
       const errText = await response.text();
-      console.error('work-schedule GET failed:', response.status, errText);
-      return NextResponse.json({ error: 'Failed' }, { status: response.status });
+      console.error('work-schedule GET failed:', response.status, errText, 'endpoint:', endpoint);
+      return NextResponse.json({ error: 'Failed', detail: errText, endpoint }, { status: response.status });
     }
     const data = await safeJsonParse(response);
     console.log(`[work-schedule GET] tenant=${ctx.tenantId}, records=${data?.records?.length ?? 'N/A'}, date=${dateParam || 'all'}`)

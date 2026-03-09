@@ -76,7 +76,8 @@ export function DriverHoursPage() {
   const { toast } = useToast()
 
   const [drivers, setDrivers] = React.useState<DriverRecord[]>([])
-  const [showFilterDialog, setShowFilterDialog] = React.useState(true)
+  const [showFilterDialog, setShowFilterDialog] = React.useState(false)
+  const [mounted, setMounted] = React.useState(false)
 
   // Temp filter state (inside dialog)
   const [tempDriverId, setTempDriverId] = React.useState("")
@@ -109,6 +110,12 @@ export function DriverHoursPage() {
   const [saving, setSaving] = React.useState(false)
 
   const selectedDriver = drivers.find(d => d.id === appliedDriverId) || null
+
+  // Mount guard - prevents SSR/client hydration mismatch
+  React.useEffect(() => {
+    setMounted(true)
+    setShowFilterDialog(true)
+  }, [])
 
   // Fetch drivers (שכיר only)
   React.useEffect(() => {
@@ -149,12 +156,27 @@ export function DriverHoursPage() {
       const DH = (tenantFields as any).driverHours
       const WS = tenantFields.workSchedule
 
-      const [hoursRes, ridesRes] = await Promise.all([
-        fetch(`/api/driver-hours?tenant=${tenantId}&driverId=${driverId}&dateFrom=${dateFrom}&dateTo=${dateTo}`),
-        fetch(`/api/work-schedule?tenant=${tenantId}&take=2000`)
-      ])
+      // Fetch hours
+      const hoursRes = await fetch(`/api/driver-hours?tenant=${tenantId}&driverId=${driverId}&dateFrom=${dateFrom}&dateTo=${dateTo}`)
       const hoursJson = await hoursRes.json()
-      const ridesJson = await ridesRes.json()
+
+      // Fetch rides with pagination - 500 per page to stay within Teable limits
+      const TAKE = 500
+      let allRides: any[] = []
+      let skip = 0
+      while (true) {
+        const res = await fetch(`/api/work-schedule?tenant=${tenantId}&take=${TAKE}&skip=${skip}`)
+        if (!res.ok) {
+          console.error('work-schedule fetch failed:', res.status)
+          break
+        }
+        const json = await res.json()
+        const records = json.records || []
+        allRides = allRides.concat(records)
+        if (records.length < TAKE) break
+        skip += TAKE
+      }
+      const ridesJson = { records: allRides }
 
       const hoursMap = new Map<string, any>()
       ;(hoursJson.records || []).forEach((r: any) => {
@@ -257,6 +279,8 @@ export function DriverHoursPage() {
   const totalPay = hoursData.reduce((s, r) => s + r.pay, 0)
   const config = selectedDriver?.salaryConfig
 
+
+  if (!mounted) return null
   return (
     <div className="flex flex-col h-full" dir="rtl">
 
