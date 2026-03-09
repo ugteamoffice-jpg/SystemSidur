@@ -101,13 +101,14 @@ export function ReportPage({ reportType }: ReportPageProps) {
     vehicleType: 100, driver: 110, vehicleNum: 85, 
     p1: 100, p2: 110, p3: 100, p4: 100, profit: 80
   }
-  const [colWidths, setColWidths] = React.useState<Record<string, number>>(() => {
+  const [colWidths, setColWidths] = React.useState<Record<string, number>>(defaultWidths)
+  React.useEffect(() => {
     try {
       const saved = localStorage.getItem(REPORT_COL_KEY)
-      if (saved) return { ...defaultWidths, ...JSON.parse(saved) }
+      if (saved) setColWidths(prev => ({ ...prev, ...JSON.parse(saved) }))
     } catch {}
-    return defaultWidths
-  })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [REPORT_COL_KEY])
   React.useEffect(() => {
     try { localStorage.setItem(REPORT_COL_KEY, JSON.stringify(colWidths)) } catch {}
   }, [colWidths, REPORT_COL_KEY])
