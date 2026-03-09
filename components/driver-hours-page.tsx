@@ -202,18 +202,18 @@ export function DriverHoursPage() {
           })
         })
 
-      // DEBUG - remove after testing
-      console.log("DEBUG fetchData:", {
-        driverId,
-        dateFrom,
-        dateTo,
-        hoursRecords: hoursJson.records?.length ?? 0,
-        totalRidesFetched: allRides.length,
-        ridesAfterFilter: ridesMap.size,
-        sampleRideDriver: allRides[0]?.fields?.[WS.DRIVER],
-        WS_DRIVER_FIELD: WS.DRIVER,
-        DH_fields: DH,
-      })
+      // DEBUG
+      const sampleDriverField = allRides[0]?.fields?.[WS.DRIVER]
+      const sampleDriverId = Array.isArray(sampleDriverField) ? sampleDriverField[0]?.id : "not array"
+      console.log("DEBUG | driverId we filter by:", driverId)
+      console.log("DEBUG | dateFrom:", dateFrom, "dateTo:", dateTo)
+      console.log("DEBUG | hoursRecords:", hoursJson.records?.length ?? 0)
+      console.log("DEBUG | totalRidesFetched:", allRides.length)
+      console.log("DEBUG | sample ride driver id from API:", sampleDriverId)
+      console.log("DEBUG | ridesMap size after filter:", ridesMap.size)
+      console.log("DEBUG | hoursMap size:", hoursMap.size)
+      console.log("DEBUG | WS.DRIVER field id:", WS.DRIVER)
+      console.log("DEBUG | DH fields:", JSON.stringify(DH))
 
       const allDates = new Set<string>([...hoursMap.keys(), ...ridesMap.keys()])
       const driver = drivers.find(d => d.id === driverId)
