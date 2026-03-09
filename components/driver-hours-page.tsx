@@ -205,8 +205,7 @@ export function DriverHoursPage() {
         })
 
       // DEBUG
-      console.log("DEBUG | sample ride fields:", JSON.stringify(Object.entries(allRides[0]?.fields || {}).slice(0,6)))
-      console.log("DEBUG | WS field ids:", JSON.stringify({DRIVER: WS.DRIVER, DATE: WS.DATE, PICKUP_TIME: WS.PICKUP_TIME, DESCRIPTION: WS.DESCRIPTION}))
+
 
       const allDates = new Set<string>([...hoursMap.keys(), ...ridesMap.keys()])
       const driver = drivers.find(d => d.id === driverId)
@@ -438,17 +437,21 @@ export function DriverHoursPage() {
                       </div>
                     </TableCell>
                   </TableRow>
-                  {expandedRows.has(row.date) && row.rides.map(ride => (
-                    <TableRow key={ride.id} className="bg-muted/40 text-xs">
-                      <TableCell className="text-muted-foreground pr-6">
-                        <div className="flex flex-col">
-                          <span>{ride.description}</span>
-                          {ride.vehicleType && <span className="text-muted-foreground/70">{ride.vehicleType}</span>}
+                  {expandedRows.has(row.date) && row.rides.map((ride, idx) => (
+                    <TableRow key={ride.id} className="bg-muted/30 text-xs border-b border-muted/50">
+                      <TableCell />
+                      <TableCell className="text-muted-foreground text-center">{idx + 1}</TableCell>
+                      <TableCell colSpan={config ? 6 : 5}>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="text-muted-foreground min-w-[60px]">{ride.pickupTime}</span>
+                          <span className="text-muted-foreground">←</span>
+                          <span className="flex-1 font-medium">{ride.description}</span>
+                          <span className="text-muted-foreground">←</span>
+                          <span className="text-muted-foreground min-w-[60px] text-left">{ride.dropoffTime}</span>
+                          {ride.vehicleType && <span className="text-muted-foreground/60 text-[11px]">({ride.vehicleType})</span>}
                         </div>
                       </TableCell>
-                      <TableCell className="text-muted-foreground">{ride.pickupTime}</TableCell>
-                      <TableCell className="text-muted-foreground">{ride.dropoffTime}</TableCell>
-                      <TableCell colSpan={config ? 5 : 4} />
+                      <TableCell />
                     </TableRow>
                   ))}
                 </React.Fragment>
