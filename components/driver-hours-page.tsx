@@ -202,6 +202,19 @@ export function DriverHoursPage() {
           })
         })
 
+      // DEBUG - remove after testing
+      console.log("DEBUG fetchData:", {
+        driverId,
+        dateFrom,
+        dateTo,
+        hoursRecords: hoursJson.records?.length ?? 0,
+        totalRidesFetched: allRides.length,
+        ridesAfterFilter: ridesMap.size,
+        sampleRideDriver: allRides[0]?.fields?.[WS.DRIVER],
+        WS_DRIVER_FIELD: WS.DRIVER,
+        DH_fields: DH,
+      })
+
       const allDates = new Set<string>([...hoursMap.keys(), ...ridesMap.keys()])
       const driver = drivers.find(d => d.id === driverId)
       const config = driver?.salaryConfig
