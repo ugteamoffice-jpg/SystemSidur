@@ -37,20 +37,7 @@ export async function GET(request: Request) {
         value: { mode: "exactDate", exactDate: `${dateParam}T00:00:00.000Z`, timeZone: "Asia/Jerusalem" }
       });
     }
-    if (dateFrom) {
-      filterSet.push({
-        fieldId: DATE_FIELD_ID,
-        operator: "isAfter",
-        value: { mode: "exactDate", exactDate: `${dateFrom}T00:00:00.000Z`, timeZone: "Asia/Jerusalem" }
-      });
-    }
-    if (dateTo) {
-      filterSet.push({
-        fieldId: DATE_FIELD_ID,
-        operator: "isBefore",
-        value: { mode: "exactDate", exactDate: `${dateTo}T23:59:59.000Z`, timeZone: "Asia/Jerusalem" }
-      });
-    }
+    // dateFrom/dateTo filtered client-side (Teable range operators unreliable)
     // Driver filter is handled client-side (link fields don't support contains filter)
 
     let endpoint = `${API_URL}/api/table/${TABLE_ID}/record?take=${take}&skip=${skip}&fieldKeyType=id`;

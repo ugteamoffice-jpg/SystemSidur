@@ -283,10 +283,10 @@ function DataGrid({ schema }: { schema?: any }) {
   const [rowSelection, setRowSelection] = React.useState({})
   const [globalFilter, setGlobalFilter] = React.useState("")
   const tableScrollRef = React.useRef<HTMLDivElement>(null)
-  const [dateFilter, setDateFilter] = React.useState<Date>(new Date())
+  const [dateFilter, setDateFilter] = React.useState<Date>(() => new Date())
   const dateFilterRef = React.useRef<Date>(new Date())
   const fetchAbortRef = React.useRef<AbortController | null>(null)
-  const [currentMonth, setCurrentMonth] = React.useState<Date>(new Date())
+  const [currentMonth, setCurrentMonth] = React.useState<Date>(() => new Date())
   
   // טעינת רוחב עמודות מ-localStorage
   const [columnSizing, setColumnSizing] = React.useState<ColumnSizingState>(() => {
@@ -364,11 +364,11 @@ function DataGrid({ schema }: { schema?: any }) {
   const [dateRangeMode, setDateRangeMode] = React.useState(false)
   const [newDateMode, setNewDateMode] = React.useState(false)
   const [newDate, setNewDate] = React.useState<Date | undefined>(undefined)
-  const [newDateMonth, setNewDateMonth] = React.useState<Date>(new Date())
+  const [newDateMonth, setNewDateMonth] = React.useState<Date>(() => new Date())
   const [startDate, setStartDate] = React.useState<Date | undefined>(dateFilter)
-  const [startDateMonth, setStartDateMonth] = React.useState<Date>(new Date())
+  const [startDateMonth, setStartDateMonth] = React.useState<Date>(() => new Date())
   const [endDate, setEndDate] = React.useState<Date | undefined>(undefined)
-  const [endDateMonth, setEndDateMonth] = React.useState<Date>(new Date())
+  const [endDateMonth, setEndDateMonth] = React.useState<Date>(() => new Date())
   const [calendarModal, setCalendarModal] = React.useState<{
     open: boolean, selected?: Date, month?: Date,
     onSelect: (date: Date | undefined) => void, onMonthChange: (month: Date) => void

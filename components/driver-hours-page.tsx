@@ -151,7 +151,7 @@ export function DriverHoursPage() {
 
       const [hoursRes, ridesRes] = await Promise.all([
         fetch(`/api/driver-hours?tenant=${tenantId}&driverId=${driverId}&dateFrom=${dateFrom}&dateTo=${dateTo}`),
-        fetch(`/api/work-schedule?tenant=${tenantId}&take=2000&dateFrom=${dateFrom}&dateTo=${dateTo}`)
+        fetch(`/api/work-schedule?tenant=${tenantId}&take=2000`)
       ])
       const hoursJson = await hoursRes.json()
       const ridesJson = await ridesRes.json()
@@ -165,8 +165,10 @@ export function DriverHoursPage() {
       const ridesMap = new Map<string, RideRecord[]>()
       ;(ridesJson.records || [])
         .filter((r: any) => {
+          const d = r.fields?.[WS.DATE]?.substring(0, 10)
           const drvs = r.fields?.[WS.DRIVER]
-          return Array.isArray(drvs) && drvs.some((x: any) => x.id === driverId)
+          return d && d >= dateFrom && d <= dateTo &&
+            Array.isArray(drvs) && drvs.some((x: any) => x.id === driverId)
         })
         .forEach((r: any) => {
           const date = r.fields?.[WS.DATE]?.substring(0, 10)
