@@ -307,7 +307,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
       driversListRef.current = items
       setDriversList(items)
     } catch {}
-  }, [fields, tenantId])
+  }, [tenantFields, tenantId])
 
   const bulkUpdateField = React.useCallback(async (ids: string[], fieldKey: string, value: any) => {
     await Promise.all(ids.map(id =>
