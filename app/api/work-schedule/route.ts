@@ -20,28 +20,48 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const dateParam = searchParams.get('date');
+    const dateFrom = searchParams.get('dateFrom');
+    const dateTo = searchParams.get('dateTo');
+    const driverIdParam = searchParams.get('driverId');
     const takeRaw = parseInt(searchParams.get('take') || '1000', 10)
     const skipRaw = parseInt(searchParams.get('skip') || '0', 10)
     const take = Math.min(Math.max(isNaN(takeRaw) ? 1000 : takeRaw, 1), 2000)
     const skip = Math.max(isNaN(skipRaw) ? 0 : skipRaw, 0)
 
-    let endpoint = `${API_URL}/api/table/${TABLE_ID}/record?take=${take}&skip=${skip}&fieldKeyType=id`;
+    const filterSet: any[] = [];
+
     if (dateParam) {
-      const filterObj = {
-        conjunction: "and",
-        filterSet: [
-          {
-            fieldId: DATE_FIELD_ID,
-            operator: "is",
-            value: {
-              mode: "exactDate",
-              exactDate: `${dateParam}T00:00:00.000Z`,
-              timeZone: "Asia/Jerusalem"
-            }
-          }
-        ]
-      };
-      endpoint += `&filter=${encodeURIComponent(JSON.stringify(filterObj))}`;
+      filterSet.push({
+        fieldId: DATE_FIELD_ID,
+        operator: "is",
+        value: { mode: "exactDate", exactDate: `${dateParam}T00:00:00.000Z`, timeZone: "Asia/Jerusalem" }
+      });
+    }
+    if (dateFrom) {
+      filterSet.push({
+        fieldId: DATE_FIELD_ID,
+        operator: "isOnOrAfter",
+        value: { mode: "exactDate", exactDate: `${dateFrom}T00:00:00.000Z`, timeZone: "Asia/Jerusalem" }
+      });
+    }
+    if (dateTo) {
+      filterSet.push({
+        fieldId: DATE_FIELD_ID,
+        operator: "isOnOrBefore",
+        value: { mode: "exactDate", exactDate: `${dateTo}T23:59:59.000Z`, timeZone: "Asia/Jerusalem" }
+      });
+    }
+    if (driverIdParam) {
+      filterSet.push({
+        fieldId: config.fields.workSchedule.DRIVER,
+        operator: "contains",
+        value: driverIdParam
+      });
+    }
+
+    let endpoint = `${API_URL}/api/table/${TABLE_ID}/record?take=${take}&skip=${skip}&fieldKeyType=id`;
+    if (filterSet.length > 0) {
+      endpoint += `&filter=${encodeURIComponent(JSON.stringify({ conjunction: "and", filterSet }))}`;
     }
 
     const response = await fetch(endpoint, { headers: { 'Authorization': `Bearer ${apiKey}` }, cache: 'no-store' });
