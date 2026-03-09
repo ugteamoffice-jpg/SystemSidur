@@ -7,10 +7,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Separator } from "@/components/ui/separator"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Plus, Search, Loader2, Trash2, Car, ChevronDown } from "lucide-react"
+import { Plus, Search, Loader2, Trash2, Car, ChevronDown, X, Settings2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useTenantFields, useTenant } from "@/lib/tenant-context"
 import { format } from "date-fns"
@@ -33,6 +34,21 @@ export default function DriversGrid() {
   const PHONE_ID = tenantFields?.drivers.PHONE || ""
   const DRIVER_TYPE_ID = tenantFields?.drivers.DRIVER_TYPE || ""
   const CAR_NUMBER_ID = tenantFields?.drivers.CAR_NUMBER || ""
+  const SALARY_CONFIG_ID = (tenantFields?.drivers as any)?.SALARY_CONFIG || ""
+
+  // Salary config state
+  const [salaryConfig, setSalaryConfig] = useState<any>(null)
+
+  const defaultSalaryConfig = () => ({
+    type: "hourly",
+    grossOrNet: "gross",
+    baseHours: 8,
+    minimumHours: 0,
+    tiers: [{ upToHours: 8, ratePerHour: 45, label: "עד 8 שעות" }],
+    dailyFixedRate: 0,
+    shabbatMultiplier: 1.5,
+    travelAllowance: 0
+  })
   const CV_CAR_NUMBER = tenantFields?.companyVehicles?.CAR_NUMBER || ""
   const CV_MAKE_MODEL = tenantFields?.companyVehicles?.MAKE_MODEL || ""
 
@@ -194,6 +210,13 @@ export default function DriversGrid() {
         }
       }
 
+      // שמור הגדרות שכר אם שכיר
+      if (filteredFields[DRIVER_TYPE_ID] === "שכיר" && salaryConfig) {
+        filteredFields[SALARY_CONFIG_ID] = JSON.stringify(salaryConfig)
+      } else if (filteredFields[DRIVER_TYPE_ID] !== "שכיר") {
+        filteredFields[SALARY_CONFIG_ID] = ""
+      }
+
       // שמור ישירות
       await saveDriverAndOptionalRides(filteredFields, [])
     } catch (error) { toast({ title: "שגיאה", description: "נכשל", variant: "destructive" }) }
@@ -268,7 +291,12 @@ export default function DriversGrid() {
       [DRIVER_TYPE_ID]: driver.fields[DRIVER_TYPE_ID] || "",
       [CAR_NUMBER_ID]: driver.fields[CAR_NUMBER_ID] || "",
       [STATUS_FIELD_ID]: driver.fields[STATUS_FIELD_ID] || "פעיל"
-    } as any); 
+    } as any)
+    // Load salary config
+    try {
+      const raw = driver.fields[SALARY_CONFIG_ID]
+      setSalaryConfig(raw ? JSON.parse(raw) : null)
+    } catch { setSalaryConfig(null) }
     setIsDialogOpen(true) 
   }
 
@@ -281,6 +309,7 @@ export default function DriversGrid() {
     }); 
     setPhoneError("");
     setCarNumberError("");
+    setSalaryConfig(null)
   }
 
   const [newDriver, setNewDriver] = useState<any>({ 
@@ -462,6 +491,124 @@ export default function DriversGrid() {
                   {carNumberError && <p className="text-sm text-red-500">{carNumberError}</p>}
                 </div>
             </div>
+            {/* Salary Config Section — only for שכיר */}
+            {newDriver[DRIVER_TYPE_ID] === "שכיר" && (
+              <div className="border rounded-lg p-4 space-y-4 mt-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-sm flex items-center gap-2"><Settings2 className="h-4 w-4" />הגדרות שכר</h3>
+                  {!salaryConfig && (
+                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setSalaryConfig(defaultSalaryConfig())}>הגדר שכר</Button>
+                  )}
+                </div>
+
+                {salaryConfig && (
+                  <div className="space-y-4">
+                    {/* Type + gross/net */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs">מודל תשלום</Label>
+                        <Select value={salaryConfig.type} onValueChange={v => setSalaryConfig((p: any) => ({...p, type: v}))}>
+                          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="hourly">שעתי עם שכבות</SelectItem>
+                            <SelectItem value="flat_hourly">שעתי שטוח</SelectItem>
+                            <SelectItem value="daily_fixed">יום קבוע</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">ברוטו / נטו</Label>
+                        <Select value={salaryConfig.grossOrNet} onValueChange={v => setSalaryConfig((p: any) => ({...p, grossOrNet: v}))}>
+                          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="gross">ברוטו</SelectItem>
+                            <SelectItem value="net">נטו</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* daily_fixed */}
+                    {salaryConfig.type === "daily_fixed" && (
+                      <div className="space-y-1">
+                        <Label className="text-xs">תשלום קבוע ליום (₪)</Label>
+                        <Input type="number" className="h-8 text-xs" value={salaryConfig.dailyFixedRate}
+                          onChange={e => setSalaryConfig((p: any) => ({...p, dailyFixedRate: +e.target.value}))} />
+                      </div>
+                    )}
+
+                    {/* hourly fields */}
+                    {salaryConfig.type !== "daily_fixed" && (
+                      <>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs">שעות בסיס ביום</Label>
+                            <Input type="number" className="h-8 text-xs" value={salaryConfig.baseHours}
+                              onChange={e => setSalaryConfig((p: any) => ({...p, baseHours: +e.target.value}))} />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">מינימום שעות לתשלום</Label>
+                            <Input type="number" className="h-8 text-xs" value={salaryConfig.minimumHours}
+                              onChange={e => setSalaryConfig((p: any) => ({...p, minimumHours: +e.target.value}))} />
+                          </div>
+                        </div>
+
+                        {/* Tiers */}
+                        {salaryConfig.type === "hourly" && (
+                          <div className="space-y-2">
+                            <Label className="text-xs font-bold">שכבות תשלום</Label>
+                            {salaryConfig.tiers.map((tier: any, i: number) => (
+                              <div key={i} className="flex items-center gap-2">
+                                <Input placeholder="תיאור" className="h-7 text-xs flex-1" value={tier.label}
+                                  onChange={e => setSalaryConfig((p: any) => { const t = [...p.tiers]; t[i] = {...t[i], label: e.target.value}; return {...p, tiers: t} })} />
+                                <Input type="number" placeholder="שעות" className="h-7 text-xs w-16"
+                                  value={tier.upToHours ?? ""} placeholder="∞"
+                                  onChange={e => setSalaryConfig((p: any) => { const t = [...p.tiers]; t[i] = {...t[i], upToHours: e.target.value === "" ? null : +e.target.value}; return {...p, tiers: t} })} />
+                                <Input type="number" placeholder="₪/שעה" className="h-7 text-xs w-20" value={tier.ratePerHour}
+                                  onChange={e => setSalaryConfig((p: any) => { const t = [...p.tiers]; t[i] = {...t[i], ratePerHour: +e.target.value}; return {...p, tiers: t} })} />
+                                <button onClick={() => setSalaryConfig((p: any) => ({...p, tiers: p.tiers.filter((_: any, j: number) => j !== i)}))}
+                                  className="text-red-400 hover:text-red-600"><X className="h-3.5 w-3.5" /></button>
+                              </div>
+                            ))}
+                            <Button size="sm" variant="outline" className="h-7 text-xs w-full"
+                              onClick={() => setSalaryConfig((p: any) => ({...p, tiers: [...p.tiers, {upToHours: null, ratePerHour: 0, label: ""}]}))}>
+                              <Plus className="h-3 w-3 ml-1" /> הוסף שכבה
+                            </Button>
+                          </div>
+                        )}
+
+                        {salaryConfig.type === "flat_hourly" && (
+                          <div className="space-y-1">
+                            <Label className="text-xs">תעריף לשעה (₪)</Label>
+                            <Input type="number" className="h-8 text-xs"
+                              value={salaryConfig.tiers[0]?.ratePerHour || 0}
+                              onChange={e => setSalaryConfig((p: any) => ({...p, tiers: [{...p.tiers[0], ratePerHour: +e.target.value}]}))} />
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {/* Extras */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs">מכפיל שבת/חג</Label>
+                        <Input type="number" step="0.1" className="h-8 text-xs" value={salaryConfig.shabbatMultiplier}
+                          onChange={e => setSalaryConfig((p: any) => ({...p, shabbatMultiplier: +e.target.value}))} />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">דמי נסיעה יומי (₪)</Label>
+                        <Input type="number" className="h-8 text-xs" value={salaryConfig.travelAllowance}
+                          onChange={e => setSalaryConfig((p: any) => ({...p, travelAllowance: +e.target.value}))} />
+                      </div>
+                    </div>
+
+                    <button className="text-xs text-red-400 hover:text-red-600"
+                      onClick={() => setSalaryConfig(null)}>הסר הגדרות שכר</button>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="flex justify-end gap-2 mt-4">
                 {isEditMode && (
                     <>
