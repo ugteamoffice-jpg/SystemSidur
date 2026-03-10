@@ -456,7 +456,7 @@ export function DriverHoursPage() {
       {/* Day Dialog */}
       {currentRow && (
         <Dialog open={dayDialog} onOpenChange={setDayDialog}>
-          <DialogContent style={{maxWidth:"96vw",width:"96vw",height:"88vh",display:"flex",flexDirection:"column",overflow:"hidden"}} dir="rtl">
+          <DialogContent style={{maxWidth:"96vw",width:"96vw",height:"88vh",display:"flex",flexDirection:"column",overflow:"hidden",fontFamily:'"Varela Round", ui-rounded, system-ui, sans-serif'}} dir="rtl">
             {/* Navigation header */}
             <div className="flex items-center justify-between border-b pb-3 mb-2">
               <Button variant="ghost" size="icon" onClick={() => navigateDay(-1)} disabled={dayIndex === 0 || saving}>
@@ -467,7 +467,7 @@ export function DriverHoursPage() {
                   {format(parseISO(currentRow.date), "EEEE, dd/MM/yyyy", { locale: he })}
                   {currentRow.isShabbat && <span className="mr-2 text-sm text-amber-600 font-normal">שבת</span>}
                 </div>
-                <div className="text-xs text-muted-foreground mt-0.5">{dayIndex + 1} / {hoursData.length}</div>
+
               </div>
               <Button variant="ghost" size="icon" onClick={() => navigateDay(1)} disabled={dayIndex === hoursData.length - 1 || saving}>
                 <ChevronLeft className="h-5 w-5" />
@@ -482,7 +482,7 @@ export function DriverHoursPage() {
                   <div className="text-sm text-muted-foreground py-8 text-center border rounded-lg">אין נסיעות ביום זה</div>
                 ) : (
                   <div className="border rounded-lg overflow-hidden flex-1 overflow-y-auto">
-                    <table style={{width:"100%",fontSize:"15px",borderCollapse:"collapse"}}>
+                    <table style={{width:"100%",fontSize:"15px",borderCollapse:"collapse",fontFamily:'"Varela Round", ui-rounded, system-ui, sans-serif'}}>
                       <thead style={{background:"#f4f4f5",position:"sticky",top:0}}>
                         <tr>
                           <th style={{textAlign:"right",padding:"10px 14px",fontWeight:600,fontSize:"15px",borderBottom:"1px solid #e2e8f0",borderLeft:"1px solid #e2e8f0"}}>תאריך</th>
