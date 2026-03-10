@@ -1,5 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
+import { Varela_Round } from "next/font/google"
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from "@/components/theme-provider"
 import { ClerkProvider } from "@clerk/nextjs"
@@ -7,6 +8,12 @@ import { heILCustom } from "@/lib/he-IL"
 import "./globals.css"
 import { ErrorReporter } from "@/components/error-reporter"
 import "../temp.ts"
+
+const varelaRound = Varela_Round({
+  subsets: ["latin", "hebrew"],
+  weight: "400",
+  display: "swap",
+})
 
 export const metadata: Metadata = {
   title: 'לו"ז - סידור עבודה',
@@ -34,7 +41,7 @@ export default function RootLayout({
       signInFallbackRedirectUrl="/"
     >
       <html lang="he" dir="rtl" suppressHydrationWarning>
-        <body className="font-sans antialiased">
+        <body className={`${varelaRound.className} antialiased`}>
           <ThemeProvider
             attribute="class"
             defaultTheme="light"
