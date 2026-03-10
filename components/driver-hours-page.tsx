@@ -516,32 +516,32 @@ export function DriverHoursPage() {
                   const breakdown = config ? calcTierBreakdown(hrs, config) : []
                   const totalPayAmt = config ? calcPay(hrs, config, currentRow.isShabbat) : 0
                   return (
-                    <div className="bg-muted/40 rounded-lg p-4 text-base space-y-2 border">
-                      <div className="flex justify-between">
+                    <div className="bg-muted/40 rounded-lg p-4 space-y-3 border">
+                      <div className="flex justify-between text-lg font-medium">
                         <span className="text-muted-foreground">סה״כ שעות</span>
                         <b>{hrs.toFixed(2)}</b>
                       </div>
                       {breakdown.length > 0 && (
-                        <div className="border-t pt-2 space-y-1">
+                        <div className="border-t pt-3 space-y-2">
                           {breakdown.map((t, i) => (
-                            <div key={i} className="flex justify-between text-xs">
+                            <div key={i} className="flex justify-between text-base">
                               <span className="text-muted-foreground">{t.label} ({t.hours.toFixed(2)}ש׳ × ₪{t.rate.toFixed(2)})</span>
-                              <span>₪{t.pay.toFixed(2)}</span>
+                              <span className="font-medium">₪{t.pay.toFixed(2)}</span>
                             </div>
                           ))}
                           {currentRow.isShabbat && config?.shabbatMultiplier > 1 && (
-                            <div className="text-xs text-amber-600">× {config.shabbatMultiplier} שבת/חג</div>
+                            <div className="text-base text-amber-600">× {config.shabbatMultiplier} שבת/חג</div>
                           )}
                           {config?.travelAllowance > 0 && (
-                            <div className="flex justify-between text-xs">
+                            <div className="flex justify-between text-base">
                               <span className="text-muted-foreground">דמי נסיעה</span>
-                              <span>₪{config.travelAllowance}</span>
+                              <span className="font-medium">₪{config.travelAllowance}</span>
                             </div>
                           )}
                         </div>
                       )}
                       {config && (
-                        <div className="flex justify-between border-t pt-2 font-bold">
+                        <div className="flex justify-between border-t pt-3 font-bold text-lg">
                           <span>סה״כ שכר</span>
                           <span className="text-green-700">₪{totalPayAmt.toFixed(2)}</span>
                         </div>
