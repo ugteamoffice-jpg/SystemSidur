@@ -407,7 +407,7 @@ export function DriverHoursPage() {
             <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
                 <TableHead className="text-right">תאריך</TableHead>
-                <TableHead className="text-right">סה״כ נסיעות</TableHead>
+                <TableHead className="text-right w-24">סה״כ נסיעות</TableHead>
                 <TableHead className="text-right">התחלה</TableHead>
                 <TableHead className="text-right">סיום</TableHead>
                 <TableHead className="text-right">סה״כ שעות</TableHead>
@@ -426,9 +426,9 @@ export function DriverHoursPage() {
                     {format(parseISO(row.date), "dd/MM/yyyy")}
                     {row.isShabbat && <span className="mr-2 text-xs text-amber-600">שבת</span>}
                   </TableCell>
-                  <TableCell className="text-sm text-center">
+                  <TableCell className="text-sm text-right w-24">
                     {row.rides.length > 0
-                      ? <span className="bg-primary/10 text-primary font-medium px-2 py-0.5 rounded-full text-xs">{row.rides.length}</span>
+                      ? <span className="font-medium text-primary">{row.rides.length}</span>
                       : <span className="text-muted-foreground">—</span>}
                   </TableCell>
                   <TableCell className="text-sm">{row.startTime || <span className="text-muted-foreground">—</span>}</TableCell>
