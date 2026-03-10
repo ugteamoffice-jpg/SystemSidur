@@ -64,6 +64,23 @@ function calcPay(hours: number, config: any, isShabbat: boolean): number {
   return Math.round(pay * 100) / 100
 }
 
+function calcTierBreakdown(hours: number, config: any): { label: string; hours: number; rate: number; pay: number }[] {
+  if (!config || config.type !== "hourly") return []
+  const baseRate = config.baseRate || 0
+  const result = []
+  let remaining = hours
+  for (const tier of (config.tiers || [])) {
+    if (remaining <= 0) break
+    const h = tier.upToHours !== null ? Math.min(remaining, tier.upToHours) : remaining
+    if (h <= 0) continue
+    const pct = tier.percentage ?? ((tier.ratePerHour || 0) / (baseRate || 1) * 100)
+    const rate = baseRate * pct / 100
+    result.push({ label: tier.label || `${pct}%`, hours: h, rate, pay: h * rate })
+    remaining -= h
+  }
+  return result
+}
+
 function isShabbatDay(dateStr: string): boolean {
   try { return parseISO(dateStr).getDay() === 6 } catch { return false }
 }
@@ -431,47 +448,48 @@ export function DriverHoursPage() {
       {/* Day Dialog */}
       {currentRow && (
         <Dialog open={dayDialog} onOpenChange={setDayDialog}>
-          <DialogContent className="max-w-2xl w-full" dir="rtl">
-            <DialogHeader>
-              <div className="flex items-center justify-between">
-                <Button variant="ghost" size="icon" onClick={() => navigateDay(-1)} disabled={dayIndex === 0 || saving}>
-                  <ChevronRight className="h-5 w-5" />
-                </Button>
-                <div className="text-center">
-                  <div className="text-lg font-bold">
-                    {format(parseISO(currentRow.date), "EEEE, dd/MM/yyyy", { locale: he })}
-                    {currentRow.isShabbat && <span className="mr-2 text-sm text-amber-600">שבת</span>}
-                  </div>
-                  <div className="text-xs text-muted-foreground">{dayIndex + 1} / {hoursData.length}</div>
+          <DialogContent className="max-w-4xl w-full" dir="rtl">
+            {/* Navigation header */}
+            <div className="flex items-center justify-between border-b pb-3 mb-2">
+              <Button variant="ghost" size="icon" onClick={() => navigateDay(-1)} disabled={dayIndex === 0 || saving}>
+                <ChevronRight className="h-5 w-5" />
+              </Button>
+              <div className="text-center">
+                <div className="text-xl font-bold">
+                  {format(parseISO(currentRow.date), "EEEE, dd/MM/yyyy", { locale: he })}
+                  {currentRow.isShabbat && <span className="mr-2 text-sm text-amber-600 font-normal">שבת</span>}
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => navigateDay(1)} disabled={dayIndex === hoursData.length - 1 || saving}>
-                  <ChevronLeft className="h-5 w-5" />
-                </Button>
+                <div className="text-xs text-muted-foreground mt-0.5">{dayIndex + 1} / {hoursData.length}</div>
               </div>
-            </DialogHeader>
+              <Button variant="ghost" size="icon" onClick={() => navigateDay(1)} disabled={dayIndex === hoursData.length - 1 || saving}>
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+            </div>
 
-            <div className="grid grid-cols-2 gap-6 pt-2">
-              {/* Right - rides */}
-              <div className="space-y-2">
-                <Label className="font-bold text-sm">נסיעות ({currentRow.rides.length})</Label>
+            <div className="grid grid-cols-5 gap-6">
+              {/* Right - rides (3 cols) */}
+              <div className="col-span-3 space-y-2">
+                <div className="text-sm font-bold text-muted-foreground">נסיעות ({currentRow.rides.length})</div>
                 {currentRow.rides.length === 0 ? (
-                  <div className="text-sm text-muted-foreground py-6 text-center border rounded-lg">אין נסיעות ביום זה</div>
+                  <div className="text-sm text-muted-foreground py-8 text-center border rounded-lg">אין נסיעות ביום זה</div>
                 ) : (
-                  <div className="border rounded-lg overflow-hidden max-h-72 overflow-y-auto">
-                    <table className="w-full text-xs">
-                      <thead className="bg-muted/50 sticky top-0">
+                  <div className="border rounded-lg overflow-hidden max-h-80 overflow-y-auto">
+                    <table className="w-full text-xs border-collapse">
+                      <thead className="bg-muted/60 sticky top-0">
                         <tr>
-                          <th className="text-right p-2 font-medium">הלוך</th>
-                          <th className="text-right p-2 font-medium">מסלול</th>
-                          <th className="text-right p-2 font-medium">חזור</th>
+                          <th className="text-right px-3 py-2 font-semibold border-b border-r">תאריך</th>
+                          <th className="text-right px-3 py-2 font-semibold border-b border-r">הלוך</th>
+                          <th className="text-right px-3 py-2 font-semibold border-b border-r">מסלול</th>
+                          <th className="text-right px-3 py-2 font-semibold border-b">חזור</th>
                         </tr>
                       </thead>
                       <tbody>
                         {currentRow.rides.map((ride, i) => (
-                          <tr key={ride.id} className={i % 2 === 0 ? "bg-background" : "bg-muted/20"}>
-                            <td className="p-2 text-muted-foreground whitespace-nowrap">{ride.pickupTime || "—"}</td>
-                            <td className="p-2 font-medium">{ride.description}</td>
-                            <td className="p-2 text-muted-foreground whitespace-nowrap">{ride.dropoffTime || "—"}</td>
+                          <tr key={ride.id} className={`border-b last:border-0 ${i % 2 === 0 ? "bg-background" : "bg-muted/20"}`}>
+                            <td className="px-3 py-2 text-muted-foreground whitespace-nowrap border-r">{format(parseISO(currentRow.date), "dd/MM/yy")}</td>
+                            <td className="px-3 py-2 text-muted-foreground whitespace-nowrap border-r">{ride.pickupTime || "—"}</td>
+                            <td className="px-3 py-2 font-medium border-r">{ride.description}</td>
+                            <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">{ride.dropoffTime || "—"}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -480,8 +498,8 @@ export function DriverHoursPage() {
                 )}
               </div>
 
-              {/* Left - time inputs */}
-              <div className="space-y-4">
+              {/* Left - time inputs (2 cols) */}
+              <div className="col-span-2 space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <Label className="text-sm font-bold">שעת התחלה</Label>
@@ -493,18 +511,48 @@ export function DriverHoursPage() {
                   </div>
                 </div>
 
-                {editStart && editEnd && (
-                  <div className="bg-muted/40 rounded-lg p-3 text-sm space-y-1">
-                    <div>שעות: <b>{calcHours(editStart, editEnd).toFixed(2)}</b></div>
-                    {config && (
-                      <div>שכר: <b className="text-green-700">₪{calcPay(calcHours(editStart, editEnd), config, currentRow.isShabbat).toFixed(2)}</b></div>
-                    )}
-                  </div>
-                )}
+                {editStart && editEnd && (() => {
+                  const hrs = calcHours(editStart, editEnd)
+                  const breakdown = config ? calcTierBreakdown(hrs, config) : []
+                  const totalPayAmt = config ? calcPay(hrs, config, currentRow.isShabbat) : 0
+                  return (
+                    <div className="bg-muted/40 rounded-lg p-3 text-sm space-y-2 border">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">סה״כ שעות</span>
+                        <b>{hrs.toFixed(2)}</b>
+                      </div>
+                      {breakdown.length > 0 && (
+                        <div className="border-t pt-2 space-y-1">
+                          {breakdown.map((t, i) => (
+                            <div key={i} className="flex justify-between text-xs">
+                              <span className="text-muted-foreground">{t.label} ({t.hours.toFixed(2)}ש׳ × ₪{t.rate.toFixed(2)})</span>
+                              <span>₪{t.pay.toFixed(2)}</span>
+                            </div>
+                          ))}
+                          {currentRow.isShabbat && config?.shabbatMultiplier > 1 && (
+                            <div className="text-xs text-amber-600">× {config.shabbatMultiplier} שבת/חג</div>
+                          )}
+                          {config?.travelAllowance > 0 && (
+                            <div className="flex justify-between text-xs">
+                              <span className="text-muted-foreground">דמי נסיעה</span>
+                              <span>₪{config.travelAllowance}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {config && (
+                        <div className="flex justify-between border-t pt-2 font-bold">
+                          <span>סה״כ שכר</span>
+                          <span className="text-green-700">₪{totalPayAmt.toFixed(2)}</span>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })()}
 
                 <div className="space-y-1">
                   <Label className="text-sm font-bold">הערות</Label>
-                  <Textarea value={editNotes} onChange={e => setEditNotes(e.target.value)} className="h-24 resize-none text-sm" placeholder="הערות לגבי יום זה..." />
+                  <Textarea value={editNotes} onChange={e => setEditNotes(e.target.value)} className="h-20 resize-none text-sm" placeholder="הערות..." />
                 </div>
 
                 <Button onClick={() => handleSave()} disabled={saving} className="w-full h-10">
