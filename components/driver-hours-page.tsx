@@ -448,7 +448,7 @@ export function DriverHoursPage() {
       {/* Day Dialog */}
       {currentRow && (
         <Dialog open={dayDialog} onOpenChange={setDayDialog}>
-          <DialogContent className="max-w-4xl w-full" dir="rtl">
+          <DialogContent className="max-w-[90vw] w-[90vw] h-[85vh] flex flex-col overflow-hidden" dir="rtl">
             {/* Navigation header */}
             <div className="flex items-center justify-between border-b pb-3 mb-2">
               <Button variant="ghost" size="icon" onClick={() => navigateDay(-1)} disabled={dayIndex === 0 || saving}>
@@ -466,14 +466,14 @@ export function DriverHoursPage() {
               </Button>
             </div>
 
-            <div className="grid grid-cols-5 gap-6">
+            <div className="grid grid-cols-5 gap-6 flex-1 overflow-hidden">
               {/* Right - rides (3 cols) */}
-              <div className="col-span-3 space-y-2">
+              <div className="col-span-3 space-y-2 flex flex-col overflow-hidden">
                 <div className="text-sm font-bold text-muted-foreground">נסיעות ({currentRow.rides.length})</div>
                 {currentRow.rides.length === 0 ? (
                   <div className="text-sm text-muted-foreground py-8 text-center border rounded-lg">אין נסיעות ביום זה</div>
                 ) : (
-                  <div className="border rounded-lg overflow-hidden max-h-80 overflow-y-auto">
+                  <div className="border rounded-lg overflow-hidden flex-1 overflow-y-auto">
                     <table className="w-full text-xs border-collapse">
                       <thead className="bg-muted/60 sticky top-0">
                         <tr>
@@ -499,7 +499,7 @@ export function DriverHoursPage() {
               </div>
 
               {/* Left - time inputs (2 cols) */}
-              <div className="col-span-2 space-y-4">
+              <div className="col-span-2 space-y-4 overflow-y-auto">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <Label className="text-sm font-bold">שעת התחלה</Label>
