@@ -407,11 +407,11 @@ export function DriverHoursPage() {
             <thead className="sticky top-0 bg-background z-10">
               <tr className="border-b-2 border-border">
                 <th className="text-right px-3 py-2 font-semibold border-l border-border w-28">תאריך</th>
-                <th className="text-right px-3 py-2 font-semibold border-l border-border w-20">סה״כ נסיעות</th>
+                <th className="text-right px-3 py-2 font-semibold border-l border-border w-32 whitespace-nowrap">סה״כ נסיעות</th>
                 <th className="text-right px-3 py-2 font-semibold border-l border-border w-20">התחלה</th>
                 <th className="text-right px-3 py-2 font-semibold border-l border-border w-20">סיום</th>
-                <th className="text-right px-3 py-2 font-semibold border-l border-border w-20">סה״כ שעות</th>
-                {config && <th className="text-right px-3 py-2 font-semibold border-l border-border w-24">סה״כ שכר</th>}
+                <th className="text-right px-3 py-2 font-semibold border-l border-border w-32 whitespace-nowrap">סה״כ שעות</th>
+                {config && <th className="text-right px-3 py-2 font-semibold border-l border-border w-32 whitespace-nowrap">סה״כ שכר</th>}
                 <th className="text-right px-3 py-2 font-semibold">הערות</th>
               </tr>
             </thead>
