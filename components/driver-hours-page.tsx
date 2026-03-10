@@ -455,7 +455,7 @@ export function DriverHoursPage() {
                 <ChevronRight className="h-5 w-5" />
               </Button>
               <div className="text-center">
-                <div className="text-xl font-bold">
+                <div className="text-2xl font-bold">
                   {format(parseISO(currentRow.date), "EEEE, dd/MM/yyyy", { locale: he })}
                   {currentRow.isShabbat && <span className="mr-2 text-sm text-amber-600 font-normal">שבת</span>}
                 </div>
@@ -469,27 +469,27 @@ export function DriverHoursPage() {
             <div className="grid grid-cols-5 gap-6 flex-1 overflow-hidden">
               {/* Right - rides (3 cols) */}
               <div className="col-span-3 space-y-2 flex flex-col overflow-hidden">
-                <div className="text-sm font-bold text-muted-foreground">נסיעות ({currentRow.rides.length})</div>
+                <div className="text-base font-bold text-muted-foreground">נסיעות ({currentRow.rides.length})</div>
                 {currentRow.rides.length === 0 ? (
                   <div className="text-sm text-muted-foreground py-8 text-center border rounded-lg">אין נסיעות ביום זה</div>
                 ) : (
                   <div className="border rounded-lg overflow-hidden flex-1 overflow-y-auto">
-                    <table style={{width:"100%",fontSize:"12px",borderCollapse:"collapse"}}>
+                    <table style={{width:"100%",fontSize:"15px",borderCollapse:"collapse"}}>
                       <thead style={{background:"#f4f4f5",position:"sticky",top:0}}>
                         <tr>
-                          <th style={{textAlign:"right",padding:"8px 12px",fontWeight:600,borderBottom:"1px solid #e2e8f0",borderLeft:"1px solid #e2e8f0"}}>תאריך</th>
-                          <th style={{textAlign:"right",padding:"8px 12px",fontWeight:600,borderBottom:"1px solid #e2e8f0",borderLeft:"1px solid #e2e8f0"}}>הלוך</th>
-                          <th style={{textAlign:"right",padding:"8px 12px",fontWeight:600,borderBottom:"1px solid #e2e8f0",borderLeft:"1px solid #e2e8f0"}}>מסלול</th>
-                          <th style={{textAlign:"right",padding:"8px 12px",fontWeight:600,borderBottom:"1px solid #e2e8f0"}}>חזור</th>
+                          <th style={{textAlign:"right",padding:"10px 14px",fontWeight:600,fontSize:"15px",borderBottom:"1px solid #e2e8f0",borderLeft:"1px solid #e2e8f0"}}>תאריך</th>
+                          <th style={{textAlign:"right",padding:"10px 14px",fontWeight:600,fontSize:"15px",borderBottom:"1px solid #e2e8f0",borderLeft:"1px solid #e2e8f0"}}>הלוך</th>
+                          <th style={{textAlign:"right",padding:"10px 14px",fontWeight:600,fontSize:"15px",borderBottom:"1px solid #e2e8f0",borderLeft:"1px solid #e2e8f0"}}>מסלול</th>
+                          <th style={{textAlign:"right",padding:"10px 14px",fontWeight:600,fontSize:"15px",borderBottom:"1px solid #e2e8f0"}}>חזור</th>
                         </tr>
                       </thead>
                       <tbody>
                         {currentRow.rides.map((ride, i) => (
                           <tr key={ride.id} style={{background: i % 2 === 0 ? "#ffffff" : "#f9fafb", borderBottom:"1px solid #e2e8f0"}}>
-                            <td style={{padding:"8px 12px",color:"#64748b",whiteSpace:"nowrap",borderLeft:"1px solid #e2e8f0"}}>{format(parseISO(currentRow.date), "dd/MM/yy")}</td>
-                            <td style={{padding:"8px 12px",color:"#64748b",whiteSpace:"nowrap",borderLeft:"1px solid #e2e8f0"}}>{ride.pickupTime || "—"}</td>
-                            <td style={{padding:"8px 12px",fontWeight:500,borderLeft:"1px solid #e2e8f0"}}>{ride.description}</td>
-                            <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">{ride.dropoffTime || "—"}</td>
+                            <td style={{padding:"10px 14px",color:"#64748b",fontSize:"15px",whiteSpace:"nowrap",borderLeft:"1px solid #e2e8f0"}}>{format(parseISO(currentRow.date), "dd/MM/yy")}</td>
+                            <td style={{padding:"10px 14px",color:"#64748b",fontSize:"15px",whiteSpace:"nowrap",borderLeft:"1px solid #e2e8f0"}}>{ride.pickupTime || "—"}</td>
+                            <td style={{padding:"10px 14px",fontWeight:500,fontSize:"15px",borderLeft:"1px solid #e2e8f0"}}>{ride.description}</td>
+                            <td style={{padding:"10px 14px",color:"#64748b",fontSize:"15px",whiteSpace:"nowrap"}}>{ride.dropoffTime || "—"}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -502,12 +502,12 @@ export function DriverHoursPage() {
               <div className="col-span-2 space-y-4 overflow-y-auto">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <Label className="text-sm font-bold">שעת התחלה</Label>
-                    <Input type="time" value={editStart} onChange={e => setEditStart(e.target.value)} className="h-10 text-base" />
+                    <Label className="text-base font-bold">שעת התחלה</Label>
+                    <Input type="time" value={editStart} onChange={e => setEditStart(e.target.value)} className="h-12 text-lg" />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-sm font-bold">שעת סיום</Label>
-                    <Input type="time" value={editEnd} onChange={e => setEditEnd(e.target.value)} className="h-10 text-base" />
+                    <Label className="text-base font-bold">שעת סיום</Label>
+                    <Input type="time" value={editEnd} onChange={e => setEditEnd(e.target.value)} className="h-12 text-lg" />
                   </div>
                 </div>
 
@@ -516,7 +516,7 @@ export function DriverHoursPage() {
                   const breakdown = config ? calcTierBreakdown(hrs, config) : []
                   const totalPayAmt = config ? calcPay(hrs, config, currentRow.isShabbat) : 0
                   return (
-                    <div className="bg-muted/40 rounded-lg p-3 text-sm space-y-2 border">
+                    <div className="bg-muted/40 rounded-lg p-4 text-base space-y-2 border">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">סה״כ שעות</span>
                         <b>{hrs.toFixed(2)}</b>
@@ -551,8 +551,8 @@ export function DriverHoursPage() {
                 })()}
 
                 <div className="space-y-1">
-                  <Label className="text-sm font-bold">הערות</Label>
-                  <Textarea value={editNotes} onChange={e => setEditNotes(e.target.value)} className="h-20 resize-none text-sm" placeholder="הערות..." />
+                  <Label className="text-base font-bold">הערות</Label>
+                  <Textarea value={editNotes} onChange={e => setEditNotes(e.target.value)} className="h-24 resize-none text-base" placeholder="הערות..." />
                 </div>
 
                 <Button onClick={() => handleSave()} disabled={saving} className="w-full h-10">
