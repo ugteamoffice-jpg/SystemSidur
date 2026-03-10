@@ -474,21 +474,21 @@ export function DriverHoursPage() {
                   <div className="text-sm text-muted-foreground py-8 text-center border rounded-lg">אין נסיעות ביום זה</div>
                 ) : (
                   <div className="border rounded-lg overflow-hidden flex-1 overflow-y-auto">
-                    <table className="w-full text-xs border-collapse">
-                      <thead className="bg-muted/60 sticky top-0">
+                    <table style={{width:"100%",fontSize:"12px",borderCollapse:"collapse"}}>
+                      <thead style={{background:"#f4f4f5",position:"sticky",top:0}}>
                         <tr>
-                          <th className="text-right px-3 py-2 font-semibold border-b border-r">תאריך</th>
-                          <th className="text-right px-3 py-2 font-semibold border-b border-r">הלוך</th>
-                          <th className="text-right px-3 py-2 font-semibold border-b border-r">מסלול</th>
-                          <th className="text-right px-3 py-2 font-semibold border-b">חזור</th>
+                          <th style={{textAlign:"right",padding:"8px 12px",fontWeight:600,borderBottom:"1px solid #e2e8f0",borderLeft:"1px solid #e2e8f0"}}>תאריך</th>
+                          <th style={{textAlign:"right",padding:"8px 12px",fontWeight:600,borderBottom:"1px solid #e2e8f0",borderLeft:"1px solid #e2e8f0"}}>הלוך</th>
+                          <th style={{textAlign:"right",padding:"8px 12px",fontWeight:600,borderBottom:"1px solid #e2e8f0",borderLeft:"1px solid #e2e8f0"}}>מסלול</th>
+                          <th style={{textAlign:"right",padding:"8px 12px",fontWeight:600,borderBottom:"1px solid #e2e8f0"}}>חזור</th>
                         </tr>
                       </thead>
                       <tbody>
                         {currentRow.rides.map((ride, i) => (
-                          <tr key={ride.id} className={`border-b last:border-0 ${i % 2 === 0 ? "bg-background" : "bg-muted/20"}`}>
-                            <td className="px-3 py-2 text-muted-foreground whitespace-nowrap border-r">{format(parseISO(currentRow.date), "dd/MM/yy")}</td>
-                            <td className="px-3 py-2 text-muted-foreground whitespace-nowrap border-r">{ride.pickupTime || "—"}</td>
-                            <td className="px-3 py-2 font-medium border-r">{ride.description}</td>
+                          <tr key={ride.id} style={{background: i % 2 === 0 ? "#ffffff" : "#f9fafb", borderBottom:"1px solid #e2e8f0"}}>
+                            <td style={{padding:"8px 12px",color:"#64748b",whiteSpace:"nowrap",borderLeft:"1px solid #e2e8f0"}}>{format(parseISO(currentRow.date), "dd/MM/yy")}</td>
+                            <td style={{padding:"8px 12px",color:"#64748b",whiteSpace:"nowrap",borderLeft:"1px solid #e2e8f0"}}>{ride.pickupTime || "—"}</td>
+                            <td style={{padding:"8px 12px",fontWeight:500,borderLeft:"1px solid #e2e8f0"}}>{ride.description}</td>
                             <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">{ride.dropoffTime || "—"}</td>
                           </tr>
                         ))}
