@@ -8,28 +8,27 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { useTenant, useTenantFields } from "@/lib/tenant-context"
-import { Loader2, ChevronDown, ChevronUp, Pencil, Trash2, Plus, Calendar as CalendarIcon, SlidersHorizontal } from "lucide-react"
+import { Loader2, Calendar as CalendarIcon, SlidersHorizontal, ChevronRight, ChevronLeft } from "lucide-react"
 
-interface SalaryTier { upToHours: number | null; ratePerHour: number; label: string }
 interface SalaryConfig {
   type: "hourly" | "flat_hourly" | "daily_fixed"
   grossOrNet: "gross" | "net"
   baseRate: number
   baseHours: number
   minimumHours: number
-  tiers: SalaryTier[]
+  tiers: { upToHours: number | null; percentage?: number; ratePerHour?: number; label: string }[]
   dailyFixedRate: number
   shabbatMultiplier: number
   travelAllowance: number
 }
 interface DriverRecord { id: string; name: string; salaryConfig: SalaryConfig | null }
-interface HoursRecord { id: string; date: string; startTime: string; endTime: string; notes: string; rides: RideRecord[]; hoursWorked: number; pay: number; isShabbat: boolean }
 interface RideRecord { id: string; pickupTime: string; description: string; dropoffTime: string; vehicleType: string }
+interface HoursRecord { id: string; date: string; startTime: string; endTime: string; notes: string; rides: RideRecord[]; hoursWorked: number; pay: number; isShabbat: boolean }
 
 function calcHours(start: string, end: string): number {
   if (!start || !end) return 0
@@ -51,12 +50,11 @@ function calcPay(hours: number, config: any, isShabbat: boolean): number {
   } else if (config.type === "flat_hourly") {
     pay = effectiveHours * baseRate
   } else {
-    // hourly with tiers using percentage
     let remaining = effectiveHours
     for (const tier of (config.tiers || [])) {
       if (remaining <= 0) break
       const h = tier.upToHours !== null ? Math.min(remaining, tier.upToHours) : remaining
-      const rate = baseRate * ((tier.percentage ?? tier.ratePerHour / baseRate * 100) / 100)
+      const rate = baseRate * ((tier.percentage ?? ((tier.ratePerHour || 0) / (baseRate || 1) * 100)) / 100)
       pay += h * rate
       remaining -= h
     }
@@ -77,44 +75,36 @@ export function DriverHoursPage() {
 
   const [drivers, setDrivers] = React.useState<DriverRecord[]>([])
   const [showFilterDialog, setShowFilterDialog] = React.useState(false)
-
-  // Temp filter state (inside dialog)
   const [tempDriverId, setTempDriverId] = React.useState("")
   const [tempDateFrom, setTempDateFrom] = React.useState<Date | undefined>(undefined)
   const [tempDateTo, setTempDateTo] = React.useState<Date | undefined>(undefined)
+  const [startCalOpen, setStartCalOpen] = React.useState(false)
+  const [endCalOpen, setEndCalOpen] = React.useState(false)
+  const [appliedDriverId, setAppliedDriverId] = React.useState("")
+  const [appliedDateFrom, setAppliedDateFrom] = React.useState("")
+  const [appliedDateTo, setAppliedDateTo] = React.useState("")
+  const [hoursData, setHoursData] = React.useState<HoursRecord[]>([])
+  const [loading, setLoading] = React.useState(false)
+
+  // Day dialog
+  const [dayDialog, setDayDialog] = React.useState(false)
+  const [dayIndex, setDayIndex] = React.useState(0)
+  const [editStart, setEditStart] = React.useState("")
+  const [editEnd, setEditEnd] = React.useState("")
+  const [editNotes, setEditNotes] = React.useState("")
+  const [saving, setSaving] = React.useState(false)
+
+  const selectedDriver = drivers.find(d => d.id === appliedDriverId) || null
+  const config = selectedDriver?.salaryConfig
+  const currentRow = hoursData[dayIndex] || null
+
   React.useEffect(() => {
     const d = new Date(); d.setDate(1)
     setTempDateFrom(d)
     setTempDateTo(new Date())
-  }, [])
-  const [startCalOpen, setStartCalOpen] = React.useState(false)
-  const [endCalOpen, setEndCalOpen] = React.useState(false)
-
-  // Applied filter state
-  const [appliedDriverId, setAppliedDriverId] = React.useState("")
-  const [appliedDateFrom, setAppliedDateFrom] = React.useState("")
-  const [appliedDateTo, setAppliedDateTo] = React.useState("")
-
-  const [hoursData, setHoursData] = React.useState<HoursRecord[]>([])
-  const [loading, setLoading] = React.useState(false)
-  const [expandedRows, setExpandedRows] = React.useState<Set<string>>(new Set())
-
-  // Edit dialog
-  const [editDialog, setEditDialog] = React.useState(false)
-  const [editRecord, setEditRecord] = React.useState<HoursRecord | null>(null)
-  const [editStart, setEditStart] = React.useState("")
-  const [editEnd, setEditEnd] = React.useState("")
-  const [editNotes, setEditNotes] = React.useState("")
-  const [editDate, setEditDate] = React.useState("")
-  const [saving, setSaving] = React.useState(false)
-
-  const selectedDriver = drivers.find(d => d.id === appliedDriverId) || null
-
-  React.useEffect(() => {
     setShowFilterDialog(true)
   }, [])
 
-  // Fetch drivers (שכיר only)
   React.useEffect(() => {
     if (!tenantId || !tenantFields?.drivers) return
     const DRV = tenantFields.drivers
@@ -152,28 +142,21 @@ export function DriverHoursPage() {
     try {
       const DH = (tenantFields as any).driverHours
       const WS = tenantFields.workSchedule
-
-      // Fetch hours
-      const hoursRes = await fetch(`/api/driver-hours?tenant=${tenantId}&driverId=${driverId}&dateFrom=${dateFrom}&dateTo=${dateTo}`)
+      const hoursRes = await fetch(`/api/driver-hours?tenant=${tenantId}&driverId=${driverId}`)
       const hoursJson = await hoursRes.json()
 
-      // Fetch rides with pagination - 500 per page to stay within Teable limits
       const TAKE = 500
       let allRides: any[] = []
       let skip = 0
       while (true) {
         const res = await fetch(`/api/work-schedule?tenant=${tenantId}&take=${TAKE}&skip=${skip}`)
-        if (!res.ok) {
-          console.error('work-schedule fetch failed:', res.status)
-          break
-        }
+        if (!res.ok) break
         const json = await res.json()
         const records = json.records || []
         allRides = allRides.concat(records)
         if (records.length < TAKE) break
         skip += TAKE
       }
-      const ridesJson = { records: allRides }
 
       const hoursMap = new Map<string, any>()
       ;(hoursJson.records || []).forEach((r: any) => {
@@ -182,14 +165,14 @@ export function DriverHoursPage() {
       })
 
       const ridesMap = new Map<string, RideRecord[]>()
-      ;(ridesJson.records || [])
+      allRides
         .filter((r: any) => {
           const d = r.fields?.[WS.DATE]?.substring(0, 10)
           const drvs = r.fields?.[WS.DRIVER]
-          const driverMatch = Array.isArray(drvs)
+          const match = Array.isArray(drvs)
             ? drvs.some((x: any) => x.id === driverId || x === driverId)
-            : (typeof drvs === 'string' ? drvs === driverId : drvs?.id === driverId)
-          return d && d >= dateFrom && d <= dateTo && driverMatch
+            : (typeof drvs === "string" ? drvs === driverId : drvs?.id === driverId)
+          return d && d >= dateFrom && d <= dateTo && match
         })
         .forEach((r: any) => {
           const date = r.fields?.[WS.DATE]?.substring(0, 10)
@@ -204,12 +187,9 @@ export function DriverHoursPage() {
           })
         })
 
-      // DEBUG
-
-
       const allDates = new Set<string>([...hoursMap.keys(), ...ridesMap.keys()])
-      const driver = drivers.find(d => d.id === driverId)
-      const config = driver?.salaryConfig
+      const driver = drivers.find(d => d.id === driverId) || null
+      const cfg = driver?.salaryConfig
 
       const result: HoursRecord[] = Array.from(allDates).sort().map(date => {
         const hr = hoursMap.get(date)
@@ -221,9 +201,9 @@ export function DriverHoursPage() {
           id: hr?.id || "",
           date, startTime: start, endTime: end,
           notes: hr?.fields?.[DH.NOTES] || "",
-          rides: ridesMap.get(date) || [],
+          rides: (ridesMap.get(date) || []).sort((a, b) => a.pickupTime.localeCompare(b.pickupTime)),
           hoursWorked: worked,
-          pay: config ? calcPay(worked, config, shabbat) : 0,
+          pay: cfg ? calcPay(worked, cfg, shabbat) : 0,
           isShabbat: shabbat
         }
       })
@@ -235,32 +215,33 @@ export function DriverHoursPage() {
     }
   }
 
-  const openEdit = (row: HoursRecord) => {
-    setEditRecord(row); setEditDate(row.date)
-    setEditStart(row.startTime); setEditEnd(row.endTime); setEditNotes(row.notes)
-    setEditDialog(true)
-  }
-  const openNew = () => {
-    setEditRecord(null); setEditDate(format(new Date(), "yyyy-MM-dd"))
-    setEditStart(""); setEditEnd(""); setEditNotes(""); setEditDialog(true)
+  const openDayDialog = (index: number) => {
+    const row = hoursData[index]
+    if (!row) return
+    setDayIndex(index)
+    setEditStart(row.startTime)
+    setEditEnd(row.endTime)
+    setEditNotes(row.notes)
+    setDayDialog(true)
   }
 
-  const handleSave = async () => {
-    if (!tenantId || !tenantFields || !appliedDriverId) return
+  const handleSave = async (nextIndex?: number) => {
+    if (!tenantId || !tenantFields || !appliedDriverId || !currentRow) return
     setSaving(true)
     try {
       const DH = (tenantFields as any).driverHours
+      const row = hoursData[dayIndex]
       const fields: any = {
-        [DH.DATE]: editDate ? `${editDate}T00:00:00.000Z` : null,
-        [DH.START_TIME]: editStart || null,
-        [DH.END_TIME]: editEnd || null,
-        [DH.NOTES]: editNotes || null,
+        [DH.DATE]: row.date ? `${row.date}T00:00:00.000Z` : undefined,
+        [DH.START_TIME]: editStart || undefined,
+        [DH.END_TIME]: editEnd || undefined,
+        [DH.NOTES]: editNotes || undefined,
         [DH.DRIVER]: [{ id: appliedDriverId }]
       }
-      // Remove null fields
-      Object.keys(fields).forEach(k => { if (fields[k] === null) delete fields[k] })
-      if (editRecord?.id) {
-        await fetch(`/api/driver-hours?tenant=${tenantId}&id=${editRecord.id}`, {
+      Object.keys(fields).forEach(k => { if (fields[k] === undefined) delete fields[k] })
+
+      if (row.id) {
+        await fetch(`/api/driver-hours?tenant=${tenantId}&id=${row.id}`, {
           method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fields })
         })
       } else {
@@ -268,23 +249,37 @@ export function DriverHoursPage() {
           method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fields })
         })
       }
-      setEditDialog(false)
+
+      // Refresh data
       await fetchData(appliedDriverId, appliedDateFrom, appliedDateTo)
-      toast({ title: "נשמר בהצלחה" })
-    } catch { toast({ title: "שגיאה בשמירה", variant: "destructive" }) }
-    finally { setSaving(false) }
+      toast({ title: "נשמר" })
+
+      if (nextIndex !== undefined) {
+        const nextRow = hoursData[nextIndex]
+        if (nextRow) {
+          setDayIndex(nextIndex)
+          setEditStart(nextRow.startTime)
+          setEditEnd(nextRow.endTime)
+          setEditNotes(nextRow.notes)
+        }
+      } else {
+        setDayDialog(false)
+      }
+    } catch {
+      toast({ title: "שגיאה בשמירה", variant: "destructive" })
+    } finally {
+      setSaving(false)
+    }
   }
 
-  const handleDelete = async (row: HoursRecord) => {
-    if (!row.id || !tenantId || !confirm("למחוק שורה זו?")) return
-    await fetch(`/api/driver-hours?tenant=${tenantId}&id=${row.id}`, { method: "DELETE" })
-    await fetchData(appliedDriverId, appliedDateFrom, appliedDateTo)
+  const navigateDay = (dir: 1 | -1) => {
+    const next = dayIndex + dir
+    if (next < 0 || next >= hoursData.length) return
+    handleSave(next)
   }
 
   const totalHours = hoursData.reduce((s, r) => s + r.hoursWorked, 0)
   const totalPay = hoursData.reduce((s, r) => s + r.pay, 0)
-  const config = selectedDriver?.salaryConfig
-
 
   return (
     <div className="flex flex-col h-full" dir="rtl">
@@ -294,10 +289,8 @@ export function DriverHoursPage() {
         <DialogContent className="sm:max-w-[420px]" dir="rtl">
           <DialogHeader>
             <DialogTitle>חישוב שעות נהג</DialogTitle>
-            <DialogDescription>בחר נהג וטווח תאריכים</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4 py-2">
-
             <div className="space-y-2">
               <Label className="font-bold">נהג</Label>
               <Select value={tempDriverId} onValueChange={setTempDriverId}>
@@ -312,7 +305,6 @@ export function DriverHoursPage() {
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-2">
               <Label className="font-bold">טווח תאריכים</Label>
               <div className="flex items-center gap-3">
@@ -342,15 +334,10 @@ export function DriverHoursPage() {
               </div>
             </div>
           </div>
-
-          <DialogFooter className="flex-row-reverse gap-2">
-            <Button onClick={applyFilter} disabled={!tempDriverId || !tempDateFrom || !tempDateTo}>
-              הצג דוח
-            </Button>
-            {hoursData.length > 0 && (
-              <Button variant="outline" onClick={() => setShowFilterDialog(false)}>ביטול</Button>
-            )}
-          </DialogFooter>
+          <div className="flex gap-2 justify-end pt-2">
+            <Button onClick={applyFilter} disabled={!tempDriverId || !tempDateFrom || !tempDateTo}>הצג דוח</Button>
+            {hoursData.length > 0 && <Button variant="outline" onClick={() => setShowFilterDialog(false)}>ביטול</Button>}
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -358,16 +345,13 @@ export function DriverHoursPage() {
       <div className="border-b bg-background px-3 py-2 flex items-center gap-3">
         <Button variant="outline" size="sm" className="h-8" onClick={() => setShowFilterDialog(true)}>
           <SlidersHorizontal className="h-4 w-4 ml-1" />
-          {appliedDriverId ? `${selectedDriver?.name || ""} • ${appliedDateFrom && format(parseISO(appliedDateFrom), "dd/MM/yy")} - ${appliedDateTo && format(parseISO(appliedDateTo), "dd/MM/yy")}` : "סינון"}
+          {appliedDriverId
+            ? `${selectedDriver?.name || ""} • ${appliedDateFrom && format(parseISO(appliedDateFrom), "dd/MM/yy")} - ${appliedDateTo && format(parseISO(appliedDateTo), "dd/MM/yy")}`
+            : "סינון"}
         </Button>
-        {hoursData.length > 0 && (
-          <Button onClick={openNew} size="sm" variant="outline" className="h-8 mr-auto">
-            <Plus className="h-4 w-4 ml-1" /> הוסף יום
-          </Button>
-        )}
       </div>
 
-      {/* Config warning */}
+      {/* Config banner */}
       {appliedDriverId && !config && !loading && (
         <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-sm text-amber-800">
           ⚠️ לנהג זה לא הוגדרו הגדרות שכר — לחישוב שכר יש להגדיר בדף נהגים
@@ -377,7 +361,6 @@ export function DriverHoursPage() {
         <div className="bg-blue-50 border-b border-blue-200 px-4 py-2 text-sm text-blue-800 flex gap-4 flex-wrap">
           <span>מודל: <b>{config.type === "daily_fixed" ? "יומית" : config.type === "flat_hourly" ? "שעתי קבוע" : "שעתי בסיס"}</b></span>
           {config.type !== "daily_fixed" && <span>בסיס: <b>{config.baseHours} שעות</b></span>}
-          {config.minimumHours > 0 && <span>מינימום: <b>{config.minimumHours} שעות</b></span>}
           {config.shabbatMultiplier > 1 && <span>שבת/חג: <b>×{config.shabbatMultiplier}</b></span>}
           {config.travelAllowance > 0 && <span>דמי נסיעה: <b>₪{config.travelAllowance}/יום</b></span>}
           <span className="font-medium">{config.grossOrNet === "gross" ? "ברוטו" : "נטו"}</span>
@@ -398,66 +381,37 @@ export function DriverHoursPage() {
           <Table>
             <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
-                <TableHead className="text-right w-8"></TableHead>
                 <TableHead className="text-right">תאריך</TableHead>
+                <TableHead className="text-right">סה״כ נסיעות</TableHead>
                 <TableHead className="text-right">התחלה</TableHead>
                 <TableHead className="text-right">סיום</TableHead>
-                <TableHead className="text-right">שעות</TableHead>
-                {config && <TableHead className="text-right">שכר</TableHead>}
-                <TableHead className="text-right">נסיעות</TableHead>
+                <TableHead className="text-right">סה״כ שעות</TableHead>
+                {config && <TableHead className="text-right">סה״כ שכר</TableHead>}
                 <TableHead className="text-right">הערות</TableHead>
-                <TableHead className="w-16"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {hoursData.map(row => (
-                <React.Fragment key={row.date}>
-                  <TableRow className={row.isShabbat ? "bg-amber-50" : undefined}>
-                    <TableCell className="p-1">
-                      {row.rides.length > 0 && (
-                        <button onClick={() => setExpandedRows(prev => { const n = new Set(prev); n.has(row.date) ? n.delete(row.date) : n.add(row.date); return n })} className="p-1 hover:bg-muted rounded">
-                          {expandedRows.has(row.date) ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                        </button>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-sm font-medium">
-                      {format(parseISO(row.date), "dd/MM/yyyy")}
-                      {row.isShabbat && <span className="mr-1 text-xs text-amber-600">שבת</span>}
-                    </TableCell>
-                    <TableCell className="text-sm">{row.startTime || <span className="text-muted-foreground">—</span>}</TableCell>
-                    <TableCell className="text-sm">{row.endTime || <span className="text-muted-foreground">—</span>}</TableCell>
-                    <TableCell className="text-sm font-medium">{row.hoursWorked > 0 ? `${row.hoursWorked.toFixed(2)}` : <span className="text-muted-foreground">—</span>}</TableCell>
-                    {config && <TableCell className="text-sm font-medium text-green-700">{row.pay > 0 ? `₪${row.pay.toFixed(2)}` : <span className="text-muted-foreground">—</span>}</TableCell>}
-                    <TableCell className="text-sm text-muted-foreground">{row.rides.length > 0 ? `${row.rides.length}` : "—"}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground max-w-[120px] truncate">{row.notes}</TableCell>
-                    <TableCell className="p-1">
-                      <div className="flex gap-1">
-                        <button onClick={() => openEdit(row)} className="p-1 hover:bg-muted rounded"><Pencil className="h-3 w-3" /></button>
-                        {row.id && <button onClick={() => handleDelete(row)} className="p-1 hover:bg-muted rounded text-red-500"><Trash2 className="h-3 w-3" /></button>}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                  {expandedRows.has(row.date) && (
-                    <>
-                      <TableRow className="bg-muted/20">
-                        <TableCell />
-                        <TableCell className="text-[11px] font-semibold text-muted-foreground">הלוך</TableCell>
-                        <TableCell className="text-[11px] font-semibold text-muted-foreground" colSpan={2}>מסלול</TableCell>
-                        <TableCell className="text-[11px] font-semibold text-muted-foreground" colSpan={config ? 3 : 2}>חזור</TableCell>
-                        <TableCell colSpan={2} />
-                      </TableRow>
-                      {row.rides.map((ride) => (
-                        <TableRow key={ride.id} className="bg-muted/10 text-xs border-b border-muted/30">
-                          <TableCell />
-                          <TableCell className="text-muted-foreground">{ride.pickupTime}</TableCell>
-                          <TableCell className="font-medium" colSpan={2}>{ride.description}</TableCell>
-                          <TableCell className="text-muted-foreground" colSpan={config ? 3 : 2}>{ride.dropoffTime}</TableCell>
-                          <TableCell colSpan={2} />
-                        </TableRow>
-                      ))}
-                    </>
-                  )}
-                </React.Fragment>
+              {hoursData.map((row, idx) => (
+                <TableRow
+                  key={row.date}
+                  className={`cursor-pointer hover:bg-muted/60 transition-colors ${row.isShabbat ? "bg-amber-50 hover:bg-amber-100" : ""}`}
+                  onClick={() => openDayDialog(idx)}
+                >
+                  <TableCell className="font-medium text-sm">
+                    {format(parseISO(row.date), "dd/MM/yyyy")}
+                    {row.isShabbat && <span className="mr-2 text-xs text-amber-600">שבת</span>}
+                  </TableCell>
+                  <TableCell className="text-sm text-center">
+                    {row.rides.length > 0
+                      ? <span className="bg-primary/10 text-primary font-medium px-2 py-0.5 rounded-full text-xs">{row.rides.length}</span>
+                      : <span className="text-muted-foreground">—</span>}
+                  </TableCell>
+                  <TableCell className="text-sm">{row.startTime || <span className="text-muted-foreground">—</span>}</TableCell>
+                  <TableCell className="text-sm">{row.endTime || <span className="text-muted-foreground">—</span>}</TableCell>
+                  <TableCell className="text-sm font-medium">{row.hoursWorked > 0 ? row.hoursWorked.toFixed(2) : <span className="text-muted-foreground">—</span>}</TableCell>
+                  {config && <TableCell className="text-sm font-medium text-green-700">{row.pay > 0 ? `₪${row.pay.toFixed(2)}` : <span className="text-muted-foreground">—</span>}</TableCell>}
+                  <TableCell className="text-sm text-muted-foreground max-w-[160px] truncate">{row.notes}</TableCell>
+                </TableRow>
               ))}
             </TableBody>
           </Table>
@@ -474,46 +428,93 @@ export function DriverHoursPage() {
         </div>
       )}
 
-      {/* Edit Dialog */}
-      <Dialog open={editDialog} onOpenChange={setEditDialog}>
-        <DialogContent className="sm:max-w-sm" dir="rtl">
-          <DialogHeader>
-            <DialogTitle>{editRecord?.id ? "עריכת שעות" : "הוספת יום עבודה"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 py-2">
-            <div className="flex flex-col gap-1">
-              <Label className="text-xs">תאריך</Label>
-              <Input type="date" value={editDate} onChange={e => setEditDate(e.target.value)} className="h-8" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex flex-col gap-1">
-                <Label className="text-xs">שעת התחלה</Label>
-                <Input type="time" value={editStart} onChange={e => setEditStart(e.target.value)} className="h-8" />
+      {/* Day Dialog */}
+      {currentRow && (
+        <Dialog open={dayDialog} onOpenChange={setDayDialog}>
+          <DialogContent className="max-w-2xl w-full" dir="rtl">
+            <DialogHeader>
+              <div className="flex items-center justify-between">
+                <Button variant="ghost" size="icon" onClick={() => navigateDay(-1)} disabled={dayIndex === 0 || saving}>
+                  <ChevronRight className="h-5 w-5" />
+                </Button>
+                <div className="text-center">
+                  <div className="text-lg font-bold">
+                    {format(parseISO(currentRow.date), "EEEE, dd/MM/yyyy", { locale: he })}
+                    {currentRow.isShabbat && <span className="mr-2 text-sm text-amber-600">שבת</span>}
+                  </div>
+                  <div className="text-xs text-muted-foreground">{dayIndex + 1} / {hoursData.length}</div>
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => navigateDay(1)} disabled={dayIndex === hoursData.length - 1 || saving}>
+                  <ChevronLeft className="h-5 w-5" />
+                </Button>
               </div>
-              <div className="flex flex-col gap-1">
-                <Label className="text-xs">שעת סיום</Label>
-                <Input type="time" value={editEnd} onChange={e => setEditEnd(e.target.value)} className="h-8" />
+            </DialogHeader>
+
+            <div className="grid grid-cols-2 gap-6 pt-2">
+              {/* Right - rides */}
+              <div className="space-y-2">
+                <Label className="font-bold text-sm">נסיעות ({currentRow.rides.length})</Label>
+                {currentRow.rides.length === 0 ? (
+                  <div className="text-sm text-muted-foreground py-6 text-center border rounded-lg">אין נסיעות ביום זה</div>
+                ) : (
+                  <div className="border rounded-lg overflow-hidden max-h-72 overflow-y-auto">
+                    <table className="w-full text-xs">
+                      <thead className="bg-muted/50 sticky top-0">
+                        <tr>
+                          <th className="text-right p-2 font-medium">הלוך</th>
+                          <th className="text-right p-2 font-medium">מסלול</th>
+                          <th className="text-right p-2 font-medium">חזור</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {currentRow.rides.map((ride, i) => (
+                          <tr key={ride.id} className={i % 2 === 0 ? "bg-background" : "bg-muted/20"}>
+                            <td className="p-2 text-muted-foreground whitespace-nowrap">{ride.pickupTime || "—"}</td>
+                            <td className="p-2 font-medium">{ride.description}</td>
+                            <td className="p-2 text-muted-foreground whitespace-nowrap">{ride.dropoffTime || "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Left - time inputs */}
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-sm font-bold">שעת התחלה</Label>
+                    <Input type="time" value={editStart} onChange={e => setEditStart(e.target.value)} className="h-10 text-base" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-sm font-bold">שעת סיום</Label>
+                    <Input type="time" value={editEnd} onChange={e => setEditEnd(e.target.value)} className="h-10 text-base" />
+                  </div>
+                </div>
+
+                {editStart && editEnd && (
+                  <div className="bg-muted/40 rounded-lg p-3 text-sm space-y-1">
+                    <div>שעות: <b>{calcHours(editStart, editEnd).toFixed(2)}</b></div>
+                    {config && (
+                      <div>שכר: <b className="text-green-700">₪{calcPay(calcHours(editStart, editEnd), config, currentRow.isShabbat).toFixed(2)}</b></div>
+                    )}
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  <Label className="text-sm font-bold">הערות</Label>
+                  <Textarea value={editNotes} onChange={e => setEditNotes(e.target.value)} className="h-24 resize-none text-sm" placeholder="הערות לגבי יום זה..." />
+                </div>
+
+                <Button onClick={() => handleSave()} disabled={saving} className="w-full h-10">
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "שמור"}
+                </Button>
               </div>
             </div>
-            {editStart && editEnd && (
-              <div className="text-sm text-muted-foreground bg-muted/40 rounded p-2">
-                שעות: <b>{calcHours(editStart, editEnd).toFixed(2)}</b>
-                {config && <span className="mr-3">שכר משוער: <b className="text-green-700">₪{calcPay(calcHours(editStart, editEnd), config, isShabbatDay(editDate)).toFixed(2)}</b></span>}
-              </div>
-            )}
-            <div className="flex flex-col gap-1">
-              <Label className="text-xs">הערות</Label>
-              <Textarea value={editNotes} onChange={e => setEditNotes(e.target.value)} className="h-16 text-sm resize-none" />
-            </div>
-          </div>
-          <DialogFooter className="flex-row-reverse gap-2">
-            <Button onClick={handleSave} disabled={saving} size="sm">
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "שמור"}
-            </Button>
-            <Button variant="outline" onClick={() => setEditDialog(false)} size="sm">ביטול</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }
