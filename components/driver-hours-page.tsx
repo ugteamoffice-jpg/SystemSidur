@@ -403,43 +403,43 @@ export function DriverHoursPage() {
             {appliedDriverId ? "אין נתונים לתקופה הנבחרת" : "בחר נהג ותאריכים"}
           </div>
         ) : (
-          <Table>
-            <TableHeader className="sticky top-0 bg-background z-10">
-              <TableRow>
-                <TableHead className="text-right">תאריך</TableHead>
-                <TableHead className="text-right px-4">סה״כ נסיעות</TableHead>
-                <TableHead className="text-right">התחלה</TableHead>
-                <TableHead className="text-right">סיום</TableHead>
-                <TableHead className="text-right">סה״כ שעות</TableHead>
-                {config && <TableHead className="text-right">סה״כ שכר</TableHead>}
-                <TableHead className="text-right">הערות</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <table className="w-full text-sm border-collapse">
+            <thead className="sticky top-0 bg-background z-10">
+              <tr className="border-b-2 border-border">
+                <th className="text-right px-3 py-2 font-semibold border-l border-border w-28">תאריך</th>
+                <th className="text-right px-3 py-2 font-semibold border-l border-border w-20">סה״כ נסיעות</th>
+                <th className="text-right px-3 py-2 font-semibold border-l border-border w-20">התחלה</th>
+                <th className="text-right px-3 py-2 font-semibold border-l border-border w-20">סיום</th>
+                <th className="text-right px-3 py-2 font-semibold border-l border-border w-20">סה״כ שעות</th>
+                {config && <th className="text-right px-3 py-2 font-semibold border-l border-border w-24">סה״כ שכר</th>}
+                <th className="text-right px-3 py-2 font-semibold">הערות</th>
+              </tr>
+            </thead>
+            <tbody>
               {hoursData.map((row, idx) => (
-                <TableRow
+                <tr
                   key={row.date}
-                  className={`cursor-pointer hover:bg-muted/60 transition-colors ${row.isShabbat ? "bg-amber-50 hover:bg-amber-100" : ""}`}
+                  className={`cursor-pointer hover:bg-muted/60 transition-colors border-b border-border ${row.isShabbat ? "bg-amber-50 hover:bg-amber-100" : ""}`}
                   onClick={() => openDayDialog(idx)}
                 >
-                  <TableCell className="font-medium text-sm">
+                  <td className="px-3 py-2 font-medium border-l border-border">
                     {format(parseISO(row.date), "dd/MM/yyyy")}
                     {row.isShabbat && <span className="mr-2 text-xs text-amber-600">שבת</span>}
-                  </TableCell>
-                  <TableCell className="text-sm text-right px-4">
+                  </td>
+                  <td className="px-3 py-2 text-right border-l border-border">
                     {row.rides.length > 0
                       ? <span className="font-medium text-primary">{row.rides.length}</span>
                       : <span className="text-muted-foreground">—</span>}
-                  </TableCell>
-                  <TableCell className="text-sm">{row.startTime || <span className="text-muted-foreground">—</span>}</TableCell>
-                  <TableCell className="text-sm">{row.endTime || <span className="text-muted-foreground">—</span>}</TableCell>
-                  <TableCell className="text-sm font-medium">{row.hoursWorked > 0 ? row.hoursWorked.toFixed(2) : <span className="text-muted-foreground">—</span>}</TableCell>
-                  {config && <TableCell className="text-sm font-medium text-green-700">{row.pay > 0 ? `₪${row.pay.toFixed(2)}` : <span className="text-muted-foreground">—</span>}</TableCell>}
-                  <TableCell className="text-sm text-muted-foreground max-w-[160px] truncate">{row.notes}</TableCell>
-                </TableRow>
+                  </td>
+                  <td className="px-3 py-2 border-l border-border">{row.startTime || <span className="text-muted-foreground">—</span>}</td>
+                  <td className="px-3 py-2 border-l border-border">{row.endTime || <span className="text-muted-foreground">—</span>}</td>
+                  <td className="px-3 py-2 font-medium border-l border-border">{row.hoursWorked > 0 ? row.hoursWorked.toFixed(2) : <span className="text-muted-foreground">—</span>}</td>
+                  {config && <td className="px-3 py-2 font-medium text-green-700 border-l border-border">{row.pay > 0 ? `₪${row.pay.toFixed(2)}` : <span className="text-muted-foreground">—</span>}</td>}
+                  <td className="px-3 py-2 text-muted-foreground max-w-[200px] truncate">{row.notes}</td>
+                </tr>
               ))}
-            </TableBody>
-          </Table>
+            </tbody>
+          </table>
         )}
       </div>
 
