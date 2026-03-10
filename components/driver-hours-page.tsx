@@ -448,7 +448,7 @@ export function DriverHoursPage() {
       {/* Day Dialog */}
       {currentRow && (
         <Dialog open={dayDialog} onOpenChange={setDayDialog}>
-          <DialogContent className="max-w-[98vw] w-[98vw] h-[88vh] flex flex-col overflow-hidden" dir="rtl">
+          <DialogContent style={{maxWidth:"96vw",width:"96vw",height:"88vh",display:"flex",flexDirection:"column",overflow:"hidden"}} dir="rtl">
             {/* Navigation header */}
             <div className="flex items-center justify-between border-b pb-3 mb-2">
               <Button variant="ghost" size="icon" onClick={() => navigateDay(-1)} disabled={dayIndex === 0 || saving}>
