@@ -178,7 +178,13 @@ export function DriverHoursPage() {
       const hoursMap = new Map<string, any>()
       ;(hoursJson.records || []).forEach((r: any) => {
         const date = r.fields?.[DH.DATE]?.substring(0, 10)
-        if (date && date >= dateFrom && date <= dateTo) hoursMap.set(date, r)
+        if (!date || date < dateFrom || date > dateTo) return
+        // Filter by driver client-side (link field)
+        const drvs = r.fields?.[DH.DRIVER]
+        const match = Array.isArray(drvs)
+          ? drvs.some((x: any) => x.id === driverId || x === driverId)
+          : (typeof drvs === "string" ? drvs === driverId : drvs?.id === driverId)
+        if (match) hoursMap.set(date, r)
       })
 
       const ridesMap = new Map<string, RideRecord[]>()
@@ -258,13 +264,15 @@ export function DriverHoursPage() {
       Object.keys(fields).forEach(k => { if (fields[k] === undefined) delete fields[k] })
 
       if (row.id) {
-        await fetch(`/api/driver-hours?tenant=${tenantId}&id=${row.id}`, {
+        const res = await fetch(`/api/driver-hours?tenant=${tenantId}&id=${row.id}`, {
           method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fields })
         })
+        if (!res.ok) { const err = await res.text(); throw new Error(`PATCH failed: ${res.status} ${err}`) }
       } else {
-        await fetch(`/api/driver-hours?tenant=${tenantId}`, {
+        const res = await fetch(`/api/driver-hours?tenant=${tenantId}`, {
           method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fields })
         })
+        if (!res.ok) { const err = await res.text(); throw new Error(`POST failed: ${res.status} ${err}`) }
       }
 
       // Refresh data
