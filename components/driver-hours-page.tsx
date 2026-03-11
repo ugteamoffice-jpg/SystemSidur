@@ -278,14 +278,30 @@ export function DriverHoursPage() {
         if (!res.ok) { const err = await res.text(); throw new Error(`POST failed: ${res.status} ${err}`) }
       }
 
-      // Wait for Teable to sync before re-fetching
-      await new Promise(r => setTimeout(r, 800))
-      // Refresh data — get fresh result directly (avoid stale closure)
-      const freshData = await fetchData(appliedDriverId, appliedDateFrom, appliedDateTo)
+      // Update local state directly — no re-fetch (Teable link field filter unreliable)
+      setHoursData(prev => {
+        const updated = [...prev]
+        const idx = updated.findIndex(r => r.date === row.date)
+        if (idx !== -1) {
+          const worked = calcHours(editStart, editEnd)
+          const driver = drivers.find(d => d.id === appliedDriverId) || null
+          const cfg = driver?.salaryConfig
+          const shabbat = updated[idx].isShabbat
+          updated[idx] = {
+            ...updated[idx],
+            startTime: editStart,
+            endTime: editEnd,
+            notes: editNotes,
+            hoursWorked: worked,
+            pay: cfg ? calcPay(worked, cfg, shabbat) : 0
+          }
+        }
+        return updated
+      })
       toast({ title: "נשמר" })
 
       if (nextIndex !== undefined) {
-        const nextRow = freshData?.[nextIndex]
+        const nextRow = hoursData[nextIndex]
         if (nextRow) {
           setDayIndex(nextIndex)
           setEditStart(nextRow.startTime)
