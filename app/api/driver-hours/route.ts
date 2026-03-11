@@ -35,12 +35,15 @@ export async function POST(request: Request) {
     const TABLE_ID = (config.tables as any).DRIVER_HOURS;
     const API_URL = config.apiUrl;
     const body = await request.json();
+    console.log('POST driver-hours fields:', JSON.stringify(body.fields))
     const response = await fetch(`${API_URL}/api/table/${TABLE_ID}/record?fieldKeyType=id`, {
       method: 'POST', headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ fieldKeyType: "id", typecast: true, records: [{ fields: body.fields }] }), cache: 'no-store'
     });
-    if (!response.ok) return NextResponse.json({ error: 'Failed' }, { status: response.status });
-    return NextResponse.json(await safeJsonParse(response) || { success: true });
+    const resultText = await response.text()
+    console.log('Teable POST response:', response.status, resultText)
+    if (!response.ok) return NextResponse.json({ error: 'Failed', details: resultText }, { status: response.status });
+    try { return NextResponse.json(JSON.parse(resultText) || { success: true }) } catch { return NextResponse.json({ success: true }) }
   } catch (e) { return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 }); }
 }
 

@@ -255,6 +255,7 @@ export function DriverHoursPage() {
     try {
       const DH = (tenantFields as any).driverHours
       const row = hoursData[dayIndex]
+      console.log('handleSave: row.id=', row.id, 'editStart=', editStart, 'editEnd=', editEnd)
       const fields: any = {
         [DH.DATE]: row.date ? `${row.date}T00:00:00.000Z` : undefined,
         [DH.START_TIME]: editStart || undefined,
