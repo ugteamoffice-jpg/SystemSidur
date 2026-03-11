@@ -55,12 +55,15 @@ export async function PATCH(request: Request) {
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
     const body = await request.json();
+    console.log('PATCH driver-hours id:', id, 'fields:', JSON.stringify(body.fields))
     const response = await fetch(`${API_URL}/api/table/${TABLE_ID}/record?fieldKeyType=id`, {
       method: 'PATCH', headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ fieldKeyType: "id", typecast: true, records: [{ id, fields: body.fields }] }), cache: 'no-store'
     });
-    if (!response.ok) return NextResponse.json({ error: 'Failed' }, { status: response.status });
-    return NextResponse.json(await safeJsonParse(response) || { success: true });
+    const resultText = await response.text()
+    console.log('Teable PATCH response:', response.status, resultText)
+    if (!response.ok) return NextResponse.json({ error: 'Failed', details: resultText }, { status: response.status });
+    try { return NextResponse.json(JSON.parse(resultText) || { success: true }) } catch { return NextResponse.json({ success: true }) }
   } catch (e) { return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 }); }
 }
 
