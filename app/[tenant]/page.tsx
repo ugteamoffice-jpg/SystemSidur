@@ -22,27 +22,32 @@ export default function TenantHomePage() {
   const { config, loading } = useTenant()
   const [activePage, setActivePage] = useState<PageType>("work-schedule")
 
-  // Read page from URL on load + set tab title
+  const titles: Record<string, string> = {
+    "work-schedule": 'לו"ז - סידור עבודה',
+    "recurring-rides": 'נסיעות קבועות | לו"ז',
+    "customers": 'לקוחות | לו"ז',
+    "drivers": 'נהגים | לו"ז',
+    "vehicle-types": 'סוגי רכבים | לו"ז',
+    "company-vehicles": 'רכבי חברה | לו"ז',
+    "report-general": 'דוח נסיעות כללי | לו"ז',
+    "driver-hours": 'חישוב שעות נהג | לו"ז',
+    "report-customer": 'דוח לקוח | לו"ז',
+    "report-driver": 'דוח נהג | לו"ז',
+    "report-invoices": 'דוח חשבוניות | לו"ז',
+    "report-profit": 'דוח רווח והפסד | לו"ז',
+  }
+
+  // Read page from URL on load
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const page = params.get("page") as PageType
     if (page) setActivePage(page)
-    const titles: Record<string, string> = {
-      "work-schedule": 'לו"ז - סידור עבודה',
-      "recurring-rides": 'נסיעות קבועות | לו"ז',
-      "customers": 'לקוחות | לו"ז',
-      "drivers": 'נהגים | לו"ז',
-      "vehicle-types": 'סוגי רכבים | לו"ז',
-      "company-vehicles": 'רכבי חברה | לו"ז',
-      "report-general": 'דוח נסיעות כללי | לו"ז',
-      "driver-hours": 'חישוב שעות נהג | לו"ז',
-      "report-customer": 'דוח לקוח | לו"ז',
-      "report-driver": 'דוח נהג | לו"ז',
-      "report-invoices": 'דוח חשבוניות | לו"ז',
-      "report-profit": 'דוח רווח והפסד | לו"ז',
-    }
-    document.title = (page && titles[page]) ? titles[page] : 'לו"ז - סידור עבודה'
   }, [])
+
+  // Update tab title whenever activePage changes
+  useEffect(() => {
+    document.title = titles[activePage] ?? 'לו"ז - סידור עבודה'
+  }, [activePage])
 
   if (loading || !config) {
     return (
