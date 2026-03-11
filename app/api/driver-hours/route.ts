@@ -23,6 +23,9 @@ export async function GET(request: Request) {
     const response = await fetch(endpoint, { headers: { 'Authorization': `Bearer ${apiKey}` }, cache: 'no-store' });
     if (!response.ok) return NextResponse.json({ error: 'Failed' }, { status: response.status });
     const data = await safeJsonParse(response);
+    const records = data?.records || []
+    console.log('GET driver-hours total records:', records.length, 'first record fields keys:', records[0] ? Object.keys(records[0].fields || {}) : 'none')
+    if (records[0]) console.log('first record DRIVER field:', JSON.stringify(records[0].fields?.['fldVnMjWJZTHHysvVGM']))
     return NextResponse.json(data || { records: [] });
   } catch (e) { return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 }); }
 }
