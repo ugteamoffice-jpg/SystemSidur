@@ -20,10 +20,10 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const driverId = searchParams.get('driverId');
     const DH_DRIVER = DH?.DRIVER;
-    // Try server-side filter by driver link field
+    // Filter by driver using Teable filterSet format
     let endpoint = `${API_URL}/api/table/${TABLE_ID}/record?take=1000&fieldKeyType=id`;
     if (driverId && DH_DRIVER) {
-      const filter = JSON.stringify({ conjunction: "and", conditions: [{ fieldId: DH_DRIVER, operator: "isAnyOf", value: [driverId] }] });
+      const filter = JSON.stringify({ conjunction: "and", filterSet: [{ fieldId: DH_DRIVER, operator: "isAnyOf", value: [driverId] }] });
       endpoint += `&filter=${encodeURIComponent(filter)}`;
     }
     const response = await fetch(endpoint, { headers: { 'Authorization': `Bearer ${apiKey}` }, cache: 'no-store' });
