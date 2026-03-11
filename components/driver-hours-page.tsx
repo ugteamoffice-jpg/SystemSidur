@@ -428,7 +428,7 @@ export function DriverHoursPage() {
                   </td>
                   <td className="px-3 py-2 text-right border-l border-border">
                     {row.rides.length > 0
-                      ? <span className="font-medium text-primary">{row.rides.length}</span>
+                      ? <span className="font-medium">{row.rides.length}</span>
                       : <span className="text-muted-foreground">—</span>}
                   </td>
                   <td className="px-3 py-2 border-l border-border">{row.startTime || <span className="text-muted-foreground">—</span>}</td>

@@ -29,19 +29,19 @@ export default function TenantHomePage() {
     if (page) setActivePage(page)
     const titles: Record<string, string> = {
       "work-schedule": 'לו"ז - סידור עבודה',
-      "recurring-rides": "נסיעות קבועות",
-      "customers": "לקוחות",
-      "drivers": "נהגים",
-      "vehicle-types": "סוגי רכבים",
-      "company-vehicles": "רכבי חברה",
-      "report-general": "דוח נסיעות כללי",
-      "driver-hours": "חישוב שעות נהג",
-      "report-customer": "דוח לקוח",
-      "report-driver": "דוח נהג",
-      "report-invoices": "דוח חשבוניות",
-      "report-profit": "דוח רווח והפסד",
+      "recurring-rides": 'נסיעות קבועות | לו"ז',
+      "customers": 'לקוחות | לו"ז',
+      "drivers": 'נהגים | לו"ז',
+      "vehicle-types": 'סוגי רכבים | לו"ז',
+      "company-vehicles": 'רכבי חברה | לו"ז',
+      "report-general": 'דוח נסיעות כללי | לו"ז',
+      "driver-hours": 'חישוב שעות נהג | לו"ז',
+      "report-customer": 'דוח לקוח | לו"ז',
+      "report-driver": 'דוח נהג | לו"ז',
+      "report-invoices": 'דוח חשבוניות | לו"ז',
+      "report-profit": 'דוח רווח והפסד | לו"ז',
     }
-    if (page && titles[page]) document.title = titles[page]
+    document.title = (page && titles[page]) ? titles[page] : 'לו"ז - סידור עבודה'
   }, [])
 
   if (loading || !config) {
