@@ -39,6 +39,8 @@ async function fetchAllRecords(endpoint: string, tenantId: string): Promise<any[
   return all
 }
 
+type RestoreStat = { table: string; created: number; updated: number; errors: number }
+
 export function BackupDialog({ open, onOpenChange }: BackupDialogProps) {
   const { tenantId } = useTenant()
   const { toast } = useToast()
@@ -47,7 +49,7 @@ export function BackupDialog({ open, onOpenChange }: BackupDialogProps) {
   const [isRestoring, setIsRestoring] = React.useState(false)
   const [backupStatus, setBackupStatus] = React.useState("")
   const [restoreProgress, setRestoreProgress] = React.useState(0)
-  const [restoreStats, setRestoreStats] = React.useState<{ table: string; created: number; skipped: number; errors: number }[] | null>(null)
+  const [restoreStats, setRestoreStats] = React.useState<RestoreStat[] | null>(null)
   const [restoreFile, setRestoreFile] = React.useState<File | null>(null)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
@@ -119,47 +121,51 @@ export function BackupDialog({ open, onOpenChange }: BackupDialogProps) {
         : (backup.tables || {})
 
       const tablesToRestore = TABLES.filter(t => Array.isArray(tableData[t.key]) && tableData[t.key].length > 0)
-      const stats: { table: string; created: number; skipped: number; errors: number }[] = []
+      const stats: RestoreStat[] = []
 
       for (let ti = 0; ti < tablesToRestore.length; ti++) {
         const table = tablesToRestore[ti]
         const records: any[] = tableData[table.key]
-        let created = 0, skipped = 0, errors = 0
+        let created = 0, updated = 0, errors = 0
 
-        // Fetch existing IDs to skip duplicates
+        // Fetch existing IDs
         const existingIds = new Set<string>()
         try {
           const existing = await fetchAllRecords(table.key, tenantId)
           existing.forEach((r: any) => existingIds.add(r.id))
         } catch {}
 
-        const toCreate = records.filter((r: any) => !existingIds.has(r.id))
-        skipped = records.length - toCreate.length
-
         const BATCH = 5
-        for (let i = 0; i < toCreate.length; i += BATCH) {
-          const batch = toCreate.slice(i, i + BATCH)
+        for (let i = 0; i < records.length; i += BATCH) {
+          const batch = records.slice(i, i + BATCH)
           await Promise.all(batch.map(async (record: any) => {
             try {
-              const res = await fetch(`/api/${table.key}?tenant=${tenantId}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ fields: record.fields })
-              })
-              if (res.ok) created++
+              const exists = existingIds.has(record.id)
+              const res = await fetch(
+                exists
+                  ? `/api/${table.key}/${record.id}?tenant=${tenantId}`
+                  : `/api/${table.key}?tenant=${tenantId}`,
+                {
+                  method: exists ? "PATCH" : "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ fields: record.fields })
+                }
+              )
+              if (res.ok) { if (exists) updated++; else created++ }
               else errors++
             } catch { errors++ }
           }))
-          setRestoreProgress(Math.round(((ti / tablesToRestore.length) + ((i + BATCH) / toCreate.length / tablesToRestore.length)) * 100))
+          setRestoreProgress(Math.round(((ti / tablesToRestore.length) + ((i + BATCH) / records.length / tablesToRestore.length)) * 100))
         }
 
-        stats.push({ table: table.label, created, skipped, errors })
+        stats.push({ table: table.label, created, updated, errors })
       }
 
       setRestoreStats(stats)
       setRestoreProgress(100)
+      const totalUpdated = stats.reduce((s, r) => s + r.updated, 0)
       const totalCreated = stats.reduce((s, r) => s + r.created, 0)
-      toast({ title: "שחזור הושלם", description: `נוצרו ${totalCreated} רשומות` })
+      toast({ title: "שחזור הושלם", description: `עודכנו ${totalUpdated} • נוצרו ${totalCreated} רשומות` })
     } catch (e) {
       toast({ title: "שגיאה בשחזור", description: "לא ניתן לקרוא את הקובץ", variant: "destructive" })
     } finally {
@@ -210,7 +216,7 @@ export function BackupDialog({ open, onOpenChange }: BackupDialogProps) {
             </div>
             <div className="bg-amber-50 border border-amber-200 rounded p-2 flex gap-2 text-sm text-amber-800">
               <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
-              <span>רשומות שכבר קיימות במערכת לא ייכפלו. רק רשומות חסרות ייווצרו.</span>
+              <span>שחזור מלא — רשומות קיימות יוחזרו לערכי הגיבוי, רשומות חסרות ייווצרו.</span>
             </div>
             <input ref={fileInputRef} type="file" accept=".json" onChange={handleFileSelect} className="hidden" />
             <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="w-full">
@@ -227,7 +233,7 @@ export function BackupDialog({ open, onOpenChange }: BackupDialogProps) {
                 {restoreStats.map(r => (
                   <div key={r.table} className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded p-2">
                     <CheckCircle2 className="h-4 w-4 shrink-0" />
-                    <span><b>{r.table}</b>: נוצרו {r.created} • דולגו {r.skipped}{r.errors > 0 ? ` • ${r.errors} שגיאות` : ""}</span>
+                    <span><b>{r.table}</b>: עודכנו {r.updated} • נוצרו {r.created}{r.errors > 0 ? ` • ${r.errors} שגיאות` : ""}</span>
                   </div>
                 ))}
               </div>
