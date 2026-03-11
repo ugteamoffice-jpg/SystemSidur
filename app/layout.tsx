@@ -16,7 +16,6 @@ const varelaRound = Varela_Round({
 })
 
 export const metadata: Metadata = {
-  title: 'לו"ז - סידור עבודה',
   description: "מערכת ניהול הסעות",
   generator: 'v0.app',
   icons: {
