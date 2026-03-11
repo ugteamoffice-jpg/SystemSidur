@@ -18,14 +18,17 @@ export async function GET(request: Request) {
     const API_URL = config.apiUrl;
     const DH = (config.fields as any).driverHours;
     const { searchParams } = new URL(request.url);
-    // No server-side filter — link fields don't support "contains" in Teable. Filter client-side.
+    const driverId = searchParams.get('driverId');
+    const DH_DRIVER = DH?.DRIVER;
+    // Try server-side filter by driver link field
     let endpoint = `${API_URL}/api/table/${TABLE_ID}/record?take=1000&fieldKeyType=id`;
+    if (driverId && DH_DRIVER) {
+      const filter = JSON.stringify({ conjunction: "and", conditions: [{ fieldId: DH_DRIVER, operator: "isAnyOf", value: [driverId] }] });
+      endpoint += `&filter=${encodeURIComponent(filter)}`;
+    }
     const response = await fetch(endpoint, { headers: { 'Authorization': `Bearer ${apiKey}` }, cache: 'no-store' });
     if (!response.ok) return NextResponse.json({ error: 'Failed' }, { status: response.status });
     const data = await safeJsonParse(response);
-    const records = data?.records || []
-    console.log('GET driver-hours total records:', records.length, 'first record fields keys:', records[0] ? Object.keys(records[0].fields || {}) : 'none')
-    if (records[0]) console.log('first record DRIVER field:', JSON.stringify(records[0].fields?.['fldVnMjWJZTHHysvVGM']))
     return NextResponse.json(data || { records: [] });
   } catch (e) { return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 }); }
 }

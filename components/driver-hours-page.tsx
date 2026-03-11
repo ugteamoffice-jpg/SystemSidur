@@ -181,9 +181,10 @@ export function DriverHoursPage() {
         if (!date || date < dateFrom || date > dateTo) return
         // Filter by driver client-side (link field)
         const drvs = r.fields?.[DH.DRIVER]
-        const match = Array.isArray(drvs)
+        // If Teable doesn't return the link field (undefined), trust server-side filter and include
+        const match = !drvs || (Array.isArray(drvs)
           ? drvs.some((x: any) => x.id === driverId || x === driverId)
-          : (typeof drvs === "string" ? drvs === driverId : drvs?.id === driverId)
+          : (typeof drvs === "string" ? drvs === driverId : drvs?.id === driverId))
         if (match) hoursMap.set(date, r)
       })
 
