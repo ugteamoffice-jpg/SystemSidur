@@ -29,6 +29,7 @@ export async function GET(request: Request) {
     const response = await fetch(endpoint, { headers: { 'Authorization': `Bearer ${apiKey}` }, cache: 'no-store' });
     if (!response.ok) return NextResponse.json({ error: 'Failed' }, { status: response.status });
     const data = await safeJsonParse(response);
+    console.log('GET driver-hours count:', data?.records?.length, 'driverId:', driverId)
     return NextResponse.json(data || { records: [] });
   } catch (e) { return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 }); }
 }
