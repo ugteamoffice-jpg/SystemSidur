@@ -23,7 +23,7 @@ export default function TenantHomePage() {
   const [activePage, setActivePage] = useState<PageType>("work-schedule")
 
   const titles: Record<string, string> = {
-    "work-schedule": 'לו"ז - סידור עבודה',
+    "work-schedule": 'סידור עבודה | לו"ז',
     "recurring-rides": 'נסיעות קבועות | לו"ז',
     "customers": 'לקוחות | לו"ז',
     "drivers": 'נהגים | לו"ז',
@@ -46,7 +46,7 @@ export default function TenantHomePage() {
 
   // Update tab title whenever activePage changes
   useEffect(() => {
-    document.title = titles[activePage] ?? 'לו"ז - סידור עבודה'
+    document.title = titles[activePage] ?? 'סידור עבודה | לו"ז'
   }, [activePage])
 
   if (loading || !config) {
