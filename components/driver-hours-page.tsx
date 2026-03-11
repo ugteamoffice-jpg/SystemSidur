@@ -231,6 +231,7 @@ export function DriverHoursPage() {
         }
       })
       setHoursData(result)
+      return result
     } catch {
       toast({ title: "שגיאה בטעינת נתונים", variant: "destructive" })
     } finally {
@@ -275,12 +276,12 @@ export function DriverHoursPage() {
         if (!res.ok) { const err = await res.text(); throw new Error(`POST failed: ${res.status} ${err}`) }
       }
 
-      // Refresh data
-      await fetchData(appliedDriverId, appliedDateFrom, appliedDateTo)
+      // Refresh data — get fresh result directly (avoid stale closure)
+      const freshData = await fetchData(appliedDriverId, appliedDateFrom, appliedDateTo)
       toast({ title: "נשמר" })
 
       if (nextIndex !== undefined) {
-        const nextRow = hoursData[nextIndex]
+        const nextRow = freshData?.[nextIndex]
         if (nextRow) {
           setDayIndex(nextIndex)
           setEditStart(nextRow.startTime)
