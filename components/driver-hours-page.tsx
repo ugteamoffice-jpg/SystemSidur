@@ -276,6 +276,8 @@ export function DriverHoursPage() {
         if (!res.ok) { const err = await res.text(); throw new Error(`POST failed: ${res.status} ${err}`) }
       }
 
+      // Wait for Teable to sync before re-fetching
+      await new Promise(r => setTimeout(r, 800))
       // Refresh data — get fresh result directly (avoid stale closure)
       const freshData = await fetchData(appliedDriverId, appliedDateFrom, appliedDateTo)
       toast({ title: "נשמר" })
