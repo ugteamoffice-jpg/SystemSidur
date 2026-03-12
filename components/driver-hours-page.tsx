@@ -404,11 +404,36 @@ export function DriverHoursPage() {
         </div>
       )}
       {config && (
-        <div className="bg-blue-50 border-b border-blue-200 px-4 py-2 text-sm text-blue-800 flex gap-4 flex-wrap">
+        <div className="bg-blue-50 border-b border-blue-200 px-4 py-2 text-sm text-blue-800 flex gap-3 flex-wrap items-center">
           <span>מודל: <b>{config.type === "daily_fixed" ? "יומית" : config.type === "flat_hourly" ? "שעתי קבוע" : "שעתי בסיס"}</b></span>
-          {config.type !== "daily_fixed" && <span>בסיס: <b>{config.baseHours} שעות</b></span>}
-          {config.shabbatMultiplier > 1 && <span>שבת/חג: <b>×{config.shabbatMultiplier}</b></span>}
-          {config.travelAllowance > 0 && <span>דמי נסיעה: <b>₪{config.travelAllowance}/יום</b></span>}
+          <span className="text-blue-300">|</span>
+          {config.type === "daily_fixed" && (
+            <span><b>₪{config.dailyFixedRate}</b>/יום</span>
+          )}
+          {config.type === "flat_hourly" && (
+            <><span><b>₪{config.baseRate}</b>/שעה</span>{config.baseHours > 0 && <><span className="text-blue-300">|</span><span>מינימום <b>{config.baseHours} שעות</b></span></>}</> 
+          )}
+          {config.type === "hourly" && config.tiers && config.tiers.length > 0 && (() => {
+            const baseRate = config.baseRate || 0
+            let remaining = 99
+            return config.tiers.map((tier, i) => {
+              const h = tier.upToHours !== null ? Math.min(remaining, tier.upToHours) : remaining
+              remaining = Math.max(0, remaining - h)
+              const pct = tier.percentage ?? Math.round((tier.ratePerHour || 0) / (baseRate || 1) * 100)
+              const rate = Math.round(baseRate * pct / 100 * 100) / 100
+              const hoursLabel = tier.upToHours !== null ? `${h} שעות` : `מעל ${config.tiers[i-1]?.upToHours || 0} שעות`
+              return (
+                <span key={i} className="flex items-center gap-1">
+                  {i > 0 && <span className="text-blue-300 mx-1">|</span>}
+                  <b>{hoursLabel}</b> × <b>₪{rate}</b>
+                  <span className="text-blue-500 text-xs">({pct}%)</span>
+                </span>
+              )
+            })
+          })()}
+          <span className="text-blue-300">|</span>
+          {config.shabbatMultiplier > 1 && <><span>שבת/חג: <b>×{config.shabbatMultiplier}</b></span><span className="text-blue-300">|</span></>}
+          {config.travelAllowance > 0 && <><span>נסיעות: <b>₪{config.travelAllowance}/יום</b></span><span className="text-blue-300">|</span></>}
           <span className="font-medium">{config.grossOrNet === "gross" ? "ברוטו" : "נטו"}</span>
         </div>
       )}
