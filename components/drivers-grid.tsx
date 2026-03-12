@@ -660,7 +660,11 @@ export default function DriversGrid() {
                         <FileText className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                         <span className="flex-1 truncate">{a.name}</span>
                         <button type="button" onClick={() => {
-                          if (a.url) window.open(a.url, "_blank")
+                          const params = new URLSearchParams({ tenant: tenantId })
+                          if (a.presignedUrl || a.url) params.set("url", a.presignedUrl || a.url)
+                          else if (a.token) params.set("token", a.token)
+                          if (a.name) params.set("name", a.name)
+                          window.open(`/api/view-file?${params.toString()}`, "_blank")
                         }} className="text-blue-600 hover:text-blue-800"><Eye className="h-3 w-3" /></button>
                       </div>
                     ))}
