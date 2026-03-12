@@ -48,7 +48,7 @@ function calcPay(hours: number, config: any, isShabbat: boolean): number {
   if (config.type === "daily_fixed") {
     pay = config.dailyFixedRate
   } else if (config.type === "flat_hourly") {
-    pay = effectiveHours * baseRate
+    pay = hours * baseRate
   } else {
     let remaining = effectiveHours
     for (const tier of (config.tiers || [])) {
@@ -411,7 +411,7 @@ export function DriverHoursPage() {
             <span><b>₪{config.dailyFixedRate}</b>/יום</span>
           )}
           {config.type === "flat_hourly" && (
-            <><span><b>₪{config.baseRate}</b>/שעה</span>{config.baseHours > 0 && <><span className="text-blue-300">|</span><span>מינימום <b>{config.baseHours} שעות</b></span></>}</> 
+            <span><b>₪{config.baseRate}</b>/שעה</span>
           )}
           {config.type === "hourly" && config.tiers && config.tiers.length > 0 && (() => {
             const baseRate = config.baseRate || 0

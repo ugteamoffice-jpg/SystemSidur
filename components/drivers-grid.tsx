@@ -545,18 +545,20 @@ export default function DriversGrid() {
                     {/* hourly fields */}
                     {salaryConfig.type !== "daily_fixed" && (
                       <>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1">
-                            <Label className="text-xs">שעות בסיס ביום</Label>
-                            <Input type="number" className="h-8 text-xs" value={salaryConfig.baseHours}
-                              onChange={e => setSalaryConfig((p: any) => ({...p, baseHours: +e.target.value}))} />
+                        {salaryConfig.type === "hourly" && (
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <Label className="text-xs">שעות בסיס ביום</Label>
+                              <Input type="number" className="h-8 text-xs" value={salaryConfig.baseHours}
+                                onChange={e => setSalaryConfig((p: any) => ({...p, baseHours: +e.target.value}))} />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">מינימום שעות לתשלום</Label>
+                              <Input type="number" className="h-8 text-xs" value={salaryConfig.minimumHours}
+                                onChange={e => setSalaryConfig((p: any) => ({...p, minimumHours: +e.target.value}))} />
+                            </div>
                           </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs">מינימום שעות לתשלום</Label>
-                            <Input type="number" className="h-8 text-xs" value={salaryConfig.minimumHours}
-                              onChange={e => setSalaryConfig((p: any) => ({...p, minimumHours: +e.target.value}))} />
-                          </div>
-                        </div>
+                        )}
 
                         {/* Tiers */}
                         {/* Base rate - for both hourly types */}
