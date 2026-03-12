@@ -661,13 +661,12 @@ export default function DriversGrid() {
                         <span className="flex-1 truncate">{a.name}</span>
                         <button type="button" onClick={async () => {
                           try {
-                            let url = a.url || ""
-                            if (a.token && !url) {
+                            if (a.token) {
                               const res = await fetch(`/api/attachment-url?token=${a.token}&tenant=${tenantId}`)
                               const data = await res.json()
-                              url = data.url
+                              if (data.url) { window.open(data.url, "_blank"); return }
                             }
-                            if (url) window.open(url, "_blank")
+                            if (a.url) window.open(a.url, "_blank")
                           } catch {}
                         }} className="text-blue-600 hover:text-blue-800"><Eye className="h-3 w-3" /></button>
                       </div>
