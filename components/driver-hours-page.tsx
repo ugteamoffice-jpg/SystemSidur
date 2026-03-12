@@ -262,7 +262,7 @@ export function DriverHoursPage() {
         [DH.START_TIME]: editStart || undefined,
         [DH.END_TIME]: editEnd || undefined,
         [DH.NOTES]: editNotes || undefined,
-        [DH.DRIVER]: [{ id: appliedDriverId }]
+        [DH.DRIVER]: [appliedDriverId]
       }
       Object.keys(fields).forEach(k => { if (fields[k] === undefined) delete fields[k] })
 
