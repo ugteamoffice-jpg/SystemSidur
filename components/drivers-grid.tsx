@@ -51,7 +51,7 @@ export default function DriversGrid() {
       { upToHours: null, percentage: 150, label: "מעל הכל" }
     ],
     dailyFixedRate: 0,
-    shabbatMultiplier: 1.5,
+    shabbatMultiplier: 150,
     travelAllowance: 0
   })
   const CV_CAR_NUMBER = tenantFields?.companyVehicles?.CAR_NUMBER || ""
@@ -610,8 +610,8 @@ export default function DriversGrid() {
                     {/* Extras */}
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
-                        <Label className="text-xs">מכפיל שבת/חג</Label>
-                        <Input type="number" step="0.1" className="h-8 text-xs" value={salaryConfig.shabbatMultiplier}
+                        <Label className="text-xs">שבת/חג (%)</Label>
+                        <Input type="number" step="1" className="h-8 text-xs" value={salaryConfig.shabbatMultiplier}
                           onChange={e => setSalaryConfig((p: any) => ({...p, shabbatMultiplier: +e.target.value}))} />
                       </div>
                       <div className="space-y-1">

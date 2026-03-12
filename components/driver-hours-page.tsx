@@ -59,7 +59,7 @@ function calcPay(hours: number, config: any, isShabbat: boolean): number {
       remaining -= h
     }
   }
-  if (isShabbat && config.shabbatMultiplier > 1) pay *= config.shabbatMultiplier
+  if (isShabbat && config.shabbatMultiplier > 100) pay = pay * (config.shabbatMultiplier / 100)
   pay += (config.travelAllowance || 0)
   return Math.round(pay * 100) / 100
 }
@@ -432,7 +432,7 @@ export function DriverHoursPage() {
             })
           })()}
           <span className="text-blue-300">|</span>
-          {config.shabbatMultiplier > 1 && <><span>שבת/חג: <b>×{config.shabbatMultiplier}</b></span><span className="text-blue-300">|</span></>}
+          {config.shabbatMultiplier > 100 && <><span>שבת/חג: <b>{config.shabbatMultiplier}%</b></span><span className="text-blue-300">|</span></>}
           {config.travelAllowance > 0 && <><span>נסיעות: <b>₪{config.travelAllowance}/יום</b></span><span className="text-blue-300">|</span></>}
           <span className="font-medium">{config.grossOrNet === "gross" ? "ברוטו" : "נטו"}</span>
         </div>
@@ -605,8 +605,8 @@ export function DriverHoursPage() {
                               <span className="font-medium">₪{t.pay.toFixed(2)}</span>
                             </div>
                           ))}
-                          {currentRow.isShabbat && config?.shabbatMultiplier > 1 && (
-                            <div className="text-base text-amber-600">× {config.shabbatMultiplier} שבת/חג</div>
+                          {currentRow.isShabbat && config?.shabbatMultiplier > 100 && (
+                            <div className="text-base text-amber-600">{config.shabbatMultiplier}% שבת/חג</div>
                           )}
                           {config?.travelAllowance > 0 && (
                             <div className="flex justify-between text-base">
