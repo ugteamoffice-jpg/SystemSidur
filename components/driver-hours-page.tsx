@@ -490,14 +490,36 @@ export function DriverHoursPage() {
       </div>
 
       {/* Summary footer */}
-      {hoursData.length > 0 && (
-        <div className="border-t bg-muted/30 px-4 py-2 flex gap-6 text-sm font-medium flex-wrap">
-          <span>סה״כ ימים: <b>{hoursData.length}</b></span>
-          <span>סה״כ שעות: <b>{totalHours.toFixed(2)}</b></span>
-          {config && <span className="text-green-800 font-bold">סה״כ לתשלום: ₪{totalPay.toFixed(2)}</span>}
-          {config && <span className="text-muted-foreground text-xs">{config.grossOrNet === "net" ? "נטו" : "ברוטו"}</span>}
-        </div>
-      )}
+      {hoursData.length > 0 && (() => {
+        const workedDays = hoursData.filter(r => r.hoursWorked > 0).length
+        return (
+          <div className="border-t bg-muted/30 px-4 py-2 flex gap-4 text-sm font-medium flex-wrap items-center">
+            <span>סה״כ ימים: <b>{workedDays}</b></span>
+            {config?.type === "hourly" && (() => {
+              // Aggregate tier hours+pay across all days
+              const tierTotals = new Map<string, { hours: number; rate: number; pay: number }>()
+              hoursData.forEach(r => {
+                if (r.hoursWorked <= 0) return
+                calcTierBreakdown(r.hoursWorked, config).forEach(t => {
+                  const key = t.label
+                  const existing = tierTotals.get(key) || { hours: 0, rate: t.rate, pay: 0 }
+                  tierTotals.set(key, { hours: existing.hours + t.hours, rate: t.rate, pay: existing.pay + t.pay })
+                })
+              })
+              return Array.from(tierTotals.entries()).map(([label, t]) => (
+                <span key={label} className="text-blue-800">
+                  <b>{label}</b>: {t.hours.toFixed(1)}ש × ₪{t.rate.toFixed(0)} = <b>₪{t.pay.toFixed(0)}</b>
+                </span>
+              ))
+            })()}
+            {config?.type === "flat_hourly" && (
+              <span>סה״כ שעות: <b>{totalHours.toFixed(2)}</b></span>
+            )}
+            {config && <span className="text-green-800 font-bold">סה״כ לתשלום: ₪{totalPay.toFixed(2)}</span>}
+            {config && <span className="text-muted-foreground text-xs">{config.grossOrNet === "net" ? "נטו" : "ברוטו"}</span>}
+          </div>
+        )
+      })()}
 
       {/* Day Dialog */}
       {currentRow && (
