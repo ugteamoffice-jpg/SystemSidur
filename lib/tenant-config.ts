@@ -89,6 +89,7 @@ const configCache: Record<string, TenantConfig> = {}
 /**
  * טעינת config בצד שרת (API routes, middleware)
  * ה-API key נשלף מ-env variable: TEABLE_API_KEY_{TENANT_ID}
+ * Field IDs מתגלים אוטומטית מ-Teable לפי שם השדה העברי (field-names.json)
  */
 export async function loadTenantConfigServer(tenantId: string): Promise<TenantConfig | null> {
   if (configCache[tenantId]) return configCache[tenantId]
@@ -98,7 +99,13 @@ export async function loadTenantConfigServer(tenantId: string): Promise<TenantCo
     const path = await import("path")
     const filePath = path.join(process.cwd(), "config", "tenants", `${tenantId}.json`)
     const data = await fs.readFile(filePath, "utf-8")
-    const config = JSON.parse(data) as TenantConfig
+    const rawConfig = JSON.parse(data)
+
+    // Auto-resolve field IDs from Teable by Hebrew field name
+    const { resolveFields } = await import("@/lib/field-resolver")
+    const resolvedFields = await resolveFields(tenantId, rawConfig)
+    const config = { ...rawConfig, fields: resolvedFields } as TenantConfig
+
     configCache[tenantId] = config
     return config
   } catch (err) {

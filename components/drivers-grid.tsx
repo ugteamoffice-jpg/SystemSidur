@@ -78,6 +78,8 @@ export default function DriversGrid() {
   const [futureRidesList, setFutureRidesList] = useState<any[]>([])
   const [pendingSaveFields, setPendingSaveFields] = useState<any>(null)
   const [isUpdatingFuture, setIsUpdatingFuture] = useState(false)
+  const [contractFile, setContractFile] = useState<File | null>(null)
+  const contractFileRef = useRef<HTMLInputElement>(null)
 
   const [scrollTop, setScrollTop] = useState(0)
   const [containerHeight, setContainerHeight] = useState(600)
@@ -175,6 +177,17 @@ export default function DriversGrid() {
     } catch { return [] }
   }
 
+  const uploadContractFile = async (recordId: string) => {
+    const DRV = (tenantFields as any)?.drivers
+    if (!contractFile || !DRV?.CONTRACT) return
+    const fd = new FormData()
+    fd.append("file", contractFile)
+    fd.append("tableId", (tenantFields as any)?.tables?.DRIVERS || "")
+    fd.append("recordId", recordId)
+    fd.append("fieldId", DRV.CONTRACT)
+    await fetch(`/api/upload-to-record?tenant=${tenantId}`, { method: "POST", body: fd })
+  }
+
   const handleCreateDriver = async () => {
     try {
       const filteredFields = Object.entries(newDriver).reduce((acc, [key, value]) => {
@@ -184,8 +197,11 @@ export default function DriversGrid() {
       filteredFields[STATUS_FIELD_ID] = "פעיל"
       const response = await fetch(`/api/drivers?tenant=${tenantId}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fields: filteredFields }) })
       if (!response.ok) throw new Error("Failed")
+      const created = await response.json()
+      const newId = created?.records?.[0]?.id || created?.id
+      if (newId) await uploadContractFile(newId)
       toast({ title: "הצלחה", description: "נוצר בהצלחה" })
-      setIsDialogOpen(false); resetForm(); fetchDrivers();
+      setIsDialogOpen(false); setContractFile(null); resetForm(); fetchDrivers();
     } catch (error) { toast({ title: "שגיאה", description: "נכשל", variant: "destructive" }) }
   }
 
@@ -257,6 +273,8 @@ export default function DriversGrid() {
         toast({ title: "הצלחה", description: "עודכן בהצלחה" })
       }
 
+      if (editingDriverId) await uploadContractFile(editingDriverId)
+      setContractFile(null)
       setIsDialogOpen(false); setEditingDriverId(null); resetForm(); setFutureRidesDialog(false); setPendingSaveFields(null)
       setDrivers(prev => prev.map(d => d.id === editingDriverId ? { ...d, fields: { ...d.fields, ...fields } } : d))
     } catch { toast({ title: "שגיאה", description: "נכשל", variant: "destructive" }) }
@@ -627,6 +645,35 @@ export default function DriversGrid() {
                 )}
               </div>
             )}
+
+            {/* Contract Upload */}
+            <div className="space-y-2 border rounded-lg p-3 bg-muted/30">
+              <Label className="text-sm font-medium">חוזה העסקה</Label>
+              {isEditMode && (() => {
+                const DRV = (tenantFields as any)?.drivers
+                const existingContract = drivers.find(d => d.id === editingDriverId)?.fields?.[DRV?.CONTRACT]
+                return existingContract && existingContract.length > 0 ? (
+                  <div className="flex items-center gap-2 bg-white border rounded px-2 py-1 text-xs">
+                    <FileText className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                    <span className="flex-1 truncate">{existingContract[0]?.name}</span>
+                    <a href={existingContract[0]?.url} target="_blank" rel="noreferrer" className="text-blue-600 hover:text-blue-800"><Eye className="h-3 w-3" /></a>
+                  </div>
+                ) : <p className="text-xs text-muted-foreground">אין חוזה מצורף</p>
+              })()}
+              {contractFile && (
+                <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded px-2 py-1 text-xs">
+                  <FileText className="h-3 w-3 text-blue-500 flex-shrink-0" />
+                  <span className="flex-1 truncate">{contractFile.name}</span>
+                  <button onClick={() => { setContractFile(null); if (contractFileRef.current) contractFileRef.current.value = "" }} className="text-red-500 hover:text-red-700"><X className="h-3 w-3" /></button>
+                </div>
+              )}
+              <input ref={contractFileRef} type="file" className="hidden" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                onChange={e => setContractFile(e.target.files?.[0] || null)} />
+              <Button variant="outline" size="sm" className="text-xs h-7 gap-1" onClick={() => contractFileRef.current?.click()} type="button">
+                <Upload className="h-3 w-3" />
+                {contractFile || (isEditMode && drivers.find(d => d.id === editingDriverId)?.fields?.[(tenantFields as any)?.drivers?.CONTRACT]?.length > 0) ? "החלף חוזה" : "העלה חוזה"}
+              </Button>
+            </div>
 
             <div className="flex justify-end gap-2 mt-4">
                 {isEditMode && (
