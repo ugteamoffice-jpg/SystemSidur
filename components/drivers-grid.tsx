@@ -652,27 +652,41 @@ export default function DriversGrid() {
               <Label className="text-sm font-medium">חוזה העסקה</Label>
               {isEditMode && (() => {
                 const DRV = (tenantFields as any)?.drivers
-                const existingContract = drivers.find(d => d.id === editingDriverId)?.fields?.[DRV?.CONTRACT]
-                return existingContract && existingContract.length > 0 ? (
-                  <div className="flex items-center gap-2 bg-white border rounded px-2 py-1 text-xs">
-                    <FileText className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                    <span className="flex-1 truncate">{existingContract[0]?.name}</span>
-                    <a href={existingContract[0]?.url} target="_blank" rel="noreferrer" className="text-blue-600 hover:text-blue-800"><Eye className="h-3 w-3" /></a>
+                const existingContracts: any[] = drivers.find(d => d.id === editingDriverId)?.fields?.[DRV?.CONTRACT] || []
+                return existingContracts.length > 0 ? (
+                  <div className="flex flex-col gap-1 mb-1">
+                    {existingContracts.map((a: any, i: number) => (
+                      <div key={i} className="flex items-center gap-2 bg-muted rounded px-2 py-1 text-xs">
+                        <FileText className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                        <span className="flex-1 truncate">{a.name}</span>
+                        <button type="button" onClick={async () => {
+                          try {
+                            let url = a.url || ""
+                            if (a.token && !url) {
+                              const res = await fetch(`/api/attachment-url?token=${a.token}&tenant=${tenantId}`)
+                              const data = await res.json()
+                              url = data.url
+                            }
+                            if (url) window.open(url, "_blank")
+                          } catch {}
+                        }} className="text-blue-600 hover:text-blue-800"><Eye className="h-3 w-3" /></button>
+                      </div>
+                    ))}
                   </div>
-                ) : <p className="text-xs text-muted-foreground">אין חוזה מצורף</p>
+                ) : !contractFile ? <p className="text-xs text-muted-foreground">אין חוזה מצורף</p> : null
               })()}
               {contractFile && (
                 <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded px-2 py-1 text-xs">
                   <FileText className="h-3 w-3 text-blue-500 flex-shrink-0" />
                   <span className="flex-1 truncate">{contractFile.name}</span>
-                  <button onClick={() => { setContractFile(null); if (contractFileRef.current) contractFileRef.current.value = "" }} className="text-red-500 hover:text-red-700"><X className="h-3 w-3" /></button>
+                  <button type="button" onClick={() => { setContractFile(null); if (contractFileRef.current) contractFileRef.current.value = "" }} className="text-red-500 hover:text-red-700"><X className="h-3 w-3" /></button>
                 </div>
               )}
               <input ref={contractFileRef} type="file" className="hidden" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                 onChange={e => setContractFile(e.target.files?.[0] || null)} />
               <Button variant="outline" size="sm" className="text-xs h-7 gap-1" onClick={() => contractFileRef.current?.click()} type="button">
                 <Upload className="h-3 w-3" />
-                {contractFile || (isEditMode && drivers.find(d => d.id === editingDriverId)?.fields?.[(tenantFields as any)?.drivers?.CONTRACT]?.length > 0) ? "החלף חוזה" : "העלה חוזה"}
+                {contractFile || (isEditMode && (drivers.find(d => d.id === editingDriverId)?.fields?.[(tenantFields as any)?.drivers?.CONTRACT] || []).length > 0) ? "החלף חוזה" : "העלה חוזה"}
               </Button>
             </div>
 
