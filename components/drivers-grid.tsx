@@ -659,15 +659,8 @@ export default function DriversGrid() {
                       <div key={i} className="flex items-center gap-2 bg-muted rounded px-2 py-1 text-xs">
                         <FileText className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                         <span className="flex-1 truncate">{a.name}</span>
-                        <button type="button" onClick={async () => {
-                          try {
-                            if (a.token) {
-                              const res = await fetch(`/api/attachment-url?token=${a.token}&tenant=${tenantId}`)
-                              const data = await res.json()
-                              if (data.url) { window.open(data.url, "_blank"); return }
-                            }
-                            if (a.url) window.open(a.url, "_blank")
-                          } catch {}
+                        <button type="button" onClick={() => {
+                          if (a.url) window.open(a.url, "_blank")
                         }} className="text-blue-600 hover:text-blue-800"><Eye className="h-3 w-3" /></button>
                       </div>
                     ))}
