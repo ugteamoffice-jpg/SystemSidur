@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Plus, Search, Loader2, Trash2, Car, ChevronDown, X, Settings2, Upload, FileText, Eye } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { useTenantFields, useTenant } from "@/lib/tenant-context"
+import { useTenantFields, useTenant, useTenantTables } from "@/lib/tenant-context"
 import { format } from "date-fns"
 
 interface Driver {
@@ -29,6 +29,7 @@ interface CompanyVehicle {
 export default function DriversGrid() {
   const tenantFields = useTenantFields()
   const { tenantId } = useTenant()
+  const tenantTables = useTenantTables()
   const STATUS_FIELD_ID = tenantFields?.drivers.STATUS || ""
   const FIRST_NAME_ID = tenantFields?.drivers.FIRST_NAME || ""
   const PHONE_ID = tenantFields?.drivers.PHONE || ""
@@ -182,7 +183,7 @@ export default function DriversGrid() {
     if (!contractFile || !DRV?.CONTRACT) return
     const fd = new FormData()
     fd.append("file", contractFile)
-    fd.append("tableId", (tenantFields as any)?.tables?.DRIVERS || "")
+    fd.append("tableId", (tenantTables as any)?.DRIVERS || "")
     fd.append("recordId", recordId)
     fd.append("fieldId", DRV.CONTRACT)
     await fetch(`/api/upload-to-record?tenant=${tenantId}`, { method: "POST", body: fd })
