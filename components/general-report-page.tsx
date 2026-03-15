@@ -597,7 +597,7 @@ export function GeneralReportPage() {
           <Button variant={selectedIds.size > 0 ? "default" : "outline"} size="sm"
             className={`shrink-0 text-xs md:text-sm h-8 md:h-9 px-2 md:px-3 gap-1 transition-colors ${selectedIds.size > 0 ? "bg-red-500 hover:bg-red-600 text-white" : "opacity-50 cursor-not-allowed"}`}
             onClick={() => setShowDeleteDialog(true)} disabled={selectedIds.size === 0}>
-            <Trash2 className="h-3.5 w-3.5" /> מחק
+            <Trash2 className="h-3.5 w-3.5" />
           </Button>
 
           {hasSearched && (
