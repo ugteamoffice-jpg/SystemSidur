@@ -277,7 +277,7 @@ export default function DriversGrid() {
       if (editingDriverId) await uploadContractFile(editingDriverId)
       setContractFile(null)
       setIsDialogOpen(false); setEditingDriverId(null); resetForm(); setFutureRidesDialog(false); setPendingSaveFields(null)
-      setDrivers(prev => prev.map(d => d.id === editingDriverId ? { ...d, fields: { ...d.fields, ...fields } } : d))
+      fetchDrivers()
     } catch { toast({ title: "שגיאה", description: "נכשל", variant: "destructive" }) }
   }
 
