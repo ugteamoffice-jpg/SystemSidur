@@ -53,9 +53,16 @@ export async function DELETE(
     const { id } = await params;
     const ctx = await getTenantFromRequest(request);
     if (isTenantError(ctx)) return ctx;
-    const { client, config } = ctx;
+    const { config, apiKey } = ctx;
+    const TABLE_ID = config.tables.WORK_SCHEDULE;
+    const API_URL = config.apiUrl;
 
-    await client.deleteRecord(config.tables.WORK_SCHEDULE, id);
+    const res = await fetch(`${API_URL}/api/table/${TABLE_ID}/record?recordIds[]=${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${apiKey}` },
+      cache: "no-store"
+    });
+    if (!res.ok) throw new Error(await res.text());
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: "Delete Failed" }, { status: 500 });
