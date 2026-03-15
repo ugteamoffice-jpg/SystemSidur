@@ -665,6 +665,13 @@ export default function DriversGrid() {
                         if (a.name) params.set("name", a.name)
                         window.open(`/api/view-file?${params.toString()}`, "_blank")
                       }}><Eye className="w-3 h-3" /></Button>
+                      <Button type="button" variant="ghost" size="sm" className="h-5 w-5 p-0 text-red-500 shrink-0" onClick={async () => {
+                        const DRV2 = (tenantFields as any)?.drivers
+                        if (!editingDriverId || !DRV2?.CONTRACT) return
+                        const updated = existingContracts.filter((_: any, j: number) => j !== i)
+                        await fetch(`/api/drivers?tenant=${tenantId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recordId: editingDriverId, fields: { [DRV2.CONTRACT]: updated.length > 0 ? updated : null } }) })
+                        setDrivers(prev => prev.map(d => d.id === editingDriverId ? { ...d, fields: { ...d.fields, [DRV2.CONTRACT]: updated } } : d))
+                      }}><X className="w-3 h-3" /></Button>
 
                     </div>
                   ))
