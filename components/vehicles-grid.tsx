@@ -21,7 +21,7 @@ interface Vehicle {
 export default function VehiclesGrid() {
   const tenantFields = useTenantFields()
   const { tenantId } = useTenant()
-  const VEHICLE_TYPE_FIELD_ID = tenantFields?.vehicles.VEHICLE_TYPE || ""
+  const VEHICLE_TYPE_FIELD_ID = tenantFields?.vehicles?.VEHICLE_TYPE || ""
 
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
