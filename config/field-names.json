@@ -1,0 +1,71 @@
+{
+  "workSchedule": {
+    "DATE": "תאריך",
+    "CUSTOMER": "שם לקוח",
+    "PICKUP_TIME": "התייצבות",
+    "DESCRIPTION": "תיאור",
+    "DROPOFF_TIME": "חזור",
+    "VEHICLE_TYPE": "סוג רכב",
+    "DRIVER": "שם נהג",
+    "VEHICLE_NUM": "מספר רכב",
+    "SENT": "שלח",
+    "APPROVED": "מאושר",
+    "PRICE_CLIENT_EXCL": "מחיר לקוח+ מע\"מ",
+    "PRICE_CLIENT_INCL": "מחיר לקוח כולל מע\"מ",
+    "PRICE_DRIVER_EXCL": "מחיר נהג+ מע\"מ",
+    "PRICE_DRIVER_INCL": "מחיר נהג כולל מע\"מ",
+    "PROFIT": "רווח+ מע\"מ",
+    "DRIVER_NOTES": "הערות לנהג",
+    "MANAGER_NOTES": "הערות מנהל",
+    "ORDER_NAME": "שם מזמין",
+    "MOBILE": "טלפון נייד",
+    "ID_NUM": "ת\"ז",
+    "ORDER_FORM": "טופס הזמנה",
+    "ORDER_FORM_DATE": "תאריך ושעה העלאת קובץ",
+    "DRIVER_LINK_SYMMETRIC": "נהג סידור",
+    "SENT_RESET": "אפס שליחה",
+    "ORDER_FORM_ATTACHMENT": "קובץ הזמנה",
+    "INVOICE": "חשבונית"
+  },
+  "drivers": {
+    "FIRST_NAME": "שם פרטי",
+    "LAST_NAME": "שם משפחה",
+    "PHONE": "טלפון נייד",
+    "DRIVER_TYPE": "סוג נהג",
+    "CAR_NUMBER": "מספר רכב",
+    "STATUS": "סטטוס",
+    "SALARY_CONFIG": "הגדרות שכר",
+    "CONTRACT": "חוזה עבודה"
+  },
+  "customers": {
+    "NAME": "שם לקוח",
+    "HP": "ח.פ",
+    "CONTACT_NAME": "שם א.קשר",
+    "PHONE": "טלפון נייד",
+    "EMAIL": "אימייל",
+    "PAYMENT_METHOD": "אמצעי תשלום",
+    "ONGOING_PAYMENT": "תשלום שוטף",
+    "ACCOUNTING_KEY": "מפתח הנהח",
+    "CREATED_IN_ACCOUNTING": "נוצר בהנהח",
+    "STATUS": "סטטוס"
+  },
+  "companyVehicles": {
+    "LABEL": "תווית",
+    "VEHICLE_TYPE": "סוג רכב",
+    "CAR_NUMBER": "מספר רכב",
+    "YEAR": "שנה",
+    "INSURANCE_FILE": "ביטוח",
+    "INSURANCE_EXPIRY": "תוקף ביטוח",
+    "OPERATION_PERMIT_FILE": "רישיון עסק",
+    "OPERATION_PERMIT_EXPIRY": "תוקף רישיון עסק",
+    "VEHICLE_LICENSE_FILE": "רישיון רכב",
+    "VEHICLE_LICENSE_EXPIRY": "תוקף רישיון רכב"
+  },
+  "driverHours": {
+    "DRIVER": "נהג",
+    "DATE": "תאריך",
+    "START_TIME": "שעת התחלה",
+    "END_TIME": "שעת סיום",
+    "NOTES": "הערות"
+  }
+}

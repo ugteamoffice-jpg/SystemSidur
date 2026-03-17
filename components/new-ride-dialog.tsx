@@ -1,0 +1,868 @@
+"use client"
+
+import * as React from "react"
+import { Plus, Loader2, Pencil, Upload, Calendar as CalendarIcon, X, FileText, Eye, ChevronUp, ChevronDown, Trash2 } from "lucide-react"
+import { format } from "date-fns"
+import { he } from "date-fns/locale"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+// הורדתי את ה-Checkbox מה-UI אבל השארתי את הלוגיקה
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
+import { Checkbox } from "@/components/ui/checkbox"
+import { useToast } from "@/hooks/use-toast"
+import { Calendar } from "@/components/ui/calendar"
+import { cn } from "@/lib/utils"
+import { useTenantFields, useTenantTables, useTenant } from "@/lib/tenant-context"
+
+interface ListItem {
+  id: string;
+  title: string
+}
+
+function AutoComplete({ options, value, onChange, onItemSelect, placeholder, isError }: any) {
+  const [show, setShow] = React.useState(false)
+  const safeValue = String(value || "").toLowerCase();
+  const filtered = options.filter((o: any) => String(o.title || "").toLowerCase().includes(safeValue))
+
+  return (
+    <div className="relative w-full">
+      <Input
+        value={value}
+        onChange={e => { onChange(e.target.value); setShow(true) }}
+        onBlur={() => setTimeout(() => setShow(false), 200)}
+        onFocus={() => setShow(true)}
+        className={cn("text-right", isError && "border-red-500 bg-red-50 focus-visible:ring-red-500")}
+        placeholder={placeholder}
+      />
+      {show && filtered.length > 0 && (
+        <div className="absolute z-50 w-full bg-white border shadow-md max-h-40 overflow-auto rounded-md mt-1 text-black">
+          {filtered.map((o: any) => (
+            <div
+              key={o.id}
+              className="p-2 hover:bg-gray-100 cursor-pointer text-right text-sm"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                if (onItemSelect) {
+                  onItemSelect(o);
+                } else {
+                  onChange(o.title);
+                }
+                setShow(false);
+              }}
+            >
+              {o.title}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export function RideDialog({ onRideSaved, initialData, triggerChild, open: controlledOpen, onOpenChange: setControlledOpen, defaultDate, allRides, onNavigate }: any) {
+  const tenantFields = useTenantFields()
+  const tenantTables = useTenantTables()
+  const { tenantId } = useTenant()
+  const FIELDS = tenantFields?.workSchedule || {} as any
+  const WS_TABLE_ID = tenantTables?.WORK_SCHEDULE || ""
+
+  const [internalOpen, setInternalOpen] = React.useState(false)
+  const [loading, setLoading] = React.useState(false)
+  const [isReady, setIsReady] = React.useState(false)
+  const [calendarModal, setCalendarModal] = React.useState<{
+    open: boolean, selected?: Date, onSelect: (date: Date | undefined) => void
+  }>({ open: false, onSelect: () => {} })
+  const [showErrors, setShowErrors] = React.useState(false)
+  const { toast } = useToast()
+
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? setControlledOpen : setInternalOpen;
+
+  const isEdit = !!initialData
+
+  // Cache of locally-saved changes during arrow navigation (survives between records)
+  const localSavedCache = React.useRef<Map<string, Record<string, any>>>(new Map())
+
+  const [date, setDate] = React.useState<Date | undefined>(() => {
+    if (defaultDate) {
+      const parsed = new Date(defaultDate);
+      if (!isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    }
+    return new Date();
+  })
+
+  // משתנה לשמירת המצב המקורי של השדות הקריטיים
+  const initialSnapshotRef = React.useRef<any>(null);
+
+  const [vatClient, setVatClient] = React.useState("18")
+  const [vatDriver, setVatDriver] = React.useState("18")
+
+  const [lists, setLists] = React.useState<{ customers: ListItem[], drivers: ListItem[], vehicles: ListItem[] }>({
+    customers: [],
+    drivers: [],
+    vehicles: []
+  })
+
+  const [form, setForm] = React.useState({
+    customer: "",
+    description: "",
+    pickup: "",
+    dropoff: "",
+    vehicleType: "",
+    driver: "",
+    vehicleNum: "",
+    managerNotes: "",
+    notes: "",
+    orderName: "",
+    mobile: "",
+    idNum: ""
+  })
+
+  const [selectedIds, setSelectedIds] = React.useState({
+    customerId: "",
+    driverId: "",
+    vehicleTypeId: ""
+  })
+
+  const [prices, setPrices] = React.useState({
+    ce: "", ci: "", de: "", di: ""
+  })
+
+  const [status, setStatus] = React.useState({ sent: false, approved: false })
+  const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false)
+  const [isDeleting, setIsDeleting] = React.useState(false)
+  const [orderFormFiles, setOrderFormFiles] = React.useState<{file: File, name: string}[]>([])
+  const [existingAttachment, setExistingAttachment] = React.useState<any[]>([])
+  const [attachmentDate, setAttachmentDate] = React.useState<string>("")
+  const [isUploading, setIsUploading] = React.useState(false)
+
+  // Refs that always hold the latest state values (for save-on-navigate)
+  const formRef = React.useRef(form)
+  const pricesRef = React.useRef(prices)
+  const onlyNumbers = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const allowed = ["0","1","2","3","4","5","6","7","8","9",".","Backspace","Delete","ArrowLeft","ArrowRight","Tab","Enter","-"]
+    if (!allowed.includes(e.key) && !e.ctrlKey && !e.metaKey) e.preventDefault()
+  }
+  const statusRef = React.useRef(status)
+  const dateRef = React.useRef(date)
+  const selectedIdsRef = React.useRef(selectedIds)
+  // useLayoutEffect ensures refs update BEFORE any subsequent event handlers
+  React.useLayoutEffect(() => { formRef.current = form }, [form])
+  React.useLayoutEffect(() => { pricesRef.current = prices }, [prices])
+  React.useLayoutEffect(() => { statusRef.current = status }, [status])
+  React.useLayoutEffect(() => { dateRef.current = date }, [date])
+  React.useLayoutEffect(() => { selectedIdsRef.current = selectedIds }, [selectedIds])
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
+  const [editingFileName, setEditingFileName] = React.useState<number | null>(null)
+
+  React.useEffect(() => {
+    if (open && lists.customers.length === 0) {
+      const load = async (url: string, isDrivers = false) => {
+        try {
+          const r = await fetch(url);
+          if (!r.ok) {
+            console.error(`Failed to load ${url}: ${r.status}`);
+            return [];
+          }
+          const d = await r.json();
+          const items = d.records ? d.records.map((x: any) => {
+            let title = "";
+            if (isDrivers && tenantFields?.drivers) {
+              const name = x.fields?.[tenantFields.drivers.FIRST_NAME] || ""
+              title = name.trim()
+            } else {
+              const firstVal = x.fields && Object.values(x.fields)[0];
+              if (Array.isArray(firstVal)) {
+                title = firstVal[0]?.title || firstVal[0]?.text || String(firstVal[0] || "");
+              } else if (typeof firstVal === 'object' && firstVal !== null) {
+                title = firstVal.title || firstVal.text || String(firstVal);
+              } else {
+                title = String(firstVal || "");
+              }
+            }
+            return { id: x.id, title };
+          }) : [];
+          return items;
+        } catch (err) {
+          console.error(`Error loading ${url}:`, err);
+          return [];
+        }
+      }
+      Promise.all([load(`/api/customers?tenant=${tenantId}`), load(`/api/drivers?tenant=${tenantId}`, true), load(`/api/vehicles?tenant=${tenantId}`)])
+        .then(([c, d, v]) => setLists({ customers: c, drivers: d, vehicles: v }))
+    }
+  }, [open])
+
+  const getValFromRecord = (v: any) => {
+    if (!v) return "";
+    if (Array.isArray(v)) return v[0]?.title || "";
+    return typeof v === 'object' ? v.title : String(v);
+  }
+
+  const getIdFromRecord = (v: any) => {
+    if (!v) return "";
+    if (Array.isArray(v)) return v[0]?.id || "";
+    return typeof v === 'object' ? v.id || "" : "";
+  }
+
+  // --- טעינת הנתונים ושמירת "תמונת המצב" (Snapshot) ---
+  React.useEffect(() => {
+    if (open) {
+      setShowErrors(false);
+      setIsReady(false);
+      
+      if (initialData) {
+        // Check if we have locally-cached form state from arrow navigation
+        const cached = localSavedCache.current.get(initialData.id)
+        if (cached) {
+          // Restore exact form state that was saved before navigation
+          setDate(cached.date)
+          setForm(cached.form)
+          setSelectedIds(cached.selectedIds)
+          setPrices(cached.prices)
+          setStatus(cached.status)
+          setExistingAttachment(Array.isArray(initialData.fields[FIELDS.ORDER_FORM]) ? initialData.fields[FIELDS.ORDER_FORM] : [])
+          setAttachmentDate(initialData.fields[FIELDS.ORDER_FORM_DATE] || "")
+          setOrderFormFiles([])
+          initialSnapshotRef.current = {
+            dateStr: cached.date ? format(cached.date, "yyyy-MM-dd") : "",
+            driver: cached.form.driver,
+            description: cached.form.description,
+            pickup: cached.form.pickup,
+            dropoff: cached.form.dropoff,
+            vehicleType: cached.form.vehicleType,
+            notes: cached.form.notes
+          }
+          setTimeout(() => setIsReady(true), 300)
+        } else {
+        const f = initialData.fields
+        
+        let initialDate: Date | undefined = undefined;
+        if (f[FIELDS.DATE]) {
+          const d = new Date(f[FIELDS.DATE]);
+          initialDate = !isNaN(d.getTime()) ? d : undefined;
+        }
+
+        const loadedForm = {
+          customer: getValFromRecord(f[FIELDS.CUSTOMER]),
+          description: f[FIELDS.DESCRIPTION] || "",
+          pickup: f[FIELDS.PICKUP_TIME] || "",
+          dropoff: f[FIELDS.DROPOFF_TIME] || "",
+          vehicleType: getValFromRecord(f[FIELDS.VEHICLE_TYPE]),
+          driver: getValFromRecord(f[FIELDS.DRIVER]),
+          vehicleNum: f[FIELDS.VEHICLE_NUM] || "",
+          managerNotes: f[FIELDS.MANAGER_NOTES] || "",
+          notes: f[FIELDS.DRIVER_NOTES] || "", // הערות נהג
+          orderName: f[FIELDS.ORDER_NAME] || "",
+          mobile: f[FIELDS.MOBILE] != null ? String(f[FIELDS.MOBILE]) : "",
+          idNum: f[FIELDS.ID_NUM] != null ? String(f[FIELDS.ID_NUM]) : ""
+        };
+
+        setDate(initialDate);
+        setForm(loadedForm);
+        
+        setSelectedIds({
+          customerId: getIdFromRecord(f[FIELDS.CUSTOMER]),
+          driverId: getIdFromRecord(f[FIELDS.DRIVER]),
+          vehicleTypeId: getIdFromRecord(f[FIELDS.VEHICLE_TYPE]),
+        })
+        setPrices({
+          ce: f[FIELDS.PRICE_CLIENT_EXCL] || "",
+          ci: f[FIELDS.PRICE_CLIENT_INCL] || "",
+          de: f[FIELDS.PRICE_DRIVER_EXCL] || "",
+          di: f[FIELDS.PRICE_DRIVER_INCL] || ""
+        })
+        setStatus({ sent: !!f[FIELDS.SENT], approved: !!f[FIELDS.APPROVED] })
+        setExistingAttachment(Array.isArray(f[FIELDS.ORDER_FORM]) ? f[FIELDS.ORDER_FORM] : [])
+        setAttachmentDate(f[FIELDS.ORDER_FORM_DATE] || "")
+        setOrderFormFiles([])
+
+        // שמירת "תמונת המצב" המקורית
+        initialSnapshotRef.current = {
+            dateStr: initialDate ? format(initialDate, "yyyy-MM-dd") : "",
+            driver: loadedForm.driver,
+            description: loadedForm.description,
+            pickup: loadedForm.pickup,
+            dropoff: loadedForm.dropoff,
+            vehicleType: loadedForm.vehicleType,
+            notes: loadedForm.notes // הערות נהג
+        };
+
+        setTimeout(() => setIsReady(true), 300)
+        } // end of else (no cache) block
+      } else {
+        // מצב "נסיעה חדשה" (Reset)
+        setForm({
+          customer: "", description: "", pickup: "", dropoff: "", vehicleType: "", driver: "", vehicleNum: "", managerNotes: "", notes: "", orderName: "", mobile: "", idNum: ""
+        })
+        setSelectedIds({ customerId: "", driverId: "", vehicleTypeId: "" })
+        setPrices({ ce: "", ci: "", de: "", di: "" })
+        setStatus({ sent: false, approved: false })
+        setExistingAttachment([])
+        setAttachmentDate("")
+        setOrderFormFiles([])
+        
+        const d = defaultDate ? new Date(defaultDate) : new Date();
+        setDate(d);
+        
+        initialSnapshotRef.current = null;
+        setIsReady(true)
+      }
+    }
+  }, [open, initialData, defaultDate])
+
+  // Clear navigation cache when dialog closes
+  React.useEffect(() => {
+    if (!open) localSavedCache.current.clear()
+  }, [open])
+
+  // --- המנגנון שמאפס צ'קבוקסים (רץ ברקע) ---
+  React.useEffect(() => {
+    if (isEdit && isReady && initialSnapshotRef.current) {
+        
+        const currentDateStr = date ? format(date, "yyyy-MM-dd") : "";
+
+        const isChanged = 
+            currentDateStr !== initialSnapshotRef.current.dateStr ||
+            form.driver !== initialSnapshotRef.current.driver ||
+            form.description !== initialSnapshotRef.current.description ||
+            form.pickup !== initialSnapshotRef.current.pickup ||
+            form.dropoff !== initialSnapshotRef.current.dropoff ||
+            form.vehicleType !== initialSnapshotRef.current.vehicleType ||
+            form.notes !== initialSnapshotRef.current.notes;
+
+        if (isChanged && (status.sent || status.approved)) {
+            // הנה! כאן זה מתאפס ברקע, בלי שצריך לראות את הצ'קבוקסים
+            setStatus({ sent: false, approved: false });
+        }
+    }
+  }, [
+    isEdit, isReady, date, 
+    form.driver, form.description, form.pickup, form.dropoff, form.vehicleType, form.notes, 
+    status.sent, status.approved
+  ]);
+
+  const calculateVat = (val: string, type: 'excl' | 'incl', side: 'client' | 'driver') => {
+    const num = parseFloat(val) || 0
+    const vat = parseFloat(side === 'client' ? vatClient : vatDriver) || 0
+    if (type === 'excl') {
+      const withVat = num * (1 + vat / 100)
+      setPrices(p => side === 'client' ? { ...p, ce: val, ci: withVat.toFixed(2) } : { ...p, de: val, di: withVat.toFixed(2) })
+    } else {
+      const noVat = num / (1 + vat / 100)
+      setPrices(p => side === 'client' ? { ...p, ci: val, ce: noVat.toFixed(2) } : { ...p, di: val, de: noVat.toFixed(2) })
+    }
+  }
+
+  // Core save logic - returns true if saved successfully
+  const saveRecord = async (): Promise<boolean> => {
+    // Read latest values from refs (not stale closure state)
+    const _form = formRef.current
+    const _prices = pricesRef.current
+    const _status = statusRef.current
+    const _date = dateRef.current
+    const _selectedIds = selectedIdsRef.current
+
+    if (!_date || !_form.customer || !_form.description || !_form.pickup) {
+      setShowErrors(true);
+      toast({ title: "שגיאה", description: "אנא מלא את כל השדות החובה", variant: "destructive" })
+      return false
+    }
+
+    setLoading(true)
+    try {
+      const findId = (list: ListItem[], text: string, currentId: string) => {
+        if (currentId) return currentId;
+        if (!text) return undefined;
+        const cleanText = text.trim();
+        return list.find(i => i.title.trim() === cleanText)?.id;
+      };
+
+      const customerId = findId(lists.customers, _form.customer, _selectedIds.customerId)
+      const driverId = findId(lists.drivers, _form.driver, _selectedIds.driverId)
+      const vehicleTypeId = findId(lists.vehicles, _form.vehicleType, _selectedIds.vehicleTypeId)
+
+      const body: any = {
+        fields: {
+          [FIELDS.DATE]: format(_date, "yyyy-MM-dd"),
+          [FIELDS.CUSTOMER]: customerId ? [customerId] : null,
+          [FIELDS.VEHICLE_TYPE]: vehicleTypeId ? [vehicleTypeId] : null,
+          [FIELDS.DRIVER]: driverId ? [driverId] : null,
+          [FIELDS.DESCRIPTION]: _form.description,
+          [FIELDS.PICKUP_TIME]: _form.pickup,
+          [FIELDS.DROPOFF_TIME]: _form.dropoff || null,
+          [FIELDS.VEHICLE_NUM]: _form.vehicleNum || null,
+          [FIELDS.MANAGER_NOTES]: _form.managerNotes || null,
+          [FIELDS.DRIVER_NOTES]: _form.notes || null,
+          [FIELDS.PRICE_CLIENT_EXCL]: _prices.ce ? parseFloat(_prices.ce) : null,
+          [FIELDS.PRICE_CLIENT_INCL]: _prices.ci ? parseFloat(_prices.ci) : null,
+          [FIELDS.PRICE_DRIVER_EXCL]: _prices.de ? parseFloat(_prices.de) : null,
+          [FIELDS.PRICE_DRIVER_INCL]: _prices.di ? parseFloat(_prices.di) : null,
+          [FIELDS.ORDER_NAME]: _form.orderName || null,
+          [FIELDS.MOBILE]: _form.mobile || null,
+          [FIELDS.ID_NUM]: _form.idNum ? Number(_form.idNum) : null,
+          [FIELDS.SENT]: _status.sent,
+          [FIELDS.APPROVED]: _status.approved,
+        }
+      }
+
+      Object.keys(body.fields).forEach(k => body.fields[k] === undefined && delete body.fields[k])
+
+      // Helper: upload files to record
+      const uploadFilesToRecord = async (recordId: string) => {
+        if (orderFormFiles.length === 0) return
+        setIsUploading(true)
+        for (const entry of orderFormFiles) {
+          const fd = new FormData()
+          const renamedFile = new File([entry.file], entry.name, { type: entry.file.type })
+          fd.append('file', renamedFile)
+          fd.append('tableId', WS_TABLE_ID)
+          fd.append('recordId', recordId)
+          fd.append('fieldId', FIELDS.ORDER_FORM)
+          const uploadRes = await fetch(`/api/upload-to-record?tenant=${tenantId}`, { method: 'POST', body: fd })
+          if (!uploadRes.ok) {
+            console.error('File upload failed:', await uploadRes.text())
+            toast({ title: "הנסיעה נשמרה אבל העלאת קובץ נכשלה", variant: "destructive" })
+          }
+        }
+        setIsUploading(false)
+      }
+
+      if (isEdit) {
+        const res = await fetch(`/api/work-schedule/${initialData.id}?tenant=${tenantId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+
+        if (!res.ok) {
+          console.error('[RideDialog] PATCH failed:', res.status);
+          throw new Error("Server rejected the data");
+        }
+
+        let result = {}
+        try { result = await res.json(); } catch { /* empty response is OK */ }
+        console.log('[RideDialog] PATCH result:', JSON.stringify(result).slice(0, 200));
+        await uploadFilesToRecord(initialData.id)
+        return true
+      }
+
+      const res = await fetch(`/api/work-schedule?tenant=${tenantId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+
+      if (!res.ok) {
+        const errText = await res.text()
+        console.error('[RideDialog] POST failed:', errText)
+        throw new Error(errText);
+      }
+
+      const result = await res.json()
+      const newRecordId = result?.records?.[0]?.id || result?.id
+      if (newRecordId && orderFormFiles.length > 0) {
+        await uploadFilesToRecord(newRecordId)
+      }
+
+      return true
+    } catch (err) {
+      console.error(err);
+      toast({ title: "שגיאה בשמירה", description: "אירעה שגיאה בעת השמירה", variant: "destructive" })
+      return false
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const saved = await saveRecord()
+    if (saved) {
+      setOpen(false)
+      if (onRideSaved) onRideSaved()
+    }
+  }
+
+  // Build current form state as API fields (for updating parent data)
+  // Navigate with auto-save (save silently, don't close dialog)
+  const handleNavigate = async (targetRecord: any) => {
+    // Capture current form state BEFORE saving (refs have latest values)
+    const snapshot = {
+      form: { ...formRef.current },
+      prices: { ...pricesRef.current },
+      status: { ...statusRef.current },
+      date: dateRef.current,
+      selectedIds: { ...selectedIdsRef.current },
+    }
+    const saved = await saveRecord()
+    if (saved) {
+      // Cache form state locally so navigating back shows updated data
+      if (initialData?.id) {
+        localSavedCache.current.set(initialData.id, snapshot)
+      }
+      setOrderFormFiles([])
+      onNavigate(targetRecord)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!initialData?.id) return
+    setIsDeleting(true)
+    try {
+      const res = await fetch(`/api/work-schedule/${initialData.id}?tenant=${tenantId}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error("Delete failed")
+      setOpen(false)
+      if (onRideSaved) onRideSaved()
+      toast({ title: "הנסיעה נמחקה בהצלחה" })
+    } catch {
+      toast({ title: "שגיאה במחיקה", variant: "destructive" })
+    } finally {
+      setIsDeleting(false)
+      setShowDeleteConfirm(false)
+    }
+  }
+
+  return (
+    <>
+    <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+      <AlertDialogContent dir="rtl">
+        <AlertDialogHeader>
+          <AlertDialogTitle>מחיקת נסיעה</AlertDialogTitle>
+          <AlertDialogDescription>האם אתה בטוח שברצונך למחוק נסיעה זו? פעולה זו אינה ניתנת לביטול.</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="flex-row-reverse gap-2">
+          <AlertDialogCancel>ביטול</AlertDialogCancel>
+          <AlertDialogAction className="bg-red-600 hover:bg-red-700 text-white" onClick={handleDelete}>
+            {isDeleting ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
+            מחק לצמיתות
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    <Dialog open={open} onOpenChange={setOpen}>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          {triggerChild || (
+            <Button className="gap-1 bg-primary text-primary-foreground hover:bg-primary/90 h-8 md:h-9 text-xs md:text-sm px-2 md:px-4">
+              <Plus className="h-3.5 w-3.5 md:h-4 md:w-4" />
+              <span className="hidden md:inline">צור נסיעה</span>
+              <span className="md:hidden">חדש</span>
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
+      <DialogContent className="w-full h-full md:w-[95vw] md:max-w-[900px] md:h-[85vh] flex flex-col max-w-full max-h-full md:rounded-lg rounded-none" dir="rtl">
+        <DialogHeader className="pb-0.5">
+          <DialogTitle className="text-base">{isEdit ? "עריכת נסיעה" : "נסיעה חדשה"}</DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogDescription className="text-xs">מלא את פרטי הנסיעה. שדות * = חובה.</DialogDescription>
+            {isEdit && allRides && onNavigate && (() => {
+              const idx = allRides.findIndex((r: any) => r.id === initialData?.id);
+              const hasPrev = idx > 0;
+              const hasNext = idx >= 0 && idx < allRides.length - 1;
+              return (
+                <div className="flex items-center gap-1 shrink-0">
+                  <span className="text-xs text-muted-foreground">{idx + 1}/{allRides.length}</span>
+                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" disabled={!hasPrev || loading} onClick={() => handleNavigate(allRides[idx - 1])} title="נסיעה קודמת">
+                    <ChevronUp className="h-4 w-4" />
+                  </Button>
+                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" disabled={!hasNext || loading} onClick={() => handleNavigate(allRides[idx + 1])} title="נסיעה הבאה">
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </div>
+              );
+            })()}
+          </div>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+          <Tabs defaultValue="details" className="flex-1 flex flex-col overflow-hidden">
+            <TabsList className="grid w-full grid-cols-3 h-10">
+              <TabsTrigger value="details" className="text-base font-medium py-2">פרטי נסיעה</TabsTrigger>
+              <TabsTrigger value="prices" className="text-base font-medium py-2">מחירים</TabsTrigger>
+              <TabsTrigger value="extra" className="text-base font-medium py-2">פרטים נוספים</TabsTrigger>
+            </TabsList>
+
+            <div className="flex-1 overflow-y-auto p-2 border rounded mt-1">
+              <TabsContent value="details" className="space-y-2 mt-0">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                  <div>
+                    <Label className={cn("text-sm block mb-px", showErrors && !date && "text-red-500")}>תאריך *</Label>
+                    <Button
+                      variant={"outline"}
+                      className={cn("w-full justify-start text-right h-8 text-sm overflow-hidden", showErrors && !date && "border-red-500")}
+                      onClick={() => setCalendarModal({
+                        open: true,
+                        selected: date,
+                        onSelect: (d) => { if (d) setDate(d) }
+                      })}
+                      type="button"
+                    >
+                      <CalendarIcon className="ml-1 h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">{date ? format(date, "dd/MM/yyyy", { locale: he }) : "בחר תאריך"}</span>
+                    </Button>
+                  </div>
+                  <div>
+                    <Label className={cn("text-sm block mb-px", showErrors && !form.customer && "text-red-500")}>שם לקוח *</Label>
+                    <AutoComplete
+                      options={lists.customers}
+                      value={form.customer}
+                      onChange={(v: string) => {
+                        setForm(p => ({ ...p, customer: v }));
+                        setSelectedIds(p => ({ ...p, customerId: "" }));
+                      }}
+                      onItemSelect={(item: ListItem) => {
+                        setForm(p => ({ ...p, customer: item.title }));
+                        setSelectedIds(p => ({ ...p, customerId: item.id }));
+                      }}
+                      placeholder=""
+                      isError={showErrors && !form.customer}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label className={cn("text-sm block mb-px", showErrors && !form.description && "text-red-500")}>תיאור (מסלול) *</Label>
+                  <Input
+                    value={form.description}
+                    onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+                    className={cn("text-right h-8 text-sm", showErrors && !form.description && "border-red-500")}
+                    placeholder=""
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                  <div>
+                    <Label className={cn("text-sm block mb-px", showErrors && !form.pickup && "text-red-500")}>התייצבות *</Label>
+                    <Input type="time" value={form.pickup} onChange={e => setForm(p => ({ ...p, pickup: e.target.value }))} className={cn("h-8", showErrors && !form.pickup && "border-red-500")} />
+                  </div>
+                  <div>
+                    <Label className="text-sm block mb-px">חזור</Label>
+                    <Input type="time" value={form.dropoff} onChange={e => setForm(p => ({ ...p, dropoff: e.target.value }))} className="h-8" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-x-3 gap-y-2">
+                  <div>
+                    <Label className="text-sm block mb-px">סוג רכב</Label>
+                    <AutoComplete
+                      options={lists.vehicles}
+                      value={form.vehicleType}
+                      onChange={(v: string) => {
+                        setForm(p => ({ ...p, vehicleType: v }));
+                        setSelectedIds(p => ({ ...p, vehicleTypeId: "" }));
+                      }}
+                      onItemSelect={(item: ListItem) => {
+                        setForm(p => ({ ...p, vehicleType: item.title }));
+                        setSelectedIds(p => ({ ...p, vehicleTypeId: item.id }));
+                      }}
+                      placeholder=""
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm block mb-px">נהג</Label>
+                    <AutoComplete
+                      options={lists.drivers}
+                      value={form.driver}
+                      onChange={(v: string) => {
+                        setForm(p => ({ ...p, driver: v }));
+                        setSelectedIds(p => ({ ...p, driverId: "" }));
+                      }}
+                      onItemSelect={(item: ListItem) => {
+                        setForm(p => ({ ...p, driver: item.title }));
+                        setSelectedIds(p => ({ ...p, driverId: item.id }));
+                      }}
+                      placeholder=""
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm block mb-px">מס' רכב</Label>
+                    <Input value={form.vehicleNum} onChange={e => setForm(p => ({ ...p, vehicleNum: e.target.value }))} className="text-right h-8" />
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-sm block mb-px"><Upload className="w-3 h-3 inline ml-1" />קבצים</Label>
+                  <div className="flex flex-col gap-1">
+                    {/* קבצים קיימים */}
+                    {existingAttachment.map((att, idx) => (
+                      <div key={`existing-${idx}`} className="flex items-center gap-1 h-8 px-2 border rounded bg-green-50 text-sm">
+                        <FileText className="w-3 h-3 text-green-600 shrink-0" />
+                        <span className="truncate flex-1">{att?.name || 'קובץ'}</span>
+                        {att?.token && (
+                          <Button type="button" variant="ghost" size="sm" className="h-5 px-1 text-orange-600 shrink-0" onClick={() => {
+                            const tenant = window.location.pathname.split('/')[1] || 'UrbanTours'
+                            const params = new URLSearchParams({ tenant })
+                            if (att.presignedUrl || att.url) params.set('url', att.presignedUrl || att.url)
+                            else params.set('token', att.token)
+                            if (att.name) params.set('name', att.name)
+                            window.open(`/api/view-file?${params.toString()}`, '_blank')
+                          }}><Eye className="w-3 h-3" /></Button>
+                        )}
+                        {isEdit && (
+                          <Button type="button" variant="ghost" size="sm" className="h-5 w-5 p-0 text-red-500 shrink-0" onClick={async () => {
+                            const updated = existingAttachment.filter((_, i) => i !== idx)
+                            setExistingAttachment(updated)
+                            try { await fetch(`/api/work-schedule/${initialData.id}?tenant=${tenantId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { [FIELDS.ORDER_FORM]: updated.length > 0 ? updated : null } }) }) } catch {}
+                          }}><X className="w-3 h-3" /></Button>
+                        )}
+                      </div>
+                    ))}
+                    {/* קבצים חדשים */}
+                    {orderFormFiles.map((entry, idx) => (
+                      <div key={`new-${idx}`} className="flex items-center gap-1 h-8 px-2 border rounded bg-orange-50 text-sm">
+                        <FileText className="w-3 h-3 text-orange-600 shrink-0" />
+                        {editingFileName === idx ? (
+                          <Input 
+                            value={entry.name} 
+                            onChange={(e) => setOrderFormFiles(prev => prev.map((f, i) => i === idx ? { ...f, name: e.target.value } : f))} 
+                            onBlur={() => setEditingFileName(null)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') setEditingFileName(null) }}
+                            className="h-6 text-xs flex-1 px-1"
+                            autoFocus
+                          />
+                        ) : (
+                          <span className="truncate flex-1 cursor-pointer" onClick={() => setEditingFileName(idx)}>{entry.name}</span>
+                        )}
+                        <Button type="button" variant="ghost" size="sm" className="h-5 w-5 p-0 text-muted-foreground shrink-0" onClick={() => setEditingFileName(idx)} title="שנה שם"><Pencil className="w-2.5 h-2.5" /></Button>
+                        <Button type="button" variant="ghost" size="sm" className="h-5 px-1 text-orange-600 shrink-0" onClick={() => {
+                          const url = URL.createObjectURL(entry.file)
+                          window.open(url, '_blank')
+                        }} title="צפה בקובץ"><Eye className="w-3 h-3" /></Button>
+                        <Button type="button" variant="ghost" size="sm" className="h-5 w-5 p-0 text-red-500 shrink-0" onClick={() => { setOrderFormFiles(prev => prev.filter((_, i) => i !== idx)); if (fileInputRef.current) fileInputRef.current.value = '' }}><X className="w-3 h-3" /></Button>
+                      </div>
+                    ))}
+                    {/* כפתור הוספה */}
+                    <Button type="button" variant="outline" size="sm" className="w-full h-8 text-sm" onClick={() => fileInputRef.current?.click()}>
+                      <Plus className="w-3 h-3 ml-1" /> {existingAttachment.length > 0 || orderFormFiles.length > 0 ? 'הוסף קובץ' : 'בחר קובץ'}
+                    </Button>
+                  </div>
+                  <input ref={fileInputRef} type="file" className="hidden" onChange={(e) => { if (e.target.files?.[0]) { const f = e.target.files[0]; setOrderFormFiles(prev => [...prev, { file: f, name: f.name }]); if (fileInputRef.current) fileInputRef.current.value = '' } }} />
+                </div>
+
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                  <div>
+                    <Label className="text-sm block mb-px">הערות מנהל</Label>
+                    <Textarea value={form.managerNotes} onChange={e => setForm(p => ({ ...p, managerNotes: e.target.value }))} className="text-right border-orange-200 bg-orange-50/30 h-12 text-sm resize-none" />
+                  </div>
+                  <div>
+                    <Label className="text-sm block mb-px">הערות נהג</Label>
+                    <Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} className="text-right h-12 text-sm resize-none" />
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="prices" className="space-y-3 mt-0">
+                {/* מחיר לקוח */}
+                <div className="p-3 border rounded-lg bg-orange-50/50">
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="font-bold text-orange-700 text-sm">מחיר לקוח</h3>
+                    <div className="flex items-center gap-1">
+                      <Label className="text-xs text-muted-foreground whitespace-nowrap">מע"מ%</Label>
+                      <Input type="number" value={vatClient} onChange={(e) => setVatClient(e.target.value)} className="w-12 h-6 bg-white text-center text-xs px-1" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div><Label className="text-xs text-muted-foreground">לפני מע"מ</Label><Input type="number" value={prices.ce} onChange={(e) => calculateVat(e.target.value, 'excl', 'client')} onKeyDown={onlyNumbers} className="bg-white h-8 text-sm mt-0.5" /></div>
+                    <div><Label className="text-xs text-muted-foreground">כולל מע"מ</Label><Input type="number" value={prices.ci} onChange={(e) => calculateVat(e.target.value, 'incl', 'client')} onKeyDown={onlyNumbers} className="bg-white h-8 text-sm font-bold mt-0.5" /></div>
+                  </div>
+                </div>
+                {/* מחיר נהג */}
+                <div className="p-3 border rounded-lg bg-orange-50/50">
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="font-bold text-orange-700 text-sm">מחיר נהג</h3>
+                    <div className="flex items-center gap-1">
+                      <Label className="text-xs text-muted-foreground whitespace-nowrap">מע"מ%</Label>
+                      <Input type="number" value={vatDriver} onChange={(e) => setVatDriver(e.target.value)} className="w-12 h-6 bg-white text-center text-xs px-1" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div><Label className="text-xs text-muted-foreground">לפני מע"מ</Label><Input type="number" value={prices.de} onChange={(e) => calculateVat(e.target.value, 'excl', 'driver')} onKeyDown={onlyNumbers} className="bg-white h-8 text-sm mt-0.5" /></div>
+                    <div><Label className="text-xs text-muted-foreground">כולל מע"מ</Label><Input type="number" value={prices.di} onChange={(e) => calculateVat(e.target.value, 'incl', 'driver')} onKeyDown={onlyNumbers} className="bg-white h-8 text-sm font-bold mt-0.5" /></div>
+                  </div>
+                </div>
+                {/* רווח */}
+                <div className="p-3 border rounded-lg bg-green-50/50">
+                  <h3 className="font-bold text-green-700 text-sm mb-2">רווח</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">לפני מע"מ</Label>
+                      <div className="h-8 flex items-center px-2 border rounded bg-white font-bold text-green-700 text-sm mt-0.5">
+                        {((parseFloat(prices.ce) || 0) - (parseFloat(prices.de) || 0)).toLocaleString()} ₪
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">כולל מע"מ</Label>
+                      <div className="h-8 flex items-center px-2 border rounded bg-white font-bold text-green-700 text-sm mt-0.5">
+                        {((parseFloat(prices.ci) || 0) - (parseFloat(prices.di) || 0)).toLocaleString()} ₪
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="extra" className="space-y-4 mt-0">
+                <div className="space-y-1"><Label>שם מזמין</Label><Input value={form.orderName} onChange={e => setForm(p => ({ ...p, orderName: e.target.value }))} className="text-right" /></div>
+                <div className="space-y-1"><Label>נייד</Label><Input value={form.mobile} onChange={e => setForm(p => ({ ...p, mobile: e.target.value }))} className="text-right" /></div>
+                <div className="space-y-1"><Label>ת.ז</Label><Input value={form.idNum} onChange={e => setForm(p => ({ ...p, idNum: e.target.value }))} className="text-right" /></div>
+              </TabsContent>
+            </div>
+          </Tabs>
+
+          <DialogFooter className="mt-1.5 pt-1.5 border-t">
+            <div className="flex flex-wrap items-center justify-between w-full gap-y-2 gap-x-2">
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                {isEdit && (
+                  <Button type="button" variant="outline" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200 h-8 w-8 p-0"
+                    onClick={() => setShowDeleteConfirm(true)}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+                <Button variant="outline" type="button" className="h-8 px-2 text-sm" onClick={() => setOpen(false)}>ביטול</Button>
+                <Button type="submit" disabled={loading} className="h-8 px-3 text-sm">
+                  {loading ? <Loader2 className="animate-spin ml-1 h-3.5 w-3.5" /> : <Pencil className="w-3.5 h-3.5 ml-1" />}
+                  {isUploading ? "מעלה..." : isEdit ? "שמור" : "צור נסיעה"}
+                </Button>
+              </div>
+            </div>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+
+    {/* Calendar Modal */}
+    <Dialog open={calendarModal.open} onOpenChange={(open) => { if (!open) setCalendarModal(prev => ({ ...prev, open: false })) }}>
+      <DialogContent dir="rtl" className="w-auto max-w-[320px] p-4 flex items-center justify-center [&>button]:hidden" aria-describedby={undefined}>
+        <DialogTitle className="sr-only">בחר תאריך</DialogTitle>
+        <Calendar
+          mode="single"
+          selected={calendarModal.selected}
+          onSelect={(date) => {
+            calendarModal.onSelect(date)
+            if (date) setCalendarModal(prev => ({ ...prev, open: false }))
+          }}
+          locale={he}
+          dir="rtl"
+        />
+      </DialogContent>
+    </Dialog>
+    </>
+  )
+}

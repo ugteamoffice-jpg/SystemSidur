@@ -1,0 +1,64 @@
+{
+  "id": "VikoLahyani",
+  "name": "Viko Lahyani",
+  "clerkOrgId": "org_39lR4XBEVZ4dLgPs8CulhYhXBlK",
+  "apiUrl": "https://teable-production-bedd.up.railway.app",
+  "baseId": "bserWEBhcEttdBJ6JhU",
+  "tables": {
+    "WORK_SCHEDULE": "tblE2NNjqz0Ooinz5Jw",
+    "WORK_SCHEDULE_VIEW": "tblE2NNjqz0Ooinz5Jw",
+    "DRIVERS": "tblGjeRbcY1V2wlVNmx",
+    "CUSTOMERS": "tblxV5qkqbqSkJdLgIx",
+    "VEHICLES": "tbllTfcJiyONTqUNC0e",
+    "VEHICLE_TYPES": "tbllTfcJiyONTqUNC0e",
+    "COMPANY_VEHICLES": "tbl0g0JjoX6BEITlqPY",
+    "DRIVER_HOURS": "tblHSAVfo2upSUXAFqu"
+  },
+  "fields": {
+    "drivers": {
+      "FIRST_NAME": "fldImLwMRtsUwSS4wNn",
+      "LAST_NAME": "fldphBAXhqm7NuO0jFT",
+      "PHONE": "fldtwfDxTp8gLM1j2dz",
+      "DRIVER_TYPE": "fld7Tr4gFkmnK93POm7",
+      "CAR_NUMBER": "fldcpX00zDXc0oTVsAS",
+      "STATUS": "fldFbyvzQdlBmm9XzlM",
+      "SALARY_CONFIG": "fldLMBlBruHRSM5llAc",
+      "CONTRACT": "fldF618d0MSYplBpLFk"
+    },
+    "driverHours": {
+      "DRIVER": "fldUdFJMkXfUWmVP4Br",
+      "DATE": "fld0ovz8qZaVeKVirpL",
+      "START_TIME": "fldmzVA0lB8dNKKEmjG",
+      "END_TIME": "fldaKGT0pxKOoFc8i40",
+      "NOTES": "fldU6ceWCSPaaWPTjNj"
+    },
+    "workSchedule": {
+      "DATE": "fldrCAWSNdt2c8qcTMu",
+      "CUSTOMER": "fldBV1pNDr88Ixrqxn7",
+      "PICKUP_TIME": "fldbLmwxlda2znf8HVO",
+      "DESCRIPTION": "fld1lL1TUoKjKXQgZYl",
+      "DROPOFF_TIME": "fldmctvEUrVoEZSSHY0",
+      "VEHICLE_TYPE": "fld7JgLOaTdgvRUsp5I",
+      "DRIVER": "fld3TskhpzaTjLQapbo",
+      "VEHICLE_NUM": "fld8O5A4xXH3gul2sli",
+      "SENT": "fldVqAgzx1F7iNX9gWs",
+      "APPROVED": "fld09m5EbjcjrUtJoWn",
+      "PRICE_CLIENT_EXCL": "fldMdxAVoe5aVEAlS9w",
+      "PRICE_CLIENT_INCL": "fldiTwKoE7pKLMvg8SF",
+      "PRICE_DRIVER_EXCL": "fldJzGwH1hU6nC9zOMM",
+      "PRICE_DRIVER_INCL": "fldoc1rgtksguqJG44g",
+      "PROFIT": "fld4l39qto5prjqn99H",
+      "DRIVER_NOTES": "fldPxJQZMBJs7zyPW0z",
+      "MANAGER_NOTES": "fldmwdJtWnQm2CduJI4",
+      "ORDER_NAME": "fldRNFyoRF0VMjjJUDC",
+      "MOBILE": "fldOpozR3gVkz97z3G8",
+      "ID_NUM": "fldCWXo3BlQTpofVyrp",
+      "ORDER_FORM": "fldy1ExFQ8mjgB9yEey",
+      "ORDER_FORM_DATE": "fldq35K8kIK2aVFgqrZ",
+      "DRIVER_LINK_SYMMETRIC": "",
+      "SENT_RESET": "",
+      "ORDER_FORM_ATTACHMENT": "",
+      "INVOICE": "fldKopaOQfJ5cW1jz97"
+    }
+  }
+}
