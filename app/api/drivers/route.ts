@@ -52,9 +52,16 @@ export async function POST(request: Request) {
       body: JSON.stringify({ fieldKeyType: "name", typecast: true, records: [{ fields: body.fields }] }),
       cache: 'no-store'
     });
-    if (!response.ok) return NextResponse.json({ error: "Error" }, { status: response.status });
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error('POST drivers error:', response.status, errText);
+      return NextResponse.json({ error: "Create failed", detail: errText }, { status: response.status });
+    }
     return NextResponse.json(await response.json());
-  } catch (error) { return NextResponse.json({ error: 'Error' }, { status: 500 }); }
+  } catch (error: any) {
+    console.error('POST drivers exception:', error);
+    return NextResponse.json({ error: 'Internal Server Error', detail: error?.message }, { status: 500 });
+  }
 }
 
 export async function DELETE(request: Request) {
@@ -75,9 +82,16 @@ export async function DELETE(request: Request) {
       headers: { 'Authorization': `Bearer ${apiKey}` },
       cache: 'no-store'
     });
-    if (!response.ok) return NextResponse.json({ error: "Error" }, { status: response.status });
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error('DELETE drivers error:', response.status, errText);
+      return NextResponse.json({ error: "Delete failed", detail: errText }, { status: response.status });
+    }
     return NextResponse.json({ success: true });
-  } catch (error) { return NextResponse.json({ error: 'Error' }, { status: 500 }); }
+  } catch (error: any) {
+    console.error('DELETE drivers exception:', error);
+    return NextResponse.json({ error: 'Internal Server Error', detail: error?.message }, { status: 500 });
+  }
 }
 
 export async function PATCH(request: Request) {
@@ -90,6 +104,8 @@ export async function PATCH(request: Request) {
 
     const body = await request.json();
     const { recordId, fields } = body;
+    if (!recordId) return NextResponse.json({ error: 'Missing recordId' }, { status: 400 });
+
     const endpoint = `${API_URL}/api/table/${TABLE_ID}/record?fieldKeyType=name`;
     const response = await fetch(endpoint, {
       method: 'PATCH',
@@ -97,7 +113,14 @@ export async function PATCH(request: Request) {
       body: JSON.stringify({ fieldKeyType: "name", typecast: true, records: [{ id: recordId, fields }] }),
       cache: 'no-store'
     });
-    if (!response.ok) return NextResponse.json({ error: "Error" }, { status: response.status });
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error('PATCH drivers error:', response.status, errText);
+      return NextResponse.json({ error: "Update failed", detail: errText }, { status: response.status });
+    }
     return NextResponse.json(await response.json());
-  } catch (error) { return NextResponse.json({ error: 'Error' }, { status: 500 }); }
+  } catch (error: any) {
+    console.error('PATCH drivers exception:', error);
+    return NextResponse.json({ error: 'Internal Server Error', detail: error?.message }, { status: 500 });
+  }
 }

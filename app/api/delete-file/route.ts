@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     const response = await fetch(patchUrl, {
       method: "PATCH",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({ fieldKeyType: "name", fields: { [FIELD_ID]: null } }),
+      body: JSON.stringify({ fieldKeyType: "name", record: { fields: { [FIELD_ID]: null } } }),
     })
 
     if (!response.ok) {

@@ -476,6 +476,7 @@ function DataGrid({ schema }: { schema?: any }) {
     try {
       const response = await fetch(`/api/work-schedule?tenant=${tenantId}`, {
         method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ recordId, fields: { [fieldKey]: value } })
       });
       if (!response.ok) throw new Error("Update failed");
@@ -494,6 +495,7 @@ function DataGrid({ schema }: { schema?: any }) {
       requestQueue.add(async () => {
         const res = await fetch(`/api/work-schedule?tenant=${tenantId}`, {
           method: "PATCH",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ recordId: id, fields: { [fieldKey]: value } })
         })
         if (!res.ok) throw new Error(`PATCH failed: ${res.status}`)
@@ -530,6 +532,7 @@ function DataGrid({ schema }: { schema?: any }) {
       requestQueue.add(async () => {
         const res = await fetch(`/api/work-schedule?tenant=${tenantId}`, {
           method: "PATCH",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ recordId: id, fields: { [WS.DRIVER]: [driver.id] } })
         })
         if (!res.ok) throw new Error(`PATCH failed: ${res.status}`)

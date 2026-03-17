@@ -25,7 +25,7 @@
     "DRIVER_LINK_SYMMETRIC": "נהג סידור",
     "SENT_RESET": "אפס שליחה",
     "ORDER_FORM_ATTACHMENT": "קובץ הזמנה",
-    "INVOICE": "חשבונית"
+    "INVOICE": "מספר חשבונית"
   },
   "drivers": {
     "FIRST_NAME": "שם פרטי",
