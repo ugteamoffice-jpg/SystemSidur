@@ -12,7 +12,11 @@ export async function GET(request: Request) {
       headers: { 'Authorization': `Bearer ${apiKey}` },
       cache: 'no-store'
     });
-    if (!response.ok) return NextResponse.json({ error: 'Failed to fetch vehicles' }, { status: response.status });
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error('GET vehicles error:', response.status, errText);
+      return NextResponse.json({ error: 'Failed to fetch vehicles', status: response.status, detail: errText }, { status: response.status });
+    }
     return NextResponse.json(await response.json());
   } catch (error) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
