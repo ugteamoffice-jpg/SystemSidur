@@ -87,7 +87,7 @@ export async function DELETE(request: Request) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
-    const response = await fetch(`${API_URL}/api/table/${TABLE_ID}/record?recordIds=${id}`, {
+    const response = await fetch(`${API_URL}/api/table/${TABLE_ID}/record?recordIds[]=${id}`, {
       method: 'DELETE', headers: { 'Authorization': `Bearer ${apiKey}` }, cache: 'no-store'
     });
     if (!response.ok) return NextResponse.json({ error: 'Failed' }, { status: response.status });

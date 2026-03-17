@@ -88,7 +88,7 @@ export function createTeableClient(config: TenantConfig, tenantId: string) {
     async deleteRecord(tableId: string, recordId: string) {
       if (!API_KEY) throw new Error("Missing TEABLE_API_KEY")
 
-      const res = await fetch(`${API_URL}/api/table/${tableId}/record/${recordId}`, {
+      const res = await fetch(`${API_URL}/table/${tableId}/record/${recordId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${API_KEY}` },
       })
