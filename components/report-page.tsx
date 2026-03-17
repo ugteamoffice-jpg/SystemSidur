@@ -88,6 +88,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
   const [showInvoiceDialog, setShowInvoiceDialog] = React.useState(false)
   const [bulkInvoiceNum, setBulkInvoiceNum] = React.useState("")
   const [isUpdatingInvoice, setIsUpdatingInvoice] = React.useState(false)
+  const [invoiceProgress, setInvoiceProgress] = React.useState({ current: 0, total: 0 })
   // Driver assign
   const [showDriverAssignDialog, setShowDriverAssignDialog] = React.useState(false)
   const [driversList, setDriversList] = React.useState<{id: string, title: string}[]>([])
@@ -510,6 +511,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
 
     const valueToSave = bulkInvoiceNum.trim() === "" ? null : bulkInvoiceNum
     const ids = Array.from(selectedRowIds)
+    setInvoiceProgress({ current: 0, total: ids.length })
 
     const results = await Promise.all(ids.map((id) =>
       requestQueue.add(async () => {
@@ -519,14 +521,19 @@ export function ReportPage({ reportType }: ReportPageProps) {
           body: JSON.stringify({ fields: { [INVOICE_FIELD_ID]: valueToSave } })
         })
         if (!res.ok) throw new Error(`PATCH failed: ${res.status}`)
+        setInvoiceProgress(prev => ({ ...prev, current: prev.current + 1 }))
         return true
-      }).catch(() => false)
+      }).catch(() => {
+        setInvoiceProgress(prev => ({ ...prev, current: prev.current + 1 }))
+        return false
+      })
     ))
     const errorCount = results.filter(ok => !ok).length
 
     await applyFilters()
 
     setIsUpdatingInvoice(false)
+    setInvoiceProgress({ current: 0, total: 0 })
     setShowInvoiceDialog(false)
     setBulkInvoiceNum("")
 
@@ -1131,13 +1138,34 @@ export function ReportPage({ reportType }: ReportPageProps) {
               placeholder="הזן מס' חשבונית (או השאר ריק למחיקה)..." 
               className="mt-2 text-right"
               inputMode="numeric"
+              disabled={isUpdatingInvoice}
             />
           </div>
+          {isUpdatingInvoice && invoiceProgress.total > 0 && (
+            <div className="space-y-2 px-1">
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <span>{invoiceProgress.current} / {invoiceProgress.total}</span>
+                <span>{Math.round((invoiceProgress.current / invoiceProgress.total) * 100)}%</span>
+              </div>
+              <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
+                <div 
+                  className="bg-primary h-3 rounded-full transition-all duration-300 ease-out"
+                  style={{ width: `${(invoiceProgress.current / invoiceProgress.total) * 100}%` }}
+                />
+              </div>
+            </div>
+          )}
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setShowInvoiceDialog(false)} disabled={isUpdatingInvoice}>ביטול</Button>
             <Button onClick={handleBulkUpdateInvoice} disabled={isUpdatingInvoice}>
-              {isUpdatingInvoice && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
-              שמור
+              {isUpdatingInvoice ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                  מעדכן... {invoiceProgress.current}/{invoiceProgress.total}
+                </>
+              ) : (
+                "שמור"
+              )}
             </Button>
           </div>
         </DialogContent>
