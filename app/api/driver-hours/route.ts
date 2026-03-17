@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     const driverId = searchParams.get('driverId');
     const DH_DRIVER = DH?.DRIVER;
     // Filter by driver using Teable filterSet format
-    let endpoint = `${API_URL}/api/table/${TABLE_ID}/record?take=1000&fieldKeyType=id`;
+    let endpoint = `${API_URL}/api/table/${TABLE_ID}/record?take=1000&fieldKeyType=name`;
     if (driverId && DH_DRIVER) {
       const filter = JSON.stringify({ conjunction: "and", filterSet: [{ fieldId: DH_DRIVER, operator: "isAnyOf", value: [driverId] }] });
       endpoint += `&filter=${encodeURIComponent(filter)}`;
@@ -43,9 +43,9 @@ export async function POST(request: Request) {
     const API_URL = config.apiUrl;
     const body = await request.json();
     console.log('POST driver-hours fields:', JSON.stringify(body.fields))
-    const response = await fetch(`${API_URL}/api/table/${TABLE_ID}/record?fieldKeyType=id`, {
+    const response = await fetch(`${API_URL}/api/table/${TABLE_ID}/record?fieldKeyType=name`, {
       method: 'POST', headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fieldKeyType: "id", typecast: true, records: [{ fields: body.fields }] }), cache: 'no-store'
+      body: JSON.stringify({ fieldKeyType: "name", typecast: true, records: [{ fields: body.fields }] }), cache: 'no-store'
     });
     const resultText = await response.text()
     console.log('Teable POST response:', response.status, resultText)
@@ -66,9 +66,9 @@ export async function PATCH(request: Request) {
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
     const body = await request.json();
     console.log('PATCH driver-hours id:', id, 'fields:', JSON.stringify(body.fields))
-    const response = await fetch(`${API_URL}/api/table/${TABLE_ID}/record?fieldKeyType=id`, {
+    const response = await fetch(`${API_URL}/api/table/${TABLE_ID}/record?fieldKeyType=name`, {
       method: 'PATCH', headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fieldKeyType: "id", typecast: true, records: [{ id, fields: body.fields }] }), cache: 'no-store'
+      body: JSON.stringify({ fieldKeyType: "name", typecast: true, records: [{ id, fields: body.fields }] }), cache: 'no-store'
     });
     const resultText = await response.text()
     console.log('Teable PATCH response:', response.status, resultText)

@@ -15,7 +15,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const res = await fetch(`${config.apiUrl}/api/table/${TABLE_ID}/record`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fieldKeyType: 'id', typecast: true, records: [{ id, fields: body.fields }] })
+      body: JSON.stringify({ fieldKeyType: 'name', typecast: true, records: [{ id, fields: body.fields }] })
     })
     if (!res.ok) return NextResponse.json({ error: 'Failed' }, { status: res.status })
     const text = await res.text()

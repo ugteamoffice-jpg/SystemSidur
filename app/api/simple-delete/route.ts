@@ -14,10 +14,10 @@ export async function POST(request: Request) {
     const FIELD_ID = config.fields.workSchedule.ORDER_FORM_ATTACHMENT
     const API_URL = config.apiUrl
 
-    const response = await fetch(`${API_URL}/api/table/${TABLE_ID}/record?fieldKeyType=id`, {
+    const response = await fetch(`${API_URL}/api/table/${TABLE_ID}/record?fieldKeyType=name`, {
       method: "PATCH",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ fieldKeyType: "id", typecast: true, records: [{ id: recordId, fields: { [FIELD_ID]: null } }] }),
+      body: JSON.stringify({ fieldKeyType: "name", typecast: true, records: [{ id: recordId, fields: { [FIELD_ID]: null } }] }),
     })
 
     if (!response.ok) {

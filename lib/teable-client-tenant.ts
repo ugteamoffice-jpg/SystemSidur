@@ -35,7 +35,7 @@ export function createTeableClient(config: TenantConfig, tenantId: string) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          fieldKeyType: "id",
+          fieldKeyType: "name",
           typecast: true,
           records: [{ fields }],
         }),
@@ -66,7 +66,7 @@ export function createTeableClient(config: TenantConfig, tenantId: string) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          fieldKeyType: "id",
+          fieldKeyType: "name",
           typecast: true,
           records: [{ id: recordId, fields }],
         }),

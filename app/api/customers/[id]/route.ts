@@ -22,12 +22,12 @@ export async function PATCH(
 
     const { id } = params;
     const body = await request.json();
-    const endpoint = `${API_URL}/api/table/${TABLE_ID}/record?fieldKeyType=id`;
+    const endpoint = `${API_URL}/api/table/${TABLE_ID}/record?fieldKeyType=name`;
 
     const response = await fetch(endpoint, {
       method: 'PATCH',
       headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fieldKeyType: "id", typecast: true, records: [{ id, fields: body.fields }] }),
+      body: JSON.stringify({ fieldKeyType: "name", typecast: true, records: [{ id, fields: body.fields }] }),
       cache: 'no-store'
     });
 

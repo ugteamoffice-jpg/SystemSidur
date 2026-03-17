@@ -16,7 +16,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        fieldKeyType: "id",
+        fieldKeyType: "name",
         typecast: true,
         records: [{ id, fields: body.fields }]
       })

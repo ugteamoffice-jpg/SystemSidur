@@ -17,7 +17,7 @@ export async function GET(request: Request) {
     let hasMore = true;
 
     while (hasMore) {
-      const endpoint = `${API_URL}/api/table/${TABLE_ID}/record?take=${take}&skip=${skip}&fieldKeyType=id`;
+      const endpoint = `${API_URL}/api/table/${TABLE_ID}/record?take=${take}&skip=${skip}&fieldKeyType=name`;
       const response = await fetch(endpoint, { headers: { 'Authorization': `Bearer ${apiKey}` }, cache: 'no-store' });
       if (!response.ok) throw new Error(`Teable API error: ${response.status}`);
       const data = await response.json();
@@ -45,11 +45,11 @@ export async function POST(request: Request) {
     const API_URL = config.apiUrl;
 
     const body = await request.json();
-    const endpoint = `${API_URL}/api/table/${TABLE_ID}/record?fieldKeyType=id`;
+    const endpoint = `${API_URL}/api/table/${TABLE_ID}/record?fieldKeyType=name`;
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fieldKeyType: "id", typecast: true, records: [{ fields: body.fields }] }),
+      body: JSON.stringify({ fieldKeyType: "name", typecast: true, records: [{ fields: body.fields }] }),
       cache: 'no-store'
     });
     if (!response.ok) return NextResponse.json({ error: "Error" }, { status: response.status });
@@ -90,11 +90,11 @@ export async function PATCH(request: Request) {
 
     const body = await request.json();
     const { recordId, fields } = body;
-    const endpoint = `${API_URL}/api/table/${TABLE_ID}/record?fieldKeyType=id`;
+    const endpoint = `${API_URL}/api/table/${TABLE_ID}/record?fieldKeyType=name`;
     const response = await fetch(endpoint, {
       method: 'PATCH',
       headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fieldKeyType: "id", typecast: true, records: [{ id: recordId, fields }] }),
+      body: JSON.stringify({ fieldKeyType: "name", typecast: true, records: [{ id: recordId, fields }] }),
       cache: 'no-store'
     });
     if (!response.ok) return NextResponse.json({ error: "Error" }, { status: response.status });

@@ -8,7 +8,7 @@ export async function GET(request: Request) {
     const { config, apiKey } = ctx;
     const TABLE_ID = config.tables.VEHICLE_TYPES;
 
-    const response = await fetch(`${config.apiUrl}/api/table/${TABLE_ID}/record?take=1000&fieldKeyType=id`, {
+    const response = await fetch(`${config.apiUrl}/api/table/${TABLE_ID}/record?take=1000&fieldKeyType=name`, {
       headers: { 'Authorization': `Bearer ${apiKey}` },
       cache: 'no-store'
     });
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        fieldKeyType: "id",
+        fieldKeyType: "name",
         typecast: true,
         records: [{ fields: body.fields }]
       })

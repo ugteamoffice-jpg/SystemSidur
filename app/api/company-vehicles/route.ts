@@ -16,7 +16,7 @@ export async function GET(request: Request) {
     const TABLE_ID = config.tables.COMPANY_VEHICLES
     if (!TABLE_ID) return NextResponse.json({ records: [], notConfigured: true })
 
-    const res = await fetch(`${config.apiUrl}/api/table/${TABLE_ID}/record?take=1000&fieldKeyType=id`, {
+    const res = await fetch(`${config.apiUrl}/api/table/${TABLE_ID}/record?take=1000&fieldKeyType=name`, {
       headers: { Authorization: `Bearer ${apiKey}` }, cache: 'no-store'
     })
     if (!res.ok) return NextResponse.json({ error: 'Failed' }, { status: res.status })
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     const res = await fetch(`${config.apiUrl}/api/table/${TABLE_ID}/record`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fieldKeyType: 'id', typecast: true, records: [{ fields: body.fields }] })
+      body: JSON.stringify({ fieldKeyType: 'name', typecast: true, records: [{ fields: body.fields }] })
     })
     if (!res.ok) return NextResponse.json({ error: 'Failed' }, { status: res.status })
     return NextResponse.json(await safeJson(res) || { success: true })

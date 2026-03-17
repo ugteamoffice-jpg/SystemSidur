@@ -113,3 +113,23 @@ export function clearFieldCache(tenantId?: string) {
     Object.keys(fieldCache).forEach(k => delete fieldCache[k])
   }
 }
+
+/**
+ * Resolve a single Hebrew field name to its Teable field ID.
+ * Used for upload URLs that require field IDs in the path.
+ * Fetches and caches all fields for the table on first call.
+ */
+const fieldIdCache: Record<string, Record<string, string>> = {}
+
+export async function resolveFieldId(
+  apiUrl: string,
+  tableId: string,
+  hebrewName: string,
+  apiKey: string
+): Promise<string> {
+  const cacheKey = `${apiUrl}:${tableId}`
+  if (!fieldIdCache[cacheKey]) {
+    fieldIdCache[cacheKey] = await fetchTableFields(apiUrl, tableId, apiKey)
+  }
+  return fieldIdCache[cacheKey][hebrewName] || hebrewName
+}

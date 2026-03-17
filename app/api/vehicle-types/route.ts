@@ -8,7 +8,7 @@ export async function GET(request: Request) {
     const { client, config } = ctx;
 
     const data = await client.getRecords(config.tables.VEHICLE_TYPES, {
-      fieldKeyType: "id",
+      fieldKeyType: "name",
       take: 1000,
     })
     return NextResponse.json(data)

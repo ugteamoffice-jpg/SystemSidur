@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { getTenantFromRequest, isTenantError } from "@/lib/api-tenant-helper"
 import { validateFile } from "@/lib/file-validation"
+import { resolveFieldId } from "@/lib/field-resolver"
 
 export async function POST(request: Request) {
   try {
@@ -19,10 +20,11 @@ export async function POST(request: Request) {
     if (!validation.valid) return NextResponse.json({ error: validation.error }, { status: 400 })
 
     const TABLE_ID = config.tables.WORK_SCHEDULE
-    const FIELD_ID = config.fields.workSchedule.ORDER_FORM
+    const FIELD_NAME = config.fields.workSchedule.ORDER_FORM
     const API_URL = config.apiUrl
 
-    const uploadUrl = `${API_URL}/api/table/${TABLE_ID}/record/${recordId}/${FIELD_ID}/uploadAttachment`
+    const fieldId = await resolveFieldId(API_URL, TABLE_ID, FIELD_NAME, apiKey)
+    const uploadUrl = `${API_URL}/api/table/${TABLE_ID}/record/${recordId}/${fieldId}/uploadAttachment`
     const uploadFormData = new FormData()
     uploadFormData.append("file", file)
 

@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getTenantFromRequest, isTenantError } from "@/lib/api-tenant-helper"
 import { validateFile } from "@/lib/file-validation"
+import { resolveFieldId } from "@/lib/field-resolver"
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,13 +13,14 @@ export async function POST(request: NextRequest) {
     const file = formData.get("file") as File
     const tableId = formData.get("tableId") as string
     const recordId = formData.get("recordId") as string
-    const fieldId = formData.get("fieldId") as string
+    const fieldName = formData.get("fieldId") as string
 
     if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 })
 
     const validation = validateFile(file)
     if (!validation.valid) return NextResponse.json({ error: validation.error }, { status: 400 })
 
+    const fieldId = await resolveFieldId(config.apiUrl, tableId, fieldName, apiKey)
     const uploadUrl = `${config.apiUrl}/api/table/${tableId}/record/${recordId}/${fieldId}/uploadAttachment`
     const uploadFormData = new FormData()
     uploadFormData.append("file", file)

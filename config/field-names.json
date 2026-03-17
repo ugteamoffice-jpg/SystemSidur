@@ -67,5 +67,8 @@
     "START_TIME": "שעת התחלה",
     "END_TIME": "שעת סיום",
     "NOTES": "הערות"
+  },
+  "vehicles": {
+    "VEHICLE_TYPE": "סוג רכב"
   }
 }

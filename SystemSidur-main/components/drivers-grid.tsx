@@ -1,0 +1,554 @@
+"use client"
+
+import type React from "react"
+import { useState, useEffect, useRef } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Plus, Search, Loader2, Trash2, Car, ChevronDown } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import { useTenantFields, useTenant } from "@/lib/tenant-context"
+import { format } from "date-fns"
+
+interface Driver {
+  id: string
+  fields: { [key: string]: any }
+}
+
+interface CompanyVehicle {
+  id: string
+  fields: { [key: string]: any }
+}
+
+export default function DriversGrid() {
+  const tenantFields = useTenantFields()
+  const { tenantId } = useTenant()
+  const STATUS_FIELD_ID = tenantFields?.drivers.STATUS || ""
+  const FIRST_NAME_ID = tenantFields?.drivers.FIRST_NAME || ""
+  const PHONE_ID = tenantFields?.drivers.PHONE || ""
+  const DRIVER_TYPE_ID = tenantFields?.drivers.DRIVER_TYPE || ""
+  const CAR_NUMBER_ID = tenantFields?.drivers.CAR_NUMBER || ""
+  const CV_CAR_NUMBER = tenantFields?.companyVehicles?.CAR_NUMBER || ""
+  const CV_MAKE_MODEL = tenantFields?.companyVehicles?.MAKE_MODEL || ""
+
+  const [drivers, setDrivers] = useState<Driver[]>([])
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [editingDriverId, setEditingDriverId] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [statusFilter, setStatusFilter] = useState<"פעיל" | "לא פעיל">("פעיל")
+  const [phoneError, setPhoneError] = useState("")
+  const [carNumberError, setCarNumberError] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const { toast } = useToast()
+
+  // רכבי חברה
+  const [companyVehicles, setCompanyVehicles] = useState<CompanyVehicle[]>([])
+  const [vehiclePickerOpen, setVehiclePickerOpen] = useState(false)
+
+  // דיאלוג עדכון נסיעות עתידיות
+  const [futureRidesDialog, setFutureRidesDialog] = useState(false)
+  const [futureRidesCount, setFutureRidesCount] = useState(0)
+  const [futureRidesList, setFutureRidesList] = useState<any[]>([])
+  const [pendingSaveFields, setPendingSaveFields] = useState<any>(null)
+  const [isUpdatingFuture, setIsUpdatingFuture] = useState(false)
+
+  const [scrollTop, setScrollTop] = useState(0)
+  const [containerHeight, setContainerHeight] = useState(600)
+  const tableContainerRef = useRef<HTMLDivElement>(null)
+
+  const ROW_HEIGHT = 53
+  const BUFFER_SIZE = 10
+
+  const DRIVERS_COL_SIZING_KEY = `driversColumnSizing_${tenantId}`
+  const driverColumns = [
+    { key: 'firstName', header: 'שם מלא / שם חברה', defaultWidth: 200, minWidth: 100 },
+    { key: 'phone', header: 'טלפון נייד', defaultWidth: 140, minWidth: 80 },
+    { key: 'type', header: 'סוג נהג', defaultWidth: 120, minWidth: 80 },
+    { key: 'carNumber', header: 'מספר רכב', defaultWidth: 140, minWidth: 80 },
+    { key: 'status', header: 'סטטוס', defaultWidth: 100, minWidth: 70 },
+  ]
+
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem(DRIVERS_COL_SIZING_KEY)
+        if (saved) return JSON.parse(saved)
+      } catch (e) {}
+    }
+    return {}
+  })
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && Object.keys(columnWidths).length > 0) {
+      try { localStorage.setItem(DRIVERS_COL_SIZING_KEY, JSON.stringify(columnWidths)) } catch (e) {}
+    }
+  }, [columnWidths])
+
+  const getColWidth = (col: typeof driverColumns[0]) => columnWidths[col.key] || col.defaultWidth
+
+  const handleResizeStart = (colKey: string, minWidth: number, e: React.MouseEvent) => {
+    e.stopPropagation(); e.preventDefault()
+    const startX = e.clientX
+    const startWidth = columnWidths[colKey] || driverColumns.find(c => c.key === colKey)!.defaultWidth
+    const onMouseMove = (me: MouseEvent) => {
+      const newWidth = Math.max(minWidth, startWidth + (startX - me.clientX))
+      setColumnWidths(old => ({ ...old, [colKey]: newWidth }))
+    }
+    const onMouseUp = () => { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp) }
+    document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp)
+  }
+
+  useEffect(() => {
+    fetchDrivers()
+    fetchCompanyVehicles()
+  }, [])
+
+  const fetchDrivers = async () => {
+    setIsLoading(true)
+    setDrivers([])
+    try {
+      const response = await fetch(`/api/drivers?tenant=${tenantId}`);
+      if (!response.ok) throw new Error("Fetch failed");
+      const data = await response.json();
+      setDrivers(data.records || []);
+    } catch (error) {
+      console.error("Error fetching drivers:", error)
+      toast({ title: "שגיאה בטעינה", description: "חלק מהנתונים אולי לא נטענו", variant: "destructive" })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const fetchCompanyVehicles = async () => {
+    try {
+      const res = await fetch(`/api/company-vehicles?tenant=${tenantId}`)
+      const data = await res.json()
+      if (!data.notConfigured) setCompanyVehicles(data.records || [])
+    } catch { /* שגיאה שקטה */ }
+  }
+
+  // שליפת נסיעות עתידיות של הנהג (מהיום והלאה)
+  const fetchFutureRidesForDriver = async (driverId: string): Promise<any[]> => {
+    try {
+      const WS_DRIVER = tenantFields?.workSchedule?.DRIVER || ""
+      const WS_DATE = tenantFields?.workSchedule?.DATE || ""
+      const today = format(new Date(), "yyyy-MM-dd")
+      // שולפים נסיעות של היום ואחריו — מסננים לפי נהג בצד הלקוח
+      const res = await fetch(`/api/work-schedule?tenant=${tenantId}&take=2000`)
+      if (!res.ok) return []
+      const data = await res.json()
+      const records: any[] = data.records || []
+      return records.filter(r => {
+        const d = r.fields[WS_DRIVER]
+        const driverMatch = Array.isArray(d) ? d.some((x: any) => x?.id === driverId) : false
+        const dateStr = r.fields[WS_DATE]
+        const rideDate = dateStr ? dateStr.split("T")[0] : ""
+        return driverMatch && rideDate >= today
+      })
+    } catch { return [] }
+  }
+
+  const handleCreateDriver = async () => {
+    try {
+      const filteredFields = Object.entries(newDriver).reduce((acc, [key, value]) => {
+        if (value !== "" && value !== undefined && value !== null) acc[key] = value
+        return acc
+      }, {} as any)
+      filteredFields[STATUS_FIELD_ID] = "פעיל"
+      const response = await fetch(`/api/drivers?tenant=${tenantId}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fields: filteredFields }) })
+      if (!response.ok) throw new Error("Failed")
+      toast({ title: "הצלחה", description: "נוצר בהצלחה" })
+      setIsDialogOpen(false); resetForm(); fetchDrivers();
+    } catch (error) { toast({ title: "שגיאה", description: "נכשל", variant: "destructive" }) }
+  }
+
+  const handleUpdateDriver = async () => {
+    if (!editingDriverId) return
+    try {
+      const filteredFields = Object.entries(newDriver).reduce((acc, [key, value]) => {
+        if (value !== "" && value !== undefined && value !== null) acc[key] = value
+        return acc
+      }, {} as any)
+
+      // האם מספר הרכב השתנה?
+      const currentDriver = drivers.find(d => d.id === editingDriverId)
+      const oldCarNumber = currentDriver?.fields[CAR_NUMBER_ID] || ""
+      const newCarNumber = filteredFields[CAR_NUMBER_ID] || ""
+      const carChanged = newCarNumber && newCarNumber !== oldCarNumber
+
+      if (carChanged) {
+        // בדוק נסיעות עתידיות
+        const futureRides = await fetchFutureRidesForDriver(editingDriverId)
+        if (futureRides.length > 0) {
+          setFutureRidesList(futureRides)
+          setFutureRidesCount(futureRides.length)
+          setPendingSaveFields(filteredFields)
+          setFutureRidesDialog(true)
+          return // עצור — ממתין לתשובת המשתמש
+        }
+      }
+
+      // שמור ישירות
+      await saveDriverAndOptionalRides(filteredFields, [])
+    } catch (error) { toast({ title: "שגיאה", description: "נכשל", variant: "destructive" }) }
+  }
+
+  const saveDriverAndOptionalRides = async (fields: any, ridesToUpdate: any[]) => {
+    try {
+      // 1. עדכן נהג
+      const res = await fetch(`/api/drivers?tenant=${tenantId}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recordId: editingDriverId, fields })
+      })
+      if (!res.ok) throw new Error("Failed")
+
+      // 2. עדכן נסיעות עתידיות אם נבחר
+      if (ridesToUpdate.length > 0) {
+        setIsUpdatingFuture(true)
+        const WS_VEHICLE_NUM = tenantFields?.workSchedule?.VEHICLE_NUM || ""
+        const newCarNumber = fields[CAR_NUMBER_ID] || ""
+        // Batch PATCH — 50 נסיעות בכל קריאה
+        const chunks = []
+        for (let i = 0; i < ridesToUpdate.length; i += 50) chunks.push(ridesToUpdate.slice(i, i + 50))
+        for (const chunk of chunks) {
+          const records = chunk.map((r: any) => ({ id: r.id, fields: { [WS_VEHICLE_NUM]: newCarNumber } }))
+          await fetch(`/api/work-schedule?tenant=${tenantId}`, {
+            method: "PATCH", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ records })
+          })
+        }
+        setIsUpdatingFuture(false)
+        toast({ title: "הצלחה", description: `הנהג ו-${ridesToUpdate.length} נסיעות עתידיות עודכנו` })
+      } else {
+        toast({ title: "הצלחה", description: "עודכן בהצלחה" })
+      }
+
+      setIsDialogOpen(false); setEditingDriverId(null); resetForm(); setFutureRidesDialog(false); setPendingSaveFields(null)
+      setDrivers(prev => prev.map(d => d.id === editingDriverId ? { ...d, fields: { ...d.fields, ...fields } } : d))
+    } catch { toast({ title: "שגיאה", description: "נכשל", variant: "destructive" }) }
+  }
+
+  const handlePermanentDelete = async () => {
+    if (!editingDriverId) return
+    try {
+      const response = await fetch(`/api/drivers?tenant=${tenantId}&recordId=${editingDriverId}`, { method: "DELETE" })
+      if (!response.ok) throw new Error("Failed")
+      toast({ title: "הצלחה", description: "הנהג נמחק לצמיתות" })
+      setDeleteConfirmOpen(false)
+      setIsDialogOpen(false)
+      setEditingDriverId(null)
+      resetForm()
+      setDrivers(prev => prev.filter(d => d.id !== editingDriverId))
+    } catch (error) { toast({ title: "שגיאה", description: "המחיקה נכשלה", variant: "destructive" }) }
+  }
+
+  const handleDeleteDriver = async () => {
+    if (!editingDriverId) return
+    try {
+      const newStatus = (newDriver[STATUS_FIELD_ID] || "פעיל") === "לא פעיל" ? "פעיל" : "לא פעיל"
+      const response = await fetch(`/api/drivers?tenant=${tenantId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recordId: editingDriverId, fields: { [STATUS_FIELD_ID]: newStatus } }) })
+      if (!response.ok) throw new Error("Failed")
+      setIsDialogOpen(false); setEditingDriverId(null); resetForm(); 
+      setDrivers(prev => prev.map(d => d.id === editingDriverId ? { ...d, fields: { ...d.fields, [STATUS_FIELD_ID]: newStatus } } : d));
+      toast({ title: "הצלחה", description: "סטטוס עודכן" })
+    } catch (error) { toast({ title: "שגיאה", description: "נכשל", variant: "destructive" }) }
+  }
+
+  const handleRowClick = (driver: Driver) => { 
+    setEditingDriverId(driver.id); 
+    setNewDriver({ 
+      [FIRST_NAME_ID]: driver.fields[FIRST_NAME_ID] || "",
+      [PHONE_ID]: driver.fields[PHONE_ID] || "",
+      [DRIVER_TYPE_ID]: driver.fields[DRIVER_TYPE_ID] || "",
+      [CAR_NUMBER_ID]: driver.fields[CAR_NUMBER_ID] || "",
+      [STATUS_FIELD_ID]: driver.fields[STATUS_FIELD_ID] || "פעיל"
+    } as any); 
+    setIsDialogOpen(true) 
+  }
+
+  const resetForm = () => { 
+    setNewDriver({ 
+      [FIRST_NAME_ID]: "",
+      [PHONE_ID]: "",
+      [DRIVER_TYPE_ID]: "",
+      [CAR_NUMBER_ID]: ""
+    }); 
+    setPhoneError("");
+    setCarNumberError("");
+  }
+
+  const [newDriver, setNewDriver] = useState<any>({ 
+    [FIRST_NAME_ID]: "",
+    [PHONE_ID]: "",
+    [DRIVER_TYPE_ID]: "",
+    [CAR_NUMBER_ID]: ""
+  })
+
+  const filteredDrivers = drivers.filter((driver) => {
+    const status = driver.fields[STATUS_FIELD_ID] || "פעיל"
+    const matchesStatus = status === statusFilter
+    if (!searchQuery) return matchesStatus
+    const searchLower = searchQuery.toLowerCase()
+    return matchesStatus && Object.values(driver.fields).some((value) => String(value).toLowerCase().includes(searchLower))
+  })
+  
+  const isEditMode = !!editingDriverId
+  const getDriverStatus = (driver: Driver) => driver.fields[STATUS_FIELD_ID] || "פעיל"
+  
+  const validatePhone = (phone: string) => {
+    if (!phone) { setPhoneError(""); return true };
+    if (!/^\d+$/.test(phone)) { setPhoneError("מספרים בלבד"); return false };
+    if (phone.length < 9 || phone.length > 10) { setPhoneError("9-10 ספרות"); return false };
+    // בדיקת כפילות — כל נהג אחר (לא הנהג הנערך כרגע)
+    const duplicate = drivers.find(d => d.id !== editingDriverId && d.fields[PHONE_ID] === phone)
+    if (duplicate) { setPhoneError(`מספר קיים כבר אצל: ${duplicate.fields[FIRST_NAME_ID] || "נהג אחר"}`); return false };
+    setPhoneError("");
+    return true;
+  }
+
+  const validateCarNumber = (carNumber: string) => {
+    if (!carNumber) { setCarNumberError(""); return true };
+    if (!/^\d+$/.test(carNumber)) { setCarNumberError("מספרים בלבד"); return false };
+    setCarNumberError("");
+    return true;
+  }
+
+  const handlePhoneChange = (value: string) => {
+    const numericValue = value.replace(/\D/g, '');
+    setNewDriver({...newDriver, [PHONE_ID]: numericValue});
+    validatePhone(numericValue);
+  }
+
+  const handleCarNumberChange = (value: string) => {
+    const numericValue = value.replace(/\D/g, '');
+    setNewDriver({...newDriver, [CAR_NUMBER_ID]: numericValue});
+    validateCarNumber(numericValue);
+  }
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => { setScrollTop(e.currentTarget.scrollTop) }
+  useEffect(() => { if (tableContainerRef.current) setContainerHeight(tableContainerRef.current.clientHeight) }, [])
+
+  const startIndex = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - BUFFER_SIZE)
+  const endIndex = Math.min(filteredDrivers.length, Math.ceil((scrollTop + containerHeight) / ROW_HEIGHT) + BUFFER_SIZE)
+  const visibleDrivers = filteredDrivers.slice(startIndex, endIndex)
+  const totalHeight = filteredDrivers.length * ROW_HEIGHT
+  const offsetY = startIndex * ROW_HEIGHT
+
+  return (
+    <div className="w-full h-[calc(100vh-2rem)] flex flex-col space-y-2 p-4 overflow-hidden" dir="rtl">
+      <div className="flex items-center gap-3 flex-none flex-wrap">
+        <Select value={statusFilter} onValueChange={(value: "פעיל" | "לא פעיל") => setStatusFilter(value)}>
+          <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value="פעיל">פעיל</SelectItem><SelectItem value="לא פעיל">לא פעיל</SelectItem></SelectContent>
+        </Select>
+        <Button onClick={() => setIsDialogOpen(true)}><Plus className="h-4 w-4 ml-2" /> נהג חדש</Button>
+        <div className="relative w-[300px]">
+          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="חיפוש..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pr-10" />
+        </div>
+        <div className="mr-auto text-sm text-muted-foreground whitespace-nowrap flex items-center gap-2">
+            {isLoading && <Loader2 className="h-3 w-3 animate-spin" />}
+            סה"כ {filteredDrivers.length.toLocaleString("he-IL")} נהגים
+        </div>
+      </div>
+
+      <div className="border rounded-lg flex-1 overflow-auto bg-background shadow-sm relative" ref={tableContainerRef} onScroll={handleScroll}>
+        <Table style={{ tableLayout: 'fixed' }}>
+          <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
+            <TableRow>
+              {driverColumns.map(col => (
+                <TableHead key={col.key} className="text-right relative border-l select-none group hover:bg-muted/30" style={{ width: getColWidth(col) }}>
+                  {col.header}
+                  <div
+                    onMouseDown={(e) => handleResizeStart(col.key, col.minWidth, e)}
+                    className="absolute left-0 top-0 h-full w-1 cursor-col-resize touch-none select-none z-20 hover:bg-primary transition-colors duration-200"
+                  />
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading && filteredDrivers.length === 0 ? (
+              <TableRow><TableCell colSpan={5} className="text-center py-8"><div className="flex items-center justify-center gap-2"><Loader2 className="h-5 w-5 animate-spin" /><span>טוען נתונים...</span></div></TableCell></TableRow>
+            ) : filteredDrivers.length === 0 ? (
+              <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">לא נמצאו נהגים</TableCell></TableRow>
+            ) : (
+              <>
+                {startIndex > 0 && <tr style={{ height: `${offsetY}px` }}><td colSpan={5} /></tr>}
+                {visibleDrivers.map((driver) => (
+                  <TableRow key={driver.id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleRowClick(driver)} style={{ height: `${ROW_HEIGHT}px` }}>
+                    <TableCell className="font-medium truncate">{driver.fields[FIRST_NAME_ID] || "-"}</TableCell>
+                    <TableCell className="truncate">{driver.fields[PHONE_ID] || "-"}</TableCell>
+                    <TableCell className="truncate">{driver.fields[DRIVER_TYPE_ID] || "-"}</TableCell>
+                    <TableCell className="truncate">{driver.fields[CAR_NUMBER_ID] || "-"}</TableCell>
+                    <TableCell><span className={`px-2 py-1 rounded-full text-xs ${getDriverStatus(driver) === 'פעיל' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{getDriverStatus(driver)}</span></TableCell>
+                  </TableRow>
+                ))}
+                {endIndex < filteredDrivers.length && <tr style={{ height: `${totalHeight - endIndex * ROW_HEIGHT}px` }}><td colSpan={5} /></tr>}
+              </>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      
+      <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) { setEditingDriverId(null); resetForm(); } }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
+            <DialogHeader><DialogTitle>{isEditMode ? "עריכת נהג" : "נהג חדש"}</DialogTitle></DialogHeader>
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2 col-span-2">
+                  <Label>שם מלא / שם חברה {!isEditMode && <span className="text-red-500">*</span>}</Label>
+                  <Input value={newDriver[FIRST_NAME_ID]} onChange={(e) => setNewDriver({...newDriver, [FIRST_NAME_ID]: e.target.value})} />
+                </div>
+                <div className="space-y-2">
+                  <Label>טלפון נייד</Label>
+                  <Input 
+                    value={newDriver[PHONE_ID] || ""} 
+                    onChange={(e) => handlePhoneChange(e.target.value)}
+                    className={phoneError ? "border-red-500" : ""}
+                  />
+                  {phoneError && <p className="text-sm text-red-500">{phoneError}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label>סוג נהג {!isEditMode && <span className="text-red-500">*</span>}</Label>
+                  <Select value={newDriver[DRIVER_TYPE_ID]} onValueChange={(val) => setNewDriver({...newDriver, [DRIVER_TYPE_ID]: val})}>
+                    <SelectTrigger><SelectValue placeholder="בחר" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="שכיר">שכיר</SelectItem>
+                      <SelectItem value="קבלן">קבלן</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>מספר רכב</Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      value={newDriver[CAR_NUMBER_ID] || ""} 
+                      onChange={(e) => handleCarNumberChange(e.target.value)}
+                      className={carNumberError ? "border-red-500" : ""}
+                    />
+                    {companyVehicles.length > 0 && (
+                      <Popover open={vehiclePickerOpen} onOpenChange={setVehiclePickerOpen}>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" size="icon" title="בחר מרכבי חברה" className="shrink-0">
+                            <Car className="h-4 w-4" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-56 p-1" dir="rtl" align="end">
+                          <div className="text-xs text-muted-foreground px-2 py-1 font-medium">רכבי חברה</div>
+                          {companyVehicles.map(v => {
+                            const num = v.fields[CV_CAR_NUMBER] || ""
+                            const model = v.fields[CV_MAKE_MODEL] || ""
+                            return (
+                              <button key={v.id} onClick={() => {
+                                setNewDriver((p: any) => ({ ...p, [CAR_NUMBER_ID]: num }))
+                                setCarNumberError("")
+                                setVehiclePickerOpen(false)
+                              }} className="w-full text-right px-2 py-1.5 text-sm hover:bg-accent rounded flex items-center justify-between gap-2">
+                                <span className="font-mono font-medium">{num}</span>
+                                {model && <span className="text-muted-foreground text-xs truncate">{model}</span>}
+                              </button>
+                            )
+                          })}
+                        </PopoverContent>
+                      </Popover>
+                    )}
+                  </div>
+                  {carNumberError && <p className="text-sm text-red-500">{carNumberError}</p>}
+                </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+                {isEditMode && (
+                    <>
+                    <Button 
+                        variant="ghost"
+                        size="icon"
+                        className="mr-auto text-red-500 hover:text-red-700 hover:bg-red-50"
+                        title="מחק נהג לצמיתות"
+                        onClick={() => setDeleteConfirmOpen(true)}
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                        variant={(newDriver[STATUS_FIELD_ID] || "פעיל") === "לא פעיל" ? "default" : "destructive"} 
+                        onClick={handleDeleteDriver} 
+                        className={`${(newDriver[STATUS_FIELD_ID] || "פעיל") === "לא פעיל" ? "bg-emerald-500 hover:bg-emerald-600 text-white" : "bg-rose-400 hover:bg-rose-500 text-white"}`}
+                    >
+                        {(newDriver[STATUS_FIELD_ID] || "פעיל") === "לא פעיל" ? "הפוך לפעיל" : "הפוך ללא פעיל"}
+                    </Button>
+                    </>
+                )}
+                <Button 
+                  onClick={isEditMode ? handleUpdateDriver : handleCreateDriver} 
+                  disabled={(!isEditMode && (!newDriver[FIRST_NAME_ID] || !newDriver[DRIVER_TYPE_ID])) || !!phoneError || !!carNumberError}
+                >
+                  {isEditMode ? "שמור שינויים" : "צור נהג"}
+                </Button>
+            </div>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>מחיקה לצמיתות</AlertDialogTitle>
+            <AlertDialogDescription>
+              האם אתה בטוח שברצונך למחוק את הנהג <strong>{newDriver[FIRST_NAME_ID]}</strong> לצמיתות?
+              <br />
+              פעולה זו אינה ניתנת לביטול.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row-reverse gap-2">
+            <AlertDialogCancel>ביטול</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={handlePermanentDelete}
+            >
+              כן, מחק לצמיתות
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* דיאלוג עדכון נסיעות עתידיות */}
+      <AlertDialog open={futureRidesDialog} onOpenChange={open => { if (!open) { setFutureRidesDialog(false); setPendingSaveFields(null) } }}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>עדכון נסיעות עתידיות</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>
+                  שינית את מספר הרכב לנהג זה.<br />
+                  נמצאו <strong className="text-foreground">{futureRidesCount} נסיעות עתידיות</strong> המשובצות לנהג זה.
+                </p>
+                <p>האם לעדכן גם את מספר הרכב בנסיעות אלו?</p>
+                <p className="text-xs text-muted-foreground/70">⚠️ נסיעות שכבר בוצעו לא ישתנו.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row-reverse gap-2">
+            <AlertDialogCancel onClick={() => {
+              // שמור נהג בלבד, ללא עדכון נסיעות
+              if (pendingSaveFields) saveDriverAndOptionalRides(pendingSaveFields, [])
+            }}>
+              שמור נהג בלבד
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pendingSaveFields) saveDriverAndOptionalRides(pendingSaveFields, futureRidesList)
+              }}
+              disabled={isUpdatingFuture}
+            >
+              {isUpdatingFuture ? <><Loader2 className="h-4 w-4 animate-spin ml-2" />מעדכן...</> : `כן, עדכן ${futureRidesCount} נסיעות`}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  )
+}

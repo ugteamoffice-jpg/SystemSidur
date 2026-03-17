@@ -30,7 +30,7 @@ export const teableClient = {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        fieldKeyType: 'id',
+        fieldKeyType: 'name',
         typecast: true,
         records: [{ fields }] 
       }),
@@ -66,7 +66,7 @@ export const teableClient = {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        fieldKeyType: 'id', // מכריח שימוש ב-IDs
+        fieldKeyType: 'name', // שימוש בשמות שדות
         typecast: true,     // פותר את בעיית ה-Validation
         records: [
           {

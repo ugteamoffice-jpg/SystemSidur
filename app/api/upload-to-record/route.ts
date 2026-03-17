@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getTenantFromRequest, isTenantError } from "@/lib/api-tenant-helper"
+import { resolveFieldId } from "@/lib/field-resolver"
 
 const ALLOWED_TYPES = [
   "application/pdf",
@@ -22,9 +23,9 @@ export async function POST(request: NextRequest) {
     const file = formData.get("file") as File
     const tableId = formData.get("tableId") as string
     const recordId = formData.get("recordId") as string
-    const fieldId = formData.get("fieldId") as string
+    const fieldName = formData.get("fieldId") as string
 
-    if (!file || !tableId || !recordId || !fieldId) {
+    if (!file || !tableId || !recordId || !fieldName) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
@@ -37,6 +38,9 @@ export async function POST(request: NextRequest) {
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json({ error: "הקובץ גדול מדי (מקסימום 10MB)" }, { status: 400 })
     }
+
+    // Resolve Hebrew field name to field ID for upload URL
+    const fieldId = await resolveFieldId(config.apiUrl, tableId, fieldName, apiKey)
 
     const uploadFormData = new FormData()
     uploadFormData.append("file", file)

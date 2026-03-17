@@ -15,6 +15,8 @@ export interface TenantConfig {
     VEHICLES: string
     VEHICLE_TYPES: string
     COMPANY_VEHICLES?: string
+    DRIVER_HOURS?: string
+    [key: string]: string | undefined
   }
   fields: {
     workSchedule: {
@@ -52,6 +54,8 @@ export interface TenantConfig {
       DRIVER_TYPE: string
       CAR_NUMBER: string
       STATUS: string
+      SALARY_CONFIG?: string
+      CONTRACT?: string
     }
     customers: {
       NAME: string
@@ -65,7 +69,7 @@ export interface TenantConfig {
       CREATED_IN_ACCOUNTING: string
       STATUS: string
     }
-    vehicles: {
+    vehicles?: {
       VEHICLE_TYPE: string
     }
     companyVehicles?: {
@@ -80,6 +84,14 @@ export interface TenantConfig {
       VEHICLE_LICENSE_FILE: string
       VEHICLE_LICENSE_EXPIRY: string
     }
+    driverHours?: {
+      DRIVER: string
+      DATE: string
+      START_TIME: string
+      END_TIME: string
+      NOTES: string
+    }
+    [key: string]: any
   }
 }
 
@@ -101,10 +113,12 @@ export async function loadTenantConfigServer(tenantId: string): Promise<TenantCo
     const data = await fs.readFile(filePath, "utf-8")
     const rawConfig = JSON.parse(data)
 
-    // Auto-resolve field IDs from Teable by Hebrew field name
-    const { resolveFields } = await import("@/lib/field-resolver")
-    const resolvedFields = await resolveFields(tenantId, rawConfig)
-    const config = { ...rawConfig, fields: resolvedFields } as TenantConfig
+    // Load Hebrew field names directly — no need to resolve IDs
+    const fieldNamesPath = path.join(process.cwd(), "config", "field-names.json")
+    const fieldNamesData = await fs.readFile(fieldNamesPath, "utf-8")
+    const fieldNames = JSON.parse(fieldNamesData)
+
+    const config = { ...rawConfig, fields: fieldNames } as TenantConfig
 
     configCache[tenantId] = config
     return config

@@ -178,7 +178,7 @@ export default function CompanyVehiclesGrid() {
       const data = await res.json()
       const records = data?.records || []
       setVehicleTypesList(records.map((r: any) => {
-        const val = r.fields?.["fldbijSftCee3DLlaFn"]
+        const val = r.fields?.["סוג רכב"]
         let name = ""
         if (typeof val === "string") name = val
         else if (Array.isArray(val)) name = val.map((x: any) => x?.title || x?.value || x).filter(Boolean).join(", ")

@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     const response = await fetch(url, {
       method: "PATCH",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ fieldKeyType: "id", record: { fields: { [FIELD_ID]: null } } }),
+      body: JSON.stringify({ fieldKeyType: "name", record: { fields: { [FIELD_ID]: null } } }),
     })
 
     if (!response.ok) {

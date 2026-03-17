@@ -1,0 +1,58 @@
+{
+  "id": "tblRSYoKFHCaDyivO9k",
+  "name": "סוגי רכבים",
+  "description": null,
+  "fields": [
+    {
+      "id": "fldUBeIPRhJ9JuUHXBL",
+      "name": "סוג רכב",
+      "type": "singleLineText",
+      "description": null,
+      "options": {},
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": null
+    },
+    {
+      "id": "fldWm4V1XAY0p8Nl26o",
+      "name": "קבלנים/נהגים",
+      "type": "link",
+      "description": null,
+      "options": {
+        "foreignTableId": "tblsMGUyHILuKGGASix",
+        "relationship": "manyMany",
+        "isOneWay": false,
+        "symmetricFieldId": "flddqCLBT7JAITEpwbl",
+        "lookupFieldId": "fld1t6uHDVHJT7mL6Hv",
+        "fkHostTableName": "bse1pHlESYWysI2D4VR.junction_fldWm4V1XAY0p8Nl26o_flddqCLBT7JAITEpwbl",
+        "selfKeyName": "__fk_flddqCLBT7JAITEpwbl",
+        "foreignKeyName": "__fk_fldWm4V1XAY0p8Nl26o"
+      },
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": true
+    },
+    {
+      "id": "fld6ckj9VpKT7GxqfAx",
+      "name": "סידור עבודה",
+      "type": "link",
+      "description": null,
+      "options": {
+        "foreignTableId": "tblVAQgIYOLfvCZdqgj",
+        "relationship": "oneMany",
+        "isOneWay": false,
+        "symmetricFieldId": "fldeppUjfYTJgZZi6VI",
+        "lookupFieldId": "fldT720jVmGMXFURUKL",
+        "fkHostTableName": "bse1pHlESYWysI2D4VR.sydvr_bvdh",
+        "selfKeyName": "__fk_fldeppUjfYTJgZZi6VI",
+        "foreignKeyName": "__id"
+      },
+      "cellValueType": "string",
+      "isLookup": null,
+      "isComputed": null,
+      "isMultipleCellValue": true
+    }
+  ]
+}
