@@ -17,6 +17,7 @@ const DataGrid = dynamic(() => import("@/components/data-grid").then(m => ({ def
 const AppHeader = dynamic(() => import("@/components/app-header").then(m => ({ default: m.AppHeader })), { ssr: false })
 const ReportPage = dynamic(() => import("@/components/report-page").then(m => ({ default: m.ReportPage })), { ssr: false })
 const DriverHoursPage = dynamic(() => import("@/components/driver-hours-page").then(m => ({ default: m.DriverHoursPage })), { ssr: false })
+const AdminUsersPage = dynamic(() => import("@/components/admin-users-page").then(m => ({ default: m.AdminUsersPage })), { ssr: false })
 
 export default function TenantHomePage() {
   const { config, loading } = useTenant()
@@ -35,6 +36,7 @@ export default function TenantHomePage() {
     "report-driver": 'דוח נהג | לו"ז',
     "report-invoices": 'דוח חשבוניות | לו"ז',
     "report-profit": 'דוח רווח והפסד | לו"ז',
+    "admin-users": 'ניהול משתמשים | לו"ז',
   }
 
   // Read page from URL on load
@@ -70,6 +72,7 @@ export default function TenantHomePage() {
       {activePage === "company-vehicles" && <div className="flex flex-col h-full overflow-hidden"><CompanyVehiclesGrid /></div>}
       {activePage === "report-general" && <GeneralReportPage />}
       {activePage === "driver-hours" && <DriverHoursPage />}
+      {activePage === "admin-users" && <AdminUsersPage />}
       {isReport && <ReportPage key={activePage} reportType={activePage as ReportType} />}
     </div>
   )

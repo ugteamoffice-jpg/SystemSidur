@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Moon, Sun, Settings, ChevronDown, Eye, Menu, X, DatabaseBackup } from "lucide-react"
+import { Moon, Sun, Settings, ChevronDown, Eye, Menu, X, DatabaseBackup, Users } from "lucide-react"
 import { useTheme } from "next-themes"
 import dynamic from "next/dynamic"
 import { ReportSettingsDialog } from "@/components/report-settings-dialog"
@@ -23,7 +23,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 
 const UserButton = dynamic(() => import("@clerk/nextjs").then(mod => mod.UserButton), { ssr: false })
 
-export type PageType = "work-schedule" | "customers" | "drivers" | "vehicle-types" | "company-vehicles" | "recurring-rides" | "report-customer" | "report-driver" | "report-invoices" | "report-profit" | "report-general"
+export type PageType = "work-schedule" | "customers" | "drivers" | "vehicle-types" | "company-vehicles" | "recurring-rides" | "report-customer" | "report-driver" | "report-invoices" | "report-profit" | "report-general" | "admin-users"
 
 const reportPages: PageType[] = ["report-general", "report-customer", "report-driver", "report-invoices", "report-profit"]
 const vehiclePages: PageType[] = ["vehicle-types", "company-vehicles"]
@@ -212,6 +212,9 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
                   </PopoverContent>
                 </Popover>
               )}
+              <Button variant="outline" size="icon" className="h-8 w-8 hidden md:flex" onClick={() => onPageChange("admin-users")} title="ניהול משתמשים">
+                <Users className="h-4 w-4" />
+              </Button>
               <Button variant="outline" size="icon" className="h-8 w-8 hidden md:flex" onClick={() => setShowBackupDialog(true)} title="גיבוי ושחזור">
                 <DatabaseBackup className="h-4 w-4" />
               </Button>
