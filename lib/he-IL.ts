@@ -27,6 +27,7 @@ export const heILCustom = {
   formFieldAction__forgotPassword: "שכחת סיסמה?",
   formButtonPrimary: "המשך",
   formButtonPrimary__verify: "אמת",
+  formButtonReset: "ביטול",
   footerActionLink__useAnotherMethod: "השתמש בשיטה אחרת",
   backButton: "חזור",
   signIn: {
@@ -132,6 +133,10 @@ export const heILCustom = {
         primaryButton__changePassword: "שנה סיסמה",
         primaryButton__setPassword: "הגדר סיסמה",
       },
+      mfaSection: {
+        title: "אימות דו-שלבי",
+        primaryButton: "הוסף אימות דו-שלבי",
+      },
     },
     navbar: {
       title: "חשבון",
@@ -185,9 +190,28 @@ export const heILCustom = {
       primaryButton__changePassword: "שנה סיסמה",
       primaryButton__setPassword: "הגדר סיסמה",
     },
+    mfaSection: {
+      title: "אימות דו-שלבי",
+      primaryButton: "הוסף אימות דו-שלבי",
+    },
     dangerSection: {
       title: "מחיקת חשבון",
       deleteAccountButton: "מחק חשבון",
+    },
+    profilePage: {
+      title: "עדכן פרופיל",
+      imageFormTitle: "תמונת פרופיל",
+      imageFormSubtitle: "העלה תמונה",
+      imageFormDestructiveActionSubtitle: "הסר תמונה",
+      fileDropAreaTitle: "גרור קובץ לכאן, או...",
+      fileDropAreaAction: "בחר קובץ",
+      fileDropAreaHint: "גודל מומלץ 1:1, עד 10MB",
+      successMessage: "הפרופיל שלך עודכן",
+      readonly: "פרטי הפרופיל שלך סופקו על ידי חיבור הארגון ולא ניתנים לעריכה.",
+    },
+    usernamePage: {
+      title: "עדכן שם משתמש",
+      successMessage: "שם המשתמש שלך עודכן",
     },
     emailAddressPage: {
       title: "הוסף כתובת אימייל",
@@ -198,10 +222,6 @@ export const heILCustom = {
         resendButton: "שלח קוד מחדש",
         successMessage: "האימייל {{identifier}} נוסף לחשבון שלך",
       },
-    },
-    usernamePage: {
-      title: "עדכן שם משתמש",
-      successMessage: "שם המשתמש שלך עודכן",
     },
     connectedAccountPage: {
       title: "הוסף חשבון מקושר",
@@ -221,6 +241,22 @@ export const heILCustom = {
       successMessage: "הסיסמה עודכנה בהצלחה",
       changePasswordSuccessMessage: "הסיסמה שלך עודכנה",
       sessionsSignedOutSuccessMessage: "כל המכשירים האחרים התנתקו",
+    },
+    mfaPage: {
+      title: "הוסף אימות דו-שלבי",
+      formHint: "בחר שיטה להוספה",
+    },
+    mfaTOTPPage: {
+      title: "הוסף אפליקציית אימות",
+      verifyTitle: "קוד אימות",
+      verifySubtitle: "הזן את קוד האימות שנוצר על ידי אפליקציית האימות שלך",
+      successMessage: "אימות דו-שלבי מופעל כעת",
+      authenticatorApp: {
+        infoText: "הגדר אפליקציית אימות כדי ליצור קודי אימות",
+        inputLabel: "קוד אימות",
+        buttonAbleToScan__nonPrimary: "סרוק קוד QR במקום",
+        buttonUnableToScan__nonPrimary: "לא מצליח לסרוק? הזן מפתח ידנית",
+      },
     },
     deletePage: {
       title: "מחק חשבון",
