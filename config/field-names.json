@@ -33,8 +33,8 @@
     "PHONE": "טלפון נייד",
     "DRIVER_TYPE": "סוג נהג",
     "CAR_NUMBER": "מספר רכב",
-    "STATUS": "סטטוס",
-    "SALARY_CONFIG": "הגדרות שכר",
+    "STATUS": "סטטוס נהג",
+    "SALARY_CONFIG": "SALARY_CONFIG",
     "CONTRACT": "חוזה עבודה"
   },
   "customers": {
@@ -43,11 +43,11 @@
     "CONTACT_NAME": "שם א.קשר",
     "PHONE": "טלפון נייד",
     "EMAIL": "אימייל",
-    "PAYMENT_METHOD": "אמצעי תשלום",
-    "ONGOING_PAYMENT": "תשלום שוטף",
-    "ACCOUNTING_KEY": "מפתח הנהח",
-    "CREATED_IN_ACCOUNTING": "נוצר בהנהח",
-    "STATUS": "סטטוס"
+    "PAYMENT_METHOD": "אופן תשלום",
+    "ONGOING_PAYMENT": "תשלום שוטף+",
+    "ACCOUNTING_KEY": "מס' מפתח הנה\"ח",
+    "CREATED_IN_ACCOUNTING": "נוצר בהנהלת חשבונות",
+    "STATUS": "סטטוס לקוח"
   },
   "companyVehicles": {
     "LABEL": "תווית",
@@ -56,8 +56,8 @@
     "YEAR": "שנה",
     "INSURANCE_FILE": "ביטוח",
     "INSURANCE_EXPIRY": "תוקף ביטוח",
-    "OPERATION_PERMIT_FILE": "רישיון עסק",
-    "OPERATION_PERMIT_EXPIRY": "תוקף רישיון עסק",
+    "OPERATION_PERMIT_FILE": "היתר הפעלה",
+    "OPERATION_PERMIT_EXPIRY": "תוקף היתר הפעלה",
     "VEHICLE_LICENSE_FILE": "רישיון רכב",
     "VEHICLE_LICENSE_EXPIRY": "תוקף רישיון רכב"
   },
