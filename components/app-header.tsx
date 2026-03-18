@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useTenant } from "@/lib/tenant-context"
+import { useOrganization } from "@clerk/nextjs"
 import { BackupDialog } from "@/components/backup-dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 
@@ -40,6 +41,8 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
   const [showAutoBackupPrompt, setShowAutoBackupPrompt] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { tenantId } = useTenant()
+  const { membership } = useOrganization()
+  const isAdmin = membership?.role === "org:admin"
 
   const COLUMN_VISIBILITY_KEY = `workScheduleColumnVisibility_${tenantId}`
 
@@ -212,9 +215,11 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
                   </PopoverContent>
                 </Popover>
               )}
+              {isAdmin && (
               <Button variant="outline" size="icon" className="h-8 w-8 hidden md:flex" onClick={() => onPageChange("admin-users")} title="ניהול משתמשים">
                 <Users className="h-4 w-4" />
               </Button>
+              )}
               <Button variant="outline" size="icon" className="h-8 w-8 hidden md:flex" onClick={() => setShowBackupDialog(true)} title="גיבוי ושחזור">
                 <DatabaseBackup className="h-4 w-4" />
               </Button>

@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
-import { Users, UserPlus, Trash2, Loader2, Mail, Shield, ShieldCheck, Eye, EyeOff, Copy, Check } from "lucide-react"
+import { Users, UserPlus, Trash2, Loader2, Mail, Shield, ShieldCheck, Eye, EyeOff, Copy, Check, ShieldAlert } from "lucide-react"
+import { useOrganization } from "@clerk/nextjs"
 
 interface Member {
   id: string
@@ -23,6 +24,8 @@ interface Member {
 export function AdminUsersPage() {
   const { config, tenantId } = useTenant()
   const { toast } = useToast()
+  const { membership } = useOrganization()
+  const isAdmin = membership?.role === "org:admin"
   const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
@@ -106,6 +109,15 @@ export function AdminUsersPage() {
 
   const formatDate = (ts: number) => {
     return new Date(ts).toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit", year: "numeric" })
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 gap-3 text-muted-foreground">
+        <ShieldAlert className="h-10 w-10" />
+        <p className="text-sm">אין לך הרשאה לצפות בעמוד זה</p>
+      </div>
+    )
   }
 
   if (loading) {
