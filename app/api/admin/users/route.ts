@@ -32,30 +32,14 @@ export async function GET(request: Request) {
       createdAt: m.createdAt,
     }))
 
-    // Also get pending invitations
-    const invitations = await clerk.organizations.getOrganizationInvitationList({
-      organizationId: orgId,
-      limit: 100,
-    })
-
-    const pendingInvites = invitations.data
-      .filter((inv: any) => inv.status === 'pending')
-      .map((inv: any) => ({
-        id: inv.id,
-        email: inv.emailAddress,
-        role: inv.role,
-        status: inv.status,
-        createdAt: inv.createdAt,
-      }))
-
-    return NextResponse.json({ members, pendingInvites })
+    return NextResponse.json({ members })
   } catch (error: any) {
     console.error('GET admin/users error:', error)
     return NextResponse.json({ error: error?.message || 'Failed' }, { status: 500 })
   }
 }
 
-// POST — invite a new user
+// POST — create a new user with username+password and add to org
 export async function POST(request: Request) {
   try {
     const ctx = await getTenantFromRequest(request)
@@ -65,29 +49,39 @@ export async function POST(request: Request) {
     const orgId = config.clerkOrgId
     if (!orgId) return NextResponse.json({ error: 'No organization configured' }, { status: 400 })
 
-    const { userId } = await auth()
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
     const body = await request.json()
-    const { email, role } = body
-    if (!email) return NextResponse.json({ error: 'Email is required' }, { status: 400 })
+    const { username, password, firstName, lastName, role } = body
+    if (!username || !password) return NextResponse.json({ error: 'שם משתמש וסיסמה נדרשים' }, { status: 400 })
+    if (password.length < 8) return NextResponse.json({ error: 'סיסמה חייבת להכיל לפחות 8 תווים' }, { status: 400 })
 
     const clerk = await clerkClient()
-    const invitation = await clerk.organizations.createOrganizationInvitation({
+
+    // Create the user
+    const user = await clerk.users.createUser({
+      username,
+      password,
+      firstName: firstName || '',
+      lastName: lastName || '',
+      skipPasswordChecks: false,
+    })
+
+    // Add to organization
+    await clerk.organizations.createOrganizationMembership({
       organizationId: orgId,
-      emailAddress: email,
-      inviterUserId: userId,
+      userId: user.id,
       role: role || 'org:member',
     })
 
-    return NextResponse.json({ success: true, invitation })
+    return NextResponse.json({ success: true, userId: user.id })
   } catch (error: any) {
     console.error('POST admin/users error:', error)
-    return NextResponse.json({ error: error?.message || 'Failed to invite' }, { status: 500 })
+    // Clerk error messages
+    const msg = error?.errors?.[0]?.longMessage || error?.errors?.[0]?.message || error?.message || 'Failed'
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
 
-// DELETE — remove a member or revoke invitation
+// DELETE — remove a member from org
 export async function DELETE(request: Request) {
   try {
     const ctx = await getTenantFromRequest(request)
@@ -99,28 +93,15 @@ export async function DELETE(request: Request) {
 
     const { searchParams } = new URL(request.url)
     const memberUserId = searchParams.get('userId')
-    const invitationId = searchParams.get('invitationId')
+    if (!memberUserId) return NextResponse.json({ error: 'Missing userId' }, { status: 400 })
 
     const clerk = await clerkClient()
+    await clerk.organizations.deleteOrganizationMembership({
+      organizationId: orgId,
+      userId: memberUserId,
+    })
 
-    if (invitationId) {
-      await clerk.organizations.revokeOrganizationInvitation({
-        organizationId: orgId,
-        invitationId,
-        requestingUserId: (await auth()).userId!,
-      })
-      return NextResponse.json({ success: true })
-    }
-
-    if (memberUserId) {
-      await clerk.organizations.deleteOrganizationMembership({
-        organizationId: orgId,
-        userId: memberUserId,
-      })
-      return NextResponse.json({ success: true })
-    }
-
-    return NextResponse.json({ error: 'Missing userId or invitationId' }, { status: 400 })
+    return NextResponse.json({ success: true })
   } catch (error: any) {
     console.error('DELETE admin/users error:', error)
     return NextResponse.json({ error: error?.message || 'Failed to remove' }, { status: 500 })
