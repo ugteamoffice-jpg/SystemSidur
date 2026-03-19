@@ -1335,7 +1335,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
                       }}
                       onDragEnd={() => setReportDraggingColId(null)}
                     >
-                      <div className="flex items-center justify-between gap-1 cursor-pointer" onClick={() => handleSortCol(col.id)}>
+                      <div className="flex items-center justify-between cursor-pointer" onClick={() => handleSortCol(col.id)}>
                         <span className="truncate">{col.label}</span>
                         <span className="text-[10px] opacity-60 shrink-0">
                           {sortCol === col.id ? (sortDir === "asc" ? "▲" : "▼") : "⇅"}

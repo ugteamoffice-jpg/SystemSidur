@@ -510,7 +510,7 @@ export function DriverHoursPage() {
                     }}
                     onDragEnd={() => setDhDraggingColId(null)}
                   >
-                    <div className={`flex items-center gap-1 ${col.sortable ? 'cursor-pointer' : ''}`} onClick={() => {
+                    <div className={`flex items-center justify-between ${col.sortable ? 'cursor-pointer' : ''}`} onClick={() => {
                       if (!col.sortable) return
                       setDhSortConfig(prev => prev?.key === col.key ? { key: col.key, direction: prev.direction === 'asc' ? 'desc' : 'asc' } : { key: col.key, direction: 'asc' })
                     }}>

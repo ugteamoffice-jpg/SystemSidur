@@ -711,7 +711,7 @@ export function GeneralReportPage() {
                     >
                       {col.id === "sel"
                         ? <div className="flex items-center justify-center"><Checkbox checked={allSelected} onCheckedChange={toggleAll} /></div>
-                        : <div className="flex items-center gap-1 cursor-pointer" onClick={() => handleGrSort(col.id)}>
+                        : <div className="flex items-center justify-between cursor-pointer" onClick={() => handleGrSort(col.id)}>
                             <span className="truncate">{col.label}</span>
                             <span className="text-[10px] opacity-60 shrink-0">{grSortCol === col.id ? (grSortDir === "asc" ? "▲" : "▼") : "⇅"}</span>
                           </div>

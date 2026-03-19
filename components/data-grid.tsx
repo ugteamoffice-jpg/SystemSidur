@@ -1139,7 +1139,7 @@ function DataGrid({ schema }: { schema?: any }) {
                     }}
                     onDragEnd={() => setDraggingColId(null)}
                   >
-                    <div className={`flex items-center gap-1 ${header.column.getCanSort() ? 'cursor-pointer' : ''}`} onClick={header.column.getToggleSortingHandler()}>
+                    <div className={`flex items-center justify-between ${header.column.getCanSort() ? 'cursor-pointer' : ''}`} onClick={header.column.getToggleSortingHandler()}>
                       {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                       <span className="text-[10px] opacity-60 shrink-0">{header.column.getIsSorted() === "asc" ? "▲" : header.column.getIsSorted() === "desc" ? "▼" : "⇅"}</span>
                     </div>

@@ -272,7 +272,7 @@ export default function VehiclesGrid() {
             <TableRow>
               {vehicleColumns.map(col => (
                 <TableHead key={col.key} className="text-right relative border-l select-none group hover:bg-muted/30 pr-4" style={{ width: getColWidth(col) }}>
-                  <div className="flex items-center gap-1 cursor-pointer" onClick={() => handleSort(col.key)}>
+                  <div className="flex items-center justify-between cursor-pointer" onClick={() => handleSort(col.key)}>
                     {col.header}
                     <span className="text-[10px] opacity-60 shrink-0">{sortConfig?.key === col.key ? (sortConfig.direction === 'asc' ? '▲' : '▼') : '⇅'}</span>
                   </div>

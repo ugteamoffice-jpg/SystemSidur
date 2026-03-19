@@ -469,7 +469,7 @@ export default function DriversGrid() {
                   }}
                   onDragEnd={() => setDraggingColId(null)}
                 >
-                  <div className="flex items-center gap-1 cursor-pointer" onClick={() => handleSort(col.key)}>
+                  <div className="flex items-center justify-between cursor-pointer" onClick={() => handleSort(col.key)}>
                     {col.header}
                     <span className="text-[10px] opacity-60 shrink-0">{sortConfig?.key === col.key ? (sortConfig.direction === 'asc' ? '▲' : '▼') : '⇅'}</span>
                   </div>

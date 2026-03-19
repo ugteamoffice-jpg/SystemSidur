@@ -501,7 +501,7 @@ export function RecurringRidesPage() {
                       setDraggedCol(null)
                     }}
                   >
-                    <div className="flex items-center gap-1 cursor-pointer" onClick={header.column.getToggleSortingHandler()}>
+                    <div className="flex items-center justify-between cursor-pointer" onClick={header.column.getToggleSortingHandler()}>
                       {flexRender(header.column.columnDef.header, header.getContext())}
                       {header.column.id !== "actions" && (
                         <span className="text-[10px] opacity-60 shrink-0">{header.column.getIsSorted() === "asc" ? "▲" : header.column.getIsSorted() === "desc" ? "▼" : "⇅"}</span>

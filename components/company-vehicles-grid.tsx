@@ -513,7 +513,7 @@ export default function CompanyVehiclesGrid() {
                   }}
                   onDragEnd={() => setCvDraggingColId(null)}
                 >
-                  <div className={`flex items-center gap-1 ${col.sortable ? 'cursor-pointer' : ''}`} onClick={() => handleCvSort(col.key)}>
+                  <div className={`flex items-center justify-between ${col.sortable ? 'cursor-pointer' : ''}`} onClick={() => handleCvSort(col.key)}>
                     {col.header}
                     {col.sortable && <span className="text-[10px] opacity-60 shrink-0">{cvSortConfig?.key === col.key ? (cvSortConfig.direction === 'asc' ? '▲' : '▼') : '⇅'}</span>}
                   </div>
