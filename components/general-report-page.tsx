@@ -8,6 +8,7 @@ import { Calendar as CalendarIcon, Loader2, Search, X, SlidersHorizontal, UserCo
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -31,8 +32,8 @@ const renderLink = (value: any): string => {
 interface FilterState {
   startDate: Date | undefined; endDate: Date | undefined
   customerName: string; driverName: string; description: string
-  withClientPrice: boolean; withoutClientPrice: boolean
-  withDriverPrice: boolean; withoutDriverPrice: boolean
+  clientPriceFilter: "all" | "with" | "without"
+  driverPriceFilter: "all" | "with" | "without"
 }
 
 export function GeneralReportPage() {
@@ -48,8 +49,8 @@ export function GeneralReportPage() {
   const [filters, setFilters] = React.useState<FilterState>({
     startDate: firstOfMonth, endDate: today,
     customerName: "", driverName: "", description: "",
-    withClientPrice: true, withoutClientPrice: true,
-    withDriverPrice: true, withoutDriverPrice: true,
+    clientPriceFilter: "all",
+    driverPriceFilter: "all",
   })
   const [tempFilters, setTempFilters] = React.useState<FilterState>(filters)
   const [startCalOpen, setStartCalOpen] = React.useState(false)
@@ -207,10 +208,10 @@ export function GeneralReportPage() {
     if (filters.customerName.trim()) { const q = filters.customerName.toLowerCase(); d = d.filter(r => renderLink(r.fields[WS.CUSTOMER]).toLowerCase().includes(q)) }
     if (filters.driverName.trim()) { const q = filters.driverName.toLowerCase(); d = d.filter(r => ((r.fields as any)._driverName || renderLink(r.fields[WS.DRIVER])).toLowerCase().includes(q)) }
     if (filters.description.trim()) { const q = filters.description.toLowerCase(); d = d.filter(r => (r.fields[WS.DESCRIPTION] || "").toLowerCase().includes(q)) }
-    if (!filters.withClientPrice) d = d.filter(r => !(Number(r.fields[WS.PRICE_CLIENT_EXCL]) > 0))
-    if (!filters.withoutClientPrice) d = d.filter(r => Number(r.fields[WS.PRICE_CLIENT_EXCL]) > 0)
-    if (!filters.withDriverPrice) d = d.filter(r => !(Number(r.fields[WS.PRICE_DRIVER_EXCL]) > 0))
-    if (!filters.withoutDriverPrice) d = d.filter(r => Number(r.fields[WS.PRICE_DRIVER_EXCL]) > 0)
+    if (filters.clientPriceFilter === "with") d = d.filter(r => Number(r.fields[WS.PRICE_CLIENT_EXCL]) > 0)
+    else if (filters.clientPriceFilter === "without") d = d.filter(r => !(Number(r.fields[WS.PRICE_CLIENT_EXCL]) > 0))
+    if (filters.driverPriceFilter === "with") d = d.filter(r => Number(r.fields[WS.PRICE_DRIVER_EXCL]) > 0)
+    else if (filters.driverPriceFilter === "without") d = d.filter(r => !(Number(r.fields[WS.PRICE_DRIVER_EXCL]) > 0))
     if (globalFilter.trim()) {
       const q = globalFilter.toLowerCase()
       const stringify = (v: any): string => {
@@ -477,22 +478,28 @@ export function GeneralReportPage() {
             <div className="space-y-2">
               <Label className="font-bold">סינון מחירים</Label>
               <div className="grid grid-cols-2 gap-3">
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <Checkbox checked={tempFilters.withClientPrice} onCheckedChange={c => setTempFilters(p => ({ ...p, withClientPrice: !!c }))} />
-                  נסיעות עם מחיר לקוח
-                </label>
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <Checkbox checked={tempFilters.withoutClientPrice} onCheckedChange={c => setTempFilters(p => ({ ...p, withoutClientPrice: !!c }))} />
-                  נסיעות ללא מחיר לקוח
-                </label>
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <Checkbox checked={tempFilters.withDriverPrice} onCheckedChange={c => setTempFilters(p => ({ ...p, withDriverPrice: !!c }))} />
-                  נסיעות עם מחיר נהג
-                </label>
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <Checkbox checked={tempFilters.withoutDriverPrice} onCheckedChange={c => setTempFilters(p => ({ ...p, withoutDriverPrice: !!c }))} />
-                  נסיעות ללא מחיר נהג
-                </label>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">מחיר לקוח</Label>
+                  <Select value={tempFilters.clientPriceFilter} onValueChange={(v: "all" | "with" | "without") => setTempFilters(p => ({ ...p, clientPriceFilter: v }))}>
+                    <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">הכל</SelectItem>
+                      <SelectItem value="with">עם מחיר</SelectItem>
+                      <SelectItem value="without">ללא מחיר</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">מחיר נהג</Label>
+                  <Select value={tempFilters.driverPriceFilter} onValueChange={(v: "all" | "with" | "without") => setTempFilters(p => ({ ...p, driverPriceFilter: v }))}>
+                    <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">הכל</SelectItem>
+                      <SelectItem value="with">עם מחיר</SelectItem>
+                      <SelectItem value="without">ללא מחיר</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
 

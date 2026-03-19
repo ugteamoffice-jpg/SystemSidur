@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Calendar } from "@/components/ui/calendar"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -51,12 +52,9 @@ interface FilterState {
   customerName: string
   driverName: string
   description: string
-  withClientPrice: boolean
-  withoutClientPrice: boolean
-  withDriverPrice: boolean
-  withoutDriverPrice: boolean
-  withInvoice: boolean
-  withoutInvoice: boolean
+  clientPriceFilter: "all" | "with" | "without"
+  driverPriceFilter: "all" | "with" | "without"
+  invoiceFilter: "all" | "with" | "without"
 }
 
 const escapeHtml = (str: string) => {
@@ -239,12 +237,9 @@ export function ReportPage({ reportType }: ReportPageProps) {
     customerName: "",
     driverName: "",
     description: "",
-    withClientPrice: true,
-    withoutClientPrice: true,
-    withDriverPrice: true,
-    withoutDriverPrice: true,
-    withInvoice: true,
-    withoutInvoice: true,
+    clientPriceFilter: "all",
+    driverPriceFilter: "all",
+    invoiceFilter: "all",
   })
 
   const [tempFilters, setTempFilters] = React.useState<FilterState>(filters)
@@ -424,26 +419,23 @@ export function ReportPage({ reportType }: ReportPageProps) {
       filtered = filtered.filter((r) => (r.fields[WS.DESCRIPTION] || "").toLowerCase().includes(search))
     }
 
-    // Invoice filters
-    if (!filters.withInvoice) {
-      filtered = filtered.filter((r) => !r.fields[INVOICE_FIELD_ID])
-    }
-    if (!filters.withoutInvoice) {
+    // Invoice filter
+    if (filters.invoiceFilter === "with") {
       filtered = filtered.filter((r) => !!r.fields[INVOICE_FIELD_ID])
+    } else if (filters.invoiceFilter === "without") {
+      filtered = filtered.filter((r) => !r.fields[INVOICE_FIELD_ID])
     }
 
     // Price filters
-    if (!filters.withClientPrice) {
+    if (filters.clientPriceFilter === "with") {
+      filtered = filtered.filter((r) => Number(r.fields[WS.PRICE_CLIENT_EXCL]) > 0)
+    } else if (filters.clientPriceFilter === "without") {
       filtered = filtered.filter((r) => !(Number(r.fields[WS.PRICE_CLIENT_EXCL]) > 0))
     }
-    if (!filters.withoutClientPrice) {
-      filtered = filtered.filter((r) => Number(r.fields[WS.PRICE_CLIENT_EXCL]) > 0)
-    }
-    if (!filters.withDriverPrice) {
-      filtered = filtered.filter((r) => !(Number(r.fields[WS.PRICE_DRIVER_EXCL]) > 0))
-    }
-    if (!filters.withoutDriverPrice) {
+    if (filters.driverPriceFilter === "with") {
       filtered = filtered.filter((r) => Number(r.fields[WS.PRICE_DRIVER_EXCL]) > 0)
+    } else if (filters.driverPriceFilter === "without") {
+      filtered = filtered.filter((r) => !(Number(r.fields[WS.PRICE_DRIVER_EXCL]) > 0))
     }
 
     if (globalFilter.trim()) {
@@ -497,12 +489,12 @@ export function ReportPage({ reportType }: ReportPageProps) {
     if (filters.customerName) parts.push(`לקוח: ${filters.customerName}`)
     if (filters.driverName) parts.push(`נהג: ${filters.driverName}`)
     if (filters.description) parts.push(`מסלול: ${filters.description}`)
-    if (!filters.withInvoice) parts.push("ללא מס' חשבונית")
-    if (!filters.withoutInvoice) parts.push("מס' חשבונית קיים")
-    if (!filters.withClientPrice) parts.push("ללא מחיר לקוח")
-    if (!filters.withoutClientPrice) parts.push("עם מחיר לקוח")
-    if (!filters.withDriverPrice) parts.push("ללא מחיר נהג")
-    if (!filters.withoutDriverPrice) parts.push("עם מחיר נהג")
+    if (filters.invoiceFilter === "with") parts.push("עם חשבונית")
+    if (filters.invoiceFilter === "without") parts.push("ללא חשבונית")
+    if (filters.clientPriceFilter === "with") parts.push("עם מחיר לקוח")
+    if (filters.clientPriceFilter === "without") parts.push("ללא מחיר לקוח")
+    if (filters.driverPriceFilter === "with") parts.push("עם מחיר נהג")
+    if (filters.driverPriceFilter === "without") parts.push("ללא מחיר נהג")
     return parts.join(" | ")
   }, [filters])
 
@@ -1095,38 +1087,41 @@ export function ReportPage({ reportType }: ReportPageProps) {
             </div>
 
             <div className="space-y-2">
-              <Label className="font-bold">סטטוס חשבונית</Label>
-              <div className="grid grid-cols-2 gap-3">
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <Checkbox checked={tempFilters.withInvoice} onCheckedChange={(c) => setTempFilters(p => ({ ...p, withInvoice: !!c }))} />
-                  מס' חשבונית קיים
-                </label>
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <Checkbox checked={tempFilters.withoutInvoice} onCheckedChange={(c) => setTempFilters(p => ({ ...p, withoutInvoice: !!c }))} />
-                  ללא מס' חשבונית
-                </label>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="font-bold">סינון מחירים</Label>
-              <div className="grid grid-cols-2 gap-3">
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <Checkbox checked={tempFilters.withClientPrice} onCheckedChange={(c) => setTempFilters(p => ({ ...p, withClientPrice: !!c }))} />
-                  נסיעות עם מחיר לקוח
-                </label>
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <Checkbox checked={tempFilters.withoutClientPrice} onCheckedChange={(c) => setTempFilters(p => ({ ...p, withoutClientPrice: !!c }))} />
-                  נסיעות ללא מחיר לקוח
-                </label>
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <Checkbox checked={tempFilters.withDriverPrice} onCheckedChange={(c) => setTempFilters(p => ({ ...p, withDriverPrice: !!c }))} />
-                  נסיעות עם מחיר נהג
-                </label>
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <Checkbox checked={tempFilters.withoutDriverPrice} onCheckedChange={(c) => setTempFilters(p => ({ ...p, withoutDriverPrice: !!c }))} />
-                  נסיעות ללא מחיר נהג
-                </label>
+              <Label className="font-bold">סינון נוסף</Label>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">חשבונית</Label>
+                  <Select value={tempFilters.invoiceFilter} onValueChange={(v: "all" | "with" | "without") => setTempFilters(p => ({ ...p, invoiceFilter: v }))}>
+                    <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">הכל</SelectItem>
+                      <SelectItem value="with">עם חשבונית</SelectItem>
+                      <SelectItem value="without">ללא חשבונית</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">מחיר לקוח</Label>
+                  <Select value={tempFilters.clientPriceFilter} onValueChange={(v: "all" | "with" | "without") => setTempFilters(p => ({ ...p, clientPriceFilter: v }))}>
+                    <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">הכל</SelectItem>
+                      <SelectItem value="with">עם מחיר</SelectItem>
+                      <SelectItem value="without">ללא מחיר</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">מחיר נהג</Label>
+                  <Select value={tempFilters.driverPriceFilter} onValueChange={(v: "all" | "with" | "without") => setTempFilters(p => ({ ...p, driverPriceFilter: v }))}>
+                    <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">הכל</SelectItem>
+                      <SelectItem value="with">עם מחיר</SelectItem>
+                      <SelectItem value="without">ללא מחיר</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
 
