@@ -62,6 +62,7 @@ export default function DriversGrid() {
   const [editingDriverId, setEditingDriverId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<"פעיל" | "לא פעיל">("פעיל")
+  const [driverTypeFilter, setDriverTypeFilter] = useState<"הכל" | "שכיר" | "קבלן">("הכל")
   const [phoneError, setPhoneError] = useState("")
   const [carNumberError, setCarNumberError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -372,9 +373,11 @@ export default function DriversGrid() {
   const filteredDrivers = drivers.filter((driver) => {
     const status = driver.fields[STATUS_FIELD_ID] || "פעיל"
     const matchesStatus = status === statusFilter
-    if (!searchQuery) return matchesStatus
+    const driverType = driver.fields[DRIVER_TYPE_ID] || ""
+    const matchesType = driverTypeFilter === "הכל" || driverType === driverTypeFilter
+    if (!searchQuery) return matchesStatus && matchesType
     const searchLower = searchQuery.toLowerCase()
-    return matchesStatus && Object.values(driver.fields).some((value) => String(value).toLowerCase().includes(searchLower))
+    return matchesStatus && matchesType && Object.values(driver.fields).some((value) => String(value).toLowerCase().includes(searchLower))
   })
   
   const sortedDrivers = React.useMemo(() => {
@@ -434,8 +437,12 @@ export default function DriversGrid() {
     <div className="w-full h-[calc(100vh-2rem)] flex flex-col space-y-2 p-4 overflow-hidden" dir="rtl">
       <div className="flex items-center gap-3 flex-none flex-wrap">
         <Select value={statusFilter} onValueChange={(value: "פעיל" | "לא פעיל") => setStatusFilter(value)}>
-          <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-[130px]"><SelectValue /></SelectTrigger>
           <SelectContent><SelectItem value="פעיל">פעיל</SelectItem><SelectItem value="לא פעיל">לא פעיל</SelectItem></SelectContent>
+        </Select>
+        <Select value={driverTypeFilter} onValueChange={(value: "הכל" | "שכיר" | "קבלן") => setDriverTypeFilter(value)}>
+          <SelectTrigger className="w-[130px]"><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value="הכל">הכל</SelectItem><SelectItem value="שכיר">שכיר</SelectItem><SelectItem value="קבלן">קבלן</SelectItem></SelectContent>
         </Select>
         <Button onClick={() => setIsDialogOpen(true)}><Plus className="h-4 w-4 ml-2" /> נהג חדש</Button>
         <div className="relative w-[300px]">
