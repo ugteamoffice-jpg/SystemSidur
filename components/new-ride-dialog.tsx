@@ -29,6 +29,7 @@ import { useTenantFields, useTenantTables, useTenant } from "@/lib/tenant-contex
 interface ListItem {
   id: string;
   title: string
+  carNumber?: string
 }
 
 function AutoComplete({ options, value, onChange, onItemSelect, placeholder, isError }: any) {
@@ -185,6 +186,8 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
             if (isDrivers && tenantFields?.drivers) {
               const name = x.fields?.[tenantFields.drivers.FIRST_NAME] || ""
               title = name.trim()
+              const carNum = x.fields?.[tenantFields.drivers.CAR_NUMBER] || ""
+              return { id: x.id, title, carNumber: String(carNum) }
             } else {
               const firstVal = x.fields && Object.values(x.fields)[0];
               if (Array.isArray(firstVal)) {
@@ -685,7 +688,7 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                         setSelectedIds(p => ({ ...p, driverId: "" }));
                       }}
                       onItemSelect={(item: ListItem) => {
-                        setForm(p => ({ ...p, driver: item.title }));
+                        setForm(p => ({ ...p, driver: item.title, ...(item.carNumber ? { vehicleNum: item.carNumber } : {}) }));
                         setSelectedIds(p => ({ ...p, driverId: item.id }));
                       }}
                       placeholder=""
