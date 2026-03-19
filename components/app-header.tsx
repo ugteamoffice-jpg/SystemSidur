@@ -44,6 +44,14 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
   const { membership } = useOrganization()
   const isAdmin = membership?.role === "org:admin"
 
+  const navigateTo = (page: PageType) => {
+    if (activePage === page) {
+      window.location.reload()
+    } else {
+      window.open(window.location.pathname + "?page=" + page, "_blank")
+    }
+  }
+
   const COLUMN_VISIBILITY_KEY = `workScheduleColumnVisibility_${tenantId}`
 
   // Auto-backup: check once per day — desktop only
@@ -138,7 +146,7 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
                   <Button
                     key={item.id}
                     variant="ghost"
-                    onClick={() => window.open(window.location.pathname + "?page=" + item.id, "_blank")}
+                    onClick={() => navigateTo(item.id)}
                     className={`text-sm md:text-base font-medium px-2 md:px-3 h-9 hover:bg-accent hover:text-accent-foreground ${
                       activePage === item.id ? "bg-accent text-accent-foreground" : ""
                     }`}
@@ -159,8 +167,8 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" dir="rtl">
-                    <DropdownMenuItem onClick={() => window.open(window.location.pathname + "?page=vehicle-types", "_blank")}>סוגי רכבים</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => window.open(window.location.pathname + "?page=company-vehicles", "_blank")}>רכבי חברה</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigateTo("vehicle-types")}>סוגי רכבים</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigateTo("company-vehicles")}>רכבי חברה</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
                 <DropdownMenu>
@@ -176,12 +184,12 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" dir="rtl">
-                    <DropdownMenuItem onClick={() => window.open(window.location.pathname + "?page=report-general", "_blank")}>דוח נסיעות כללי</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => window.open(window.location.pathname + "?page=report-customer", "_blank")}>דוח לקוח</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => window.open(window.location.pathname + "?page=report-driver", "_blank")}>דוח נהג</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => window.open(window.location.pathname + "?page=report-invoices", "_blank")}>דוח חשבוניות</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => window.open(window.location.pathname + "?page=report-profit", "_blank")}>דוח רווח והפסד</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => window.open(window.location.pathname + "?page=driver-hours", "_blank")}>חישוב שעות נהג</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigateTo("report-general")}>דוח נסיעות כללי</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigateTo("report-customer")}>דוח לקוח</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigateTo("report-driver")}>דוח נהג</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigateTo("report-invoices")}>דוח חשבוניות</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigateTo("report-profit")}>דוח רווח והפסד</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigateTo("driver-hours")}>חישוב שעות נהג</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </nav>
