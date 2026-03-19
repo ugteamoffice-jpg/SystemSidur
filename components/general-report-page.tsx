@@ -17,6 +17,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useTenantFields, useTenant } from "@/lib/tenant-context"
 import { useToast } from "@/hooks/use-toast"
+import { RideDialog } from "@/components/new-ride-dialog"
 
 interface RideRecord { id: string; fields: { [key: string]: any } }
 
@@ -88,6 +89,7 @@ export function GeneralReportPage() {
 
   // Delete state
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false)
+  const [editingRecord, setEditingRecord] = React.useState<any>(null)
 
   // Column order
   const COL_ORDER_KEY = `generalReportColOrder_${tenantId}`
@@ -733,7 +735,7 @@ export function GeneralReportPage() {
                 {sortedGrData.map(rec => (
                   <TableRow key={rec.id}
                     className={`cursor-pointer hover:bg-muted/50 transition-colors ${selectedIds.has(rec.id) ? "bg-orange-50" : ""}`}
-                    onClick={() => toggleRow(rec.id)}>
+                    onClick={() => setEditingRecord(rec)}>
                     {cols.map(col => (
                       <TableCell key={col.id} className="border-l truncate text-right text-sm" style={{ width: col.width }}
                         onClick={col.id === "sel" ? e => e.stopPropagation() : undefined}>
@@ -768,6 +770,16 @@ export function GeneralReportPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <RideDialog 
+        open={!!editingRecord} 
+        onOpenChange={(isOpen: boolean) => { if (!isOpen) { setEditingRecord(null); applyFilters(); } }}
+        initialData={editingRecord} 
+        onRideSaved={() => { setEditingRecord(null); applyFilters(); }} 
+        triggerChild={<span />}
+        allRides={sortedGrData}
+        onNavigate={(record: any) => setEditingRecord(record)}
+      />
     </>
   )
 }
