@@ -1,7 +1,6 @@
 "use client"
 
-import type React from "react"
-import { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -39,8 +38,16 @@ export default function VehiclesGrid() {
 
   const VEHICLES_COL_SIZING_KEY = `vehiclesColumnSizing_${tenantId}`
   const vehicleColumns = [
-    { key: 'type', header: 'סוג רכב', defaultWidth: 300, minWidth: 100 },
+    { key: 'type', header: 'סוג רכב', fieldKey: VEHICLE_TYPE_FIELD_ID, defaultWidth: 300, minWidth: 100 },
   ]
+
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null)
+  const handleSort = (key: string) => {
+    setSortConfig(prev => {
+      if (prev?.key === key) return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' }
+      return { key, direction: 'asc' }
+    })
+  }
 
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
     if (typeof window !== 'undefined') {
@@ -201,6 +208,18 @@ export default function VehiclesGrid() {
 
   const isEditMode = !!editingVehicleId
 
+  const sortedVehicles = React.useMemo(() => {
+    if (!sortConfig) return filteredVehicles
+    const col = vehicleColumns.find(c => c.key === sortConfig.key)
+    if (!col) return filteredVehicles
+    return [...filteredVehicles].sort((a, b) => {
+      const aVal = a.fields[col.fieldKey] ?? ''
+      const bVal = b.fields[col.fieldKey] ?? ''
+      const cmp = String(aVal).localeCompare(String(bVal), 'he', { numeric: true })
+      return sortConfig.direction === 'asc' ? cmp : -cmp
+    })
+  }, [filteredVehicles, sortConfig])
+
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     setScrollTop(e.currentTarget.scrollTop)
   }
@@ -213,11 +232,11 @@ export default function VehiclesGrid() {
 
   const startIndex = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - BUFFER_SIZE)
   const endIndex = Math.min(
-    filteredVehicles.length,
+    sortedVehicles.length,
     Math.ceil((scrollTop + containerHeight) / ROW_HEIGHT) + BUFFER_SIZE,
   )
-  const visibleVehicles = filteredVehicles.slice(startIndex, endIndex)
-  const totalHeight = filteredVehicles.length * ROW_HEIGHT
+  const visibleVehicles = sortedVehicles.slice(startIndex, endIndex)
+  const totalHeight = sortedVehicles.length * ROW_HEIGHT
   const offsetY = startIndex * ROW_HEIGHT
 
   return (
@@ -253,7 +272,10 @@ export default function VehiclesGrid() {
             <TableRow>
               {vehicleColumns.map(col => (
                 <TableHead key={col.key} className="text-right relative border-l select-none group hover:bg-muted/30 pr-4" style={{ width: getColWidth(col) }}>
-                  {col.header}
+                  <div className="flex items-center gap-1 cursor-pointer" onClick={() => handleSort(col.key)}>
+                    {col.header}
+                    {sortConfig?.key === col.key && <span className="text-xs">{sortConfig.direction === 'asc' ? '▲' : '▼'}</span>}
+                  </div>
                   <div
                     onMouseDown={(e) => handleResizeStart(col.key, col.minWidth, e)}
                     className="absolute left-0 top-0 h-full w-1 cursor-col-resize touch-none select-none z-20 hover:bg-primary transition-colors duration-200"
@@ -273,14 +295,14 @@ export default function VehiclesGrid() {
                 </TableCell>
               </TableRow>
             )}
-            {!isLoading && filteredVehicles.length === 0 && (
+            {!isLoading && sortedVehicles.length === 0 && (
               <TableRow>
                 <TableCell colSpan={1} className="text-center py-8 text-muted-foreground">
                   {searchQuery ? "לא נמצאו תוצאות חיפוש" : "אין סוגי רכבים להצגה"}
                 </TableCell>
               </TableRow>
             )}
-            {!isLoading && filteredVehicles.length > 0 && (
+            {!isLoading && sortedVehicles.length > 0 && (
               <>
                 {startIndex > 0 && <tr style={{ height: `${offsetY}px` }}><td colSpan={1} /></tr>}
                 {visibleVehicles.map((vehicle) => (
@@ -293,7 +315,7 @@ export default function VehiclesGrid() {
                     <TableCell className="text-right pr-4 truncate">{vehicle.fields[VEHICLE_TYPE_FIELD_ID] || "-"}</TableCell>
                   </TableRow>
                 ))}
-                {endIndex < filteredVehicles.length && <tr style={{ height: `${totalHeight - endIndex * ROW_HEIGHT}px` }}><td colSpan={1} /></tr>}
+                {endIndex < sortedVehicles.length && <tr style={{ height: `${totalHeight - endIndex * ROW_HEIGHT}px` }}><td colSpan={1} /></tr>}
               </>
             )}
           </TableBody>

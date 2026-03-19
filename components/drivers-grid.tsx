@@ -1,7 +1,6 @@
 "use client"
 
-import type React from "react"
-import { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -90,12 +89,14 @@ export default function DriversGrid() {
   const BUFFER_SIZE = 10
 
   const DRIVERS_COL_SIZING_KEY = `driversColumnSizing_${tenantId}`
+  const DRIVERS_COL_ORDER_KEY = `driversColumnOrder_${tenantId}`
+  const getDriverStatus = (driver: Driver) => driver.fields[STATUS_FIELD_ID] || "פעיל"
   const driverColumns = [
-    { key: 'firstName', header: 'שם מלא / שם חברה', defaultWidth: 200, minWidth: 100 },
-    { key: 'phone', header: 'טלפון נייד', defaultWidth: 140, minWidth: 80 },
-    { key: 'type', header: 'סוג נהג', defaultWidth: 120, minWidth: 80 },
-    { key: 'carNumber', header: 'מספר רכב', defaultWidth: 140, minWidth: 80 },
-    { key: 'status', header: 'סטטוס', defaultWidth: 100, minWidth: 70 },
+    { key: 'firstName', header: 'שם מלא / שם חברה', fieldKey: FIRST_NAME_ID, defaultWidth: 200, minWidth: 100, render: (d: Driver) => <span className="font-medium">{d.fields[FIRST_NAME_ID] || "-"}</span> },
+    { key: 'phone', header: 'טלפון נייד', fieldKey: PHONE_ID, defaultWidth: 140, minWidth: 80, render: (d: Driver) => d.fields[PHONE_ID] || "-" },
+    { key: 'type', header: 'סוג נהג', fieldKey: DRIVER_TYPE_ID, defaultWidth: 120, minWidth: 80, render: (d: Driver) => d.fields[DRIVER_TYPE_ID] || "-" },
+    { key: 'carNumber', header: 'מספר רכב', fieldKey: CAR_NUMBER_ID, defaultWidth: 140, minWidth: 80, render: (d: Driver) => d.fields[CAR_NUMBER_ID] || "-" },
+    { key: 'status', header: 'סטטוס', fieldKey: STATUS_FIELD_ID, defaultWidth: 100, minWidth: 70, render: (d: Driver) => <span className={`px-2 py-1 rounded-full text-xs ${getDriverStatus(d) === 'פעיל' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{getDriverStatus(d)}</span> },
   ]
 
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
@@ -127,6 +128,31 @@ export default function DriversGrid() {
     const onMouseUp = () => { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp) }
     document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp)
   }
+
+  // Sort
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null)
+  const handleSort = (key: string) => {
+    setSortConfig(prev => {
+      if (prev?.key === key) return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' }
+      return { key, direction: 'asc' }
+    })
+  }
+
+  // Column order
+  const [columnOrder, setColumnOrder] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      try { const s = localStorage.getItem(DRIVERS_COL_ORDER_KEY); if (s) return JSON.parse(s) } catch {}
+    }
+    return driverColumns.map(c => c.key)
+  })
+  useEffect(() => {
+    if (typeof window !== 'undefined' && columnOrder.length > 0) {
+      try { localStorage.setItem(DRIVERS_COL_ORDER_KEY, JSON.stringify(columnOrder)) } catch {}
+    }
+  }, [columnOrder])
+  const [draggingColId, setDraggingColId] = useState<string | null>(null)
+
+  const displayColumns = columnOrder.map(k => driverColumns.find(c => c.key === k)!).filter(Boolean)
 
   useEffect(() => {
     fetchDrivers()
@@ -351,8 +377,19 @@ export default function DriversGrid() {
     return matchesStatus && Object.values(driver.fields).some((value) => String(value).toLowerCase().includes(searchLower))
   })
   
+  const sortedDrivers = React.useMemo(() => {
+    if (!sortConfig) return filteredDrivers
+    const col = driverColumns.find(c => c.key === sortConfig.key)
+    if (!col) return filteredDrivers
+    return [...filteredDrivers].sort((a, b) => {
+      const aVal = a.fields[col.fieldKey] ?? ''
+      const bVal = b.fields[col.fieldKey] ?? ''
+      const cmp = String(aVal).localeCompare(String(bVal), 'he', { numeric: true })
+      return sortConfig.direction === 'asc' ? cmp : -cmp
+    })
+  }, [filteredDrivers, sortConfig])
+
   const isEditMode = !!editingDriverId
-  const getDriverStatus = (driver: Driver) => driver.fields[STATUS_FIELD_ID] || "פעיל"
   
   const validatePhone = (phone: string) => {
     if (!phone) { setPhoneError(""); return true };
@@ -388,9 +425,9 @@ export default function DriversGrid() {
   useEffect(() => { if (tableContainerRef.current) setContainerHeight(tableContainerRef.current.clientHeight) }, [])
 
   const startIndex = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - BUFFER_SIZE)
-  const endIndex = Math.min(filteredDrivers.length, Math.ceil((scrollTop + containerHeight) / ROW_HEIGHT) + BUFFER_SIZE)
-  const visibleDrivers = filteredDrivers.slice(startIndex, endIndex)
-  const totalHeight = filteredDrivers.length * ROW_HEIGHT
+  const endIndex = Math.min(sortedDrivers.length, Math.ceil((scrollTop + containerHeight) / ROW_HEIGHT) + BUFFER_SIZE)
+  const visibleDrivers = sortedDrivers.slice(startIndex, endIndex)
+  const totalHeight = sortedDrivers.length * ROW_HEIGHT
   const offsetY = startIndex * ROW_HEIGHT
 
   return (
@@ -415,9 +452,27 @@ export default function DriversGrid() {
         <Table style={{ tableLayout: 'fixed' }}>
           <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
             <TableRow>
-              {driverColumns.map(col => (
-                <TableHead key={col.key} className="text-right relative border-l select-none group hover:bg-muted/30" style={{ width: getColWidth(col) }}>
-                  {col.header}
+              {displayColumns.map(col => (
+                <TableHead
+                  key={col.key}
+                  className={`text-right relative border-l select-none group hover:bg-muted/30 transition-colors ${draggingColId && draggingColId !== col.key ? 'border-l-2 border-l-primary/30' : ''}`}
+                  style={{ width: getColWidth(col), cursor: 'grab' }}
+                  draggable
+                  onDragStart={(e) => { setDraggingColId(col.key); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", col.key) }}
+                  onDragOver={(e) => { if (!draggingColId) return; e.preventDefault(); e.dataTransfer.dropEffect = "move" }}
+                  onDrop={(e) => {
+                    e.preventDefault(); const src = e.dataTransfer.getData("text/plain")
+                    if (!src || src === col.key) { setDraggingColId(null); return }
+                    const order = [...columnOrder]; const fi = order.indexOf(src); const ti = order.indexOf(col.key)
+                    if (fi === -1 || ti === -1) { setDraggingColId(null); return }
+                    order.splice(fi, 1); order.splice(ti, 0, src); setColumnOrder(order); setDraggingColId(null)
+                  }}
+                  onDragEnd={() => setDraggingColId(null)}
+                >
+                  <div className="flex items-center gap-1 cursor-pointer" onClick={() => handleSort(col.key)}>
+                    {col.header}
+                    {sortConfig?.key === col.key && <span className="text-xs">{sortConfig.direction === 'asc' ? '▲' : '▼'}</span>}
+                  </div>
                   <div
                     onMouseDown={(e) => handleResizeStart(col.key, col.minWidth, e)}
                     className="absolute left-0 top-0 h-full w-1 cursor-col-resize touch-none select-none z-20 hover:bg-primary transition-colors duration-200"
@@ -427,23 +482,21 @@ export default function DriversGrid() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading && filteredDrivers.length === 0 ? (
-              <TableRow><TableCell colSpan={5} className="text-center py-8"><div className="flex items-center justify-center gap-2"><Loader2 className="h-5 w-5 animate-spin" /><span>טוען נתונים...</span></div></TableCell></TableRow>
-            ) : filteredDrivers.length === 0 ? (
-              <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">לא נמצאו נהגים</TableCell></TableRow>
+            {isLoading && sortedDrivers.length === 0 ? (
+              <TableRow><TableCell colSpan={displayColumns.length} className="text-center py-8"><div className="flex items-center justify-center gap-2"><Loader2 className="h-5 w-5 animate-spin" /><span>טוען נתונים...</span></div></TableCell></TableRow>
+            ) : sortedDrivers.length === 0 ? (
+              <TableRow><TableCell colSpan={displayColumns.length} className="text-center py-8 text-muted-foreground">לא נמצאו נהגים</TableCell></TableRow>
             ) : (
               <>
-                {startIndex > 0 && <tr style={{ height: `${offsetY}px` }}><td colSpan={5} /></tr>}
+                {startIndex > 0 && <tr style={{ height: `${offsetY}px` }}><td colSpan={displayColumns.length} /></tr>}
                 {visibleDrivers.map((driver) => (
                   <TableRow key={driver.id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleRowClick(driver)} style={{ height: `${ROW_HEIGHT}px` }}>
-                    <TableCell className="font-medium truncate">{driver.fields[FIRST_NAME_ID] || "-"}</TableCell>
-                    <TableCell className="truncate">{driver.fields[PHONE_ID] || "-"}</TableCell>
-                    <TableCell className="truncate">{driver.fields[DRIVER_TYPE_ID] || "-"}</TableCell>
-                    <TableCell className="truncate">{driver.fields[CAR_NUMBER_ID] || "-"}</TableCell>
-                    <TableCell><span className={`px-2 py-1 rounded-full text-xs ${getDriverStatus(driver) === 'פעיל' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{getDriverStatus(driver)}</span></TableCell>
+                    {displayColumns.map(col => (
+                      <TableCell key={col.key} className="truncate">{col.render(driver)}</TableCell>
+                    ))}
                   </TableRow>
                 ))}
-                {endIndex < filteredDrivers.length && <tr style={{ height: `${totalHeight - endIndex * ROW_HEIGHT}px` }}><td colSpan={5} /></tr>}
+                {endIndex < sortedDrivers.length && <tr style={{ height: `${totalHeight - endIndex * ROW_HEIGHT}px` }}><td colSpan={displayColumns.length} /></tr>}
               </>
             )}
           </TableBody>

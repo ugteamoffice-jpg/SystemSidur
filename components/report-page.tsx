@@ -137,6 +137,19 @@ export function ReportPage({ reportType }: ReportPageProps) {
     window.addEventListener("mousemove", onMove); window.addEventListener("mouseup", onUp)
   }, [])
 
+  // Column order + drag
+  const REPORT_COL_ORDER_KEY = `reportColumnOrder_${tenantId}_${reportType}`
+  const [reportColumnOrder, setReportColumnOrder] = React.useState<string[] | null>(() => {
+    if (typeof window !== 'undefined') { try { const s = localStorage.getItem(REPORT_COL_ORDER_KEY); if (s) return JSON.parse(s) } catch {} }
+    return null
+  })
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && reportColumnOrder) {
+      try { localStorage.setItem(REPORT_COL_ORDER_KEY, JSON.stringify(reportColumnOrder)) } catch {}
+    }
+  }, [reportColumnOrder, REPORT_COL_ORDER_KEY])
+  const [reportDraggingColId, setReportDraggingColId] = React.useState<string | null>(null)
+
   // --- Visible table columns per report type ---
   type TableColDef = {
     id: string; label: string; width: number
@@ -211,6 +224,11 @@ export function ReportPage({ reportType }: ReportPageProps) {
       ]
     }
   }, [reportType, WS, colWidths])
+
+  const displayColumns = React.useMemo(() => {
+    if (!reportColumnOrder) return tableColumns
+    return reportColumnOrder.map(id => tableColumns.find(c => c.id === id)).filter(Boolean) as TableColDef[]
+  }, [tableColumns, reportColumnOrder])
   
   const today = new Date()
   const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
@@ -1299,8 +1317,24 @@ export function ReportPage({ reportType }: ReportPageProps) {
                       onCheckedChange={handleToggleAll} 
                     />
                   </TableHead>
-                  {tableColumns.map(col => (
-                    <TableHead key={col.id} className="relative text-right border-l select-none overflow-visible" style={{ width: col.width }}>
+                  {displayColumns.map(col => (
+                    <TableHead
+                      key={col.id}
+                      className={`relative text-right border-l select-none overflow-visible transition-colors ${reportDraggingColId && reportDraggingColId !== col.id ? 'border-l-2 border-l-primary/30' : ''}`}
+                      style={{ width: col.width, cursor: 'grab' }}
+                      draggable
+                      onDragStart={(e) => { setReportDraggingColId(col.id); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", col.id) }}
+                      onDragOver={(e) => { if (!reportDraggingColId) return; e.preventDefault(); e.dataTransfer.dropEffect = "move" }}
+                      onDrop={(e) => {
+                        e.preventDefault(); const src = e.dataTransfer.getData("text/plain")
+                        if (!src || src === col.id) { setReportDraggingColId(null); return }
+                        const order = displayColumns.map(c => c.id)
+                        const fi = order.indexOf(src); const ti = order.indexOf(col.id)
+                        if (fi === -1 || ti === -1) { setReportDraggingColId(null); return }
+                        order.splice(fi, 1); order.splice(ti, 0, src); setReportColumnOrder(order); setReportDraggingColId(null)
+                      }}
+                      onDragEnd={() => setReportDraggingColId(null)}
+                    >
                       <div className="flex items-center justify-between gap-1 cursor-pointer" onClick={() => handleSortCol(col.id)}>
                         <span className="truncate">{col.label}</span>
                         <span className="text-[10px] opacity-60 shrink-0">
@@ -1329,7 +1363,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
                             onCheckedChange={() => handleToggleRow(record.id)} 
                           />
                         </TableCell>
-                        {tableColumns.map(col => (
+                        {displayColumns.map(col => (
                           <TableCell key={col.id} className={`text-right border-l truncate ${col.cls || ""}`}>
                             {col.render(record)}
                           </TableCell>

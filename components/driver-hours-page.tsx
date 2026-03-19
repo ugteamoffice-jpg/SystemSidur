@@ -115,6 +115,22 @@ export function DriverHoursPage() {
   const config = selectedDriver?.salaryConfig
   const currentRow = hoursData[dayIndex] || null
 
+  // Sort, resize, drag for table
+  const DH_COL_SIZING_KEY = `driverHoursColSizing_${tenantId}`
+  const DH_COL_ORDER_KEY = `driverHoursColOrder_${tenantId}`
+  const [dhSortConfig, setDhSortConfig] = React.useState<{ key: string; direction: 'asc' | 'desc' } | null>(null)
+  const [dhColWidths, setDhColWidths] = React.useState<Record<string, number>>(() => {
+    if (typeof window !== 'undefined') { try { const s = localStorage.getItem(DH_COL_SIZING_KEY); if (s) return JSON.parse(s) } catch {} }
+    return {}
+  })
+  React.useEffect(() => { if (typeof window !== 'undefined' && Object.keys(dhColWidths).length > 0) { try { localStorage.setItem(DH_COL_SIZING_KEY, JSON.stringify(dhColWidths)) } catch {} } }, [dhColWidths])
+  const [dhColumnOrder, setDhColumnOrder] = React.useState<string[] | null>(() => {
+    if (typeof window !== 'undefined') { try { const s = localStorage.getItem(DH_COL_ORDER_KEY); if (s) return JSON.parse(s) } catch {} }
+    return null
+  })
+  React.useEffect(() => { if (typeof window !== 'undefined' && dhColumnOrder) { try { localStorage.setItem(DH_COL_ORDER_KEY, JSON.stringify(dhColumnOrder)) } catch {} } }, [dhColumnOrder])
+  const [dhDraggingColId, setDhDraggingColId] = React.useState<string | null>(null)
+
   React.useEffect(() => {
     const d = new Date(); d.setDate(1)
     setTempDateFrom(d)
@@ -448,45 +464,91 @@ export function DriverHoursPage() {
           <div className="flex items-center justify-center h-full text-muted-foreground">
             {appliedDriverId ? "אין נתונים לתקופה הנבחרת" : "בחר נהג ותאריכים"}
           </div>
-        ) : (
-          <table className="w-full text-sm border-collapse">
+        ) : (() => {
+          const dhColumns = [
+            { key: 'date', header: 'תאריך', defaultWidth: 112, minWidth: 80, sortable: true, getValue: (r: HoursRecord) => r.date, render: (r: HoursRecord) => <><span>{format(parseISO(r.date), "dd/MM/yyyy")}</span>{r.isShabbat && <span className="mr-2 text-xs text-amber-600">שבת</span>}</> },
+            { key: 'rides', header: 'סה״כ נסיעות', defaultWidth: 128, minWidth: 80, sortable: true, getValue: (r: HoursRecord) => r.rides.length, render: (r: HoursRecord) => r.rides.length > 0 ? <span className="font-medium">{r.rides.length}</span> : <span className="text-muted-foreground">—</span> },
+            { key: 'start', header: 'התחלה', defaultWidth: 80, minWidth: 60, sortable: true, getValue: (r: HoursRecord) => r.startTime || '', render: (r: HoursRecord) => r.startTime || <span className="text-muted-foreground">—</span> },
+            { key: 'end', header: 'סיום', defaultWidth: 80, minWidth: 60, sortable: true, getValue: (r: HoursRecord) => r.endTime || '', render: (r: HoursRecord) => r.endTime || <span className="text-muted-foreground">—</span> },
+            { key: 'hours', header: 'סה״כ שעות', defaultWidth: 128, minWidth: 80, sortable: true, getValue: (r: HoursRecord) => r.hoursWorked, render: (r: HoursRecord) => r.hoursWorked > 0 ? <span className="font-medium">{r.hoursWorked.toFixed(2)}</span> : <span className="text-muted-foreground">—</span> },
+            ...(config ? [{ key: 'pay', header: 'סה״כ שכר', defaultWidth: 128, minWidth: 80, sortable: true, getValue: (r: HoursRecord) => r.pay, render: (r: HoursRecord) => r.pay > 0 ? <span className="font-medium text-green-700">₪{r.pay.toFixed(2)}</span> : <span className="text-muted-foreground">—</span> }] : []),
+            { key: 'notes', header: 'הערות', defaultWidth: 200, minWidth: 100, sortable: false, getValue: (r: HoursRecord) => r.notes, render: (r: HoursRecord) => <span className="text-muted-foreground truncate">{r.notes}</span> },
+          ]
+
+          const sortedHours = dhSortConfig
+            ? [...hoursData].sort((a, b) => {
+                const col = dhColumns.find(c => c.key === dhSortConfig.key)
+                if (!col) return 0
+                const aVal = col.getValue(a); const bVal = col.getValue(b)
+                const cmp = typeof aVal === 'number' && typeof bVal === 'number' ? aVal - bVal : String(aVal).localeCompare(String(bVal), 'he', { numeric: true })
+                return dhSortConfig.direction === 'asc' ? cmp : -cmp
+              })
+            : hoursData
+
+          const dhDisplayCols = dhColumnOrder
+            ? dhColumnOrder.map(k => dhColumns.find(c => c.key === k)).filter(Boolean) as typeof dhColumns
+            : dhColumns
+
+          return (
+          <table className="w-full text-sm border-collapse" style={{ tableLayout: 'fixed' }}>
             <thead className="sticky top-0 bg-background z-10">
               <tr className="border-b-2 border-border">
-                <th className="text-right px-3 py-2 font-semibold border-l border-border w-28">תאריך</th>
-                <th className="text-right px-3 py-2 font-semibold border-l border-border w-32 whitespace-nowrap">סה״כ נסיעות</th>
-                <th className="text-right px-3 py-2 font-semibold border-l border-border w-20">התחלה</th>
-                <th className="text-right px-3 py-2 font-semibold border-l border-border w-20">סיום</th>
-                <th className="text-right px-3 py-2 font-semibold border-l border-border w-32 whitespace-nowrap">סה״כ שעות</th>
-                {config && <th className="text-right px-3 py-2 font-semibold border-l border-border w-32 whitespace-nowrap">סה״כ שכר</th>}
-                <th className="text-right px-3 py-2 font-semibold">הערות</th>
+                {dhDisplayCols.map(col => (
+                  <th
+                    key={col.key}
+                    className={`text-right px-3 py-2 font-semibold border-l border-border select-none relative hover:bg-muted/30 transition-colors whitespace-nowrap ${dhDraggingColId && dhDraggingColId !== col.key ? 'border-l-2 border-l-primary/30' : ''}`}
+                    style={{ width: dhColWidths[col.key] || col.defaultWidth, cursor: 'grab' }}
+                    draggable
+                    onDragStart={(e) => { setDhDraggingColId(col.key); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", col.key) }}
+                    onDragOver={(e) => { if (!dhDraggingColId) return; e.preventDefault(); e.dataTransfer.dropEffect = "move" }}
+                    onDrop={(e) => {
+                      e.preventDefault(); const src = e.dataTransfer.getData("text/plain")
+                      if (!src || src === col.key) { setDhDraggingColId(null); return }
+                      const order = dhDisplayCols.map(c => c.key); const fi = order.indexOf(src); const ti = order.indexOf(col.key)
+                      if (fi === -1 || ti === -1) { setDhDraggingColId(null); return }
+                      order.splice(fi, 1); order.splice(ti, 0, src); setDhColumnOrder(order); setDhDraggingColId(null)
+                    }}
+                    onDragEnd={() => setDhDraggingColId(null)}
+                  >
+                    <div className={`flex items-center gap-1 ${col.sortable ? 'cursor-pointer' : ''}`} onClick={() => {
+                      if (!col.sortable) return
+                      setDhSortConfig(prev => prev?.key === col.key ? { key: col.key, direction: prev.direction === 'asc' ? 'desc' : 'asc' } : { key: col.key, direction: 'asc' })
+                    }}>
+                      {col.header}
+                      {dhSortConfig?.key === col.key && <span className="text-xs">{dhSortConfig.direction === 'asc' ? '▲' : '▼'}</span>}
+                    </div>
+                    <div
+                      onMouseDown={(e) => {
+                        e.stopPropagation(); e.preventDefault()
+                        const startX = e.clientX; const startW = dhColWidths[col.key] || col.defaultWidth
+                        const onMove = (me: MouseEvent) => setDhColWidths(old => ({ ...old, [col.key]: Math.max(col.minWidth, startW + (startX - me.clientX)) }))
+                        const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
+                        document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onUp)
+                      }}
+                      className="absolute left-0 top-0 h-full w-1 cursor-col-resize touch-none select-none z-20 hover:bg-primary transition-colors duration-200"
+                    />
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {hoursData.map((row, idx) => (
+              {sortedHours.map((row, idx) => {
+                const origIdx = hoursData.indexOf(row)
+                return (
                 <tr
                   key={row.date}
                   className={`cursor-pointer hover:bg-muted/60 transition-colors border-b border-border ${row.isShabbat ? "bg-amber-50 hover:bg-amber-100" : ""}`}
-                  onClick={() => openDayDialog(idx)}
+                  onClick={() => openDayDialog(origIdx)}
                 >
-                  <td className="px-3 py-2 font-medium border-l border-border">
-                    {format(parseISO(row.date), "dd/MM/yyyy")}
-                    {row.isShabbat && <span className="mr-2 text-xs text-amber-600">שבת</span>}
-                  </td>
-                  <td className="px-3 py-2 text-right border-l border-border">
-                    {row.rides.length > 0
-                      ? <span className="font-medium">{row.rides.length}</span>
-                      : <span className="text-muted-foreground">—</span>}
-                  </td>
-                  <td className="px-3 py-2 border-l border-border">{row.startTime || <span className="text-muted-foreground">—</span>}</td>
-                  <td className="px-3 py-2 border-l border-border">{row.endTime || <span className="text-muted-foreground">—</span>}</td>
-                  <td className="px-3 py-2 font-medium border-l border-border">{row.hoursWorked > 0 ? row.hoursWorked.toFixed(2) : <span className="text-muted-foreground">—</span>}</td>
-                  {config && <td className="px-3 py-2 font-medium text-green-700 border-l border-border">{row.pay > 0 ? `₪${row.pay.toFixed(2)}` : <span className="text-muted-foreground">—</span>}</td>}
-                  <td className="px-3 py-2 text-muted-foreground max-w-[200px] truncate">{row.notes}</td>
+                  {dhDisplayCols.map(col => (
+                    <td key={col.key} className="px-3 py-2 border-l border-border truncate">{col.render(row)}</td>
+                  ))}
                 </tr>
-              ))}
+              )})}
             </tbody>
           </table>
-        )}
+          )
+        })()}
       </div>
 
       {/* Summary footer */}

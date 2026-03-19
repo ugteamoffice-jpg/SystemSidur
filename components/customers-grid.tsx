@@ -1,7 +1,6 @@
 "use client"
 
-import type React from "react"
-import { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect, useRef, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -56,17 +55,19 @@ export default function CustomersGrid() {
   const BUFFER_SIZE = 10 
 
   const CUSTOMERS_COL_SIZING_KEY = `customersColumnSizing_${tenantId}`
+  const CUSTOMERS_COL_ORDER_KEY = `customersColumnOrder_${tenantId}`
+  const getCustomerStatus = (customer: Customer) => customer.fields[STATUS_FIELD_ID] || "פעיל"
   const customerColumns = [
-    { key: 'name', header: 'שם לקוח', defaultWidth: 200, minWidth: 100 },
-    { key: 'hp', header: 'ח.פ', defaultWidth: 120, minWidth: 80 },
-    { key: 'contact', header: 'שם א.קשר', defaultWidth: 120, minWidth: 80 },
-    { key: 'phone', header: 'טלפון נייד', defaultWidth: 120, minWidth: 80 },
-    { key: 'email', header: 'אימייל', defaultWidth: 200, minWidth: 100 },
-    { key: 'payment', header: 'אופן תשלום', defaultWidth: 130, minWidth: 80 },
-    { key: 'ongoing', header: 'תשלום שוטף+', defaultWidth: 120, minWidth: 80 },
-    { key: 'accKey', header: 'מס\' מפתח הנה"ח', defaultWidth: 130, minWidth: 80 },
-    { key: 'accCreated', header: 'נוצר בהנה"ח', defaultWidth: 110, minWidth: 70 },
-    { key: 'status', header: 'סטטוס', defaultWidth: 90, minWidth: 70 },
+    { key: 'name', header: 'שם לקוח', fieldKey: NAME_ID, defaultWidth: 200, minWidth: 100, render: (c: Customer) => <span className="font-medium">{c.fields[NAME_ID] || "-"}</span> },
+    { key: 'hp', header: 'ח.פ', fieldKey: HP_ID, defaultWidth: 120, minWidth: 80, render: (c: Customer) => c.fields[HP_ID] || "-" },
+    { key: 'contact', header: 'שם א.קשר', fieldKey: CONTACT_NAME_ID, defaultWidth: 120, minWidth: 80, render: (c: Customer) => c.fields[CONTACT_NAME_ID] || "-" },
+    { key: 'phone', header: 'טלפון נייד', fieldKey: PHONE_ID, defaultWidth: 120, minWidth: 80, render: (c: Customer) => c.fields[PHONE_ID] || "-" },
+    { key: 'email', header: 'אימייל', fieldKey: EMAIL_ID, defaultWidth: 200, minWidth: 100, render: (c: Customer) => c.fields[EMAIL_ID] || "-" },
+    { key: 'payment', header: 'אופן תשלום', fieldKey: PAYMENT_METHOD_ID, defaultWidth: 130, minWidth: 80, render: (c: Customer) => c.fields[PAYMENT_METHOD_ID] || "-" },
+    { key: 'ongoing', header: 'תשלום שוטף+', fieldKey: ONGOING_PAYMENT_ID, defaultWidth: 120, minWidth: 80, render: (c: Customer) => c.fields[ONGOING_PAYMENT_ID] || "-" },
+    { key: 'accKey', header: 'מס\' מפתח הנה"ח', fieldKey: ACCOUNTING_KEY_NUMBER_ID, defaultWidth: 130, minWidth: 80, render: (c: Customer) => c.fields[ACCOUNTING_KEY_NUMBER_ID] || "-" },
+    { key: 'accCreated', header: 'נוצר בהנה"ח', fieldKey: CREATED_IN_ACCOUNTING_ID, defaultWidth: 110, minWidth: 70, render: (c: Customer) => c.fields[CREATED_IN_ACCOUNTING_ID] ? "כן" : "לא" },
+    { key: 'status', header: 'סטטוס', fieldKey: STATUS_FIELD_ID, defaultWidth: 90, minWidth: 70, render: (c: Customer) => <span className={`px-2 py-1 rounded-full text-xs ${getCustomerStatus(c) === 'פעיל' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{getCustomerStatus(c)}</span> },
   ]
 
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
@@ -98,6 +99,31 @@ export default function CustomersGrid() {
     const onMouseUp = () => { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp) }
     document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp)
   }
+
+  // Sort
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null)
+  const handleSort = (key: string) => {
+    setSortConfig(prev => {
+      if (prev?.key === key) return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' }
+      return { key, direction: 'asc' }
+    })
+  }
+
+  // Column order
+  const [columnOrder, setColumnOrder] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      try { const s = localStorage.getItem(CUSTOMERS_COL_ORDER_KEY); if (s) return JSON.parse(s) } catch {}
+    }
+    return customerColumns.map(c => c.key)
+  })
+  useEffect(() => {
+    if (typeof window !== 'undefined' && columnOrder.length > 0) {
+      try { localStorage.setItem(CUSTOMERS_COL_ORDER_KEY, JSON.stringify(columnOrder)) } catch {}
+    }
+  }, [columnOrder])
+  const [draggingColId, setDraggingColId] = useState<string | null>(null)
+
+  const displayColumns = columnOrder.map(k => customerColumns.find(c => c.key === k)!).filter(Boolean)
 
   useEffect(() => {
     fetchCustomers()
@@ -220,9 +246,20 @@ export default function CustomersGrid() {
     const searchLower = searchQuery.toLowerCase()
     return matchesStatus && Object.values(customer.fields).some((value) => String(value).toLowerCase().includes(searchLower))
   })
+
+  const sortedCustomers = React.useMemo(() => {
+    if (!sortConfig) return filteredCustomers
+    const col = customerColumns.find(c => c.key === sortConfig.key)
+    if (!col) return filteredCustomers
+    return [...filteredCustomers].sort((a, b) => {
+      const aVal = a.fields[col.fieldKey] ?? ''
+      const bVal = b.fields[col.fieldKey] ?? ''
+      const cmp = String(aVal).localeCompare(String(bVal), 'he', { numeric: true })
+      return sortConfig.direction === 'asc' ? cmp : -cmp
+    })
+  }, [filteredCustomers, sortConfig])
   
   const isEditMode = !!editingCustomerId
-  const getCustomerStatus = (customer: Customer) => customer.fields[STATUS_FIELD_ID] || "פעיל"
   
   const validateEmail = (email: string) => { 
     if (!email) { setEmailError(""); return true }; 
@@ -294,9 +331,9 @@ export default function CustomersGrid() {
   useEffect(() => { if (tableContainerRef.current) setContainerHeight(tableContainerRef.current.clientHeight) }, [])
 
   const startIndex = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - BUFFER_SIZE)
-  const endIndex = Math.min(filteredCustomers.length, Math.ceil((scrollTop + containerHeight) / ROW_HEIGHT) + BUFFER_SIZE)
-  const visibleCustomers = filteredCustomers.slice(startIndex, endIndex)
-  const totalHeight = filteredCustomers.length * ROW_HEIGHT
+  const endIndex = Math.min(sortedCustomers.length, Math.ceil((scrollTop + containerHeight) / ROW_HEIGHT) + BUFFER_SIZE)
+  const visibleCustomers = sortedCustomers.slice(startIndex, endIndex)
+  const totalHeight = sortedCustomers.length * ROW_HEIGHT
   const offsetY = startIndex * ROW_HEIGHT
 
   return (
@@ -321,9 +358,27 @@ export default function CustomersGrid() {
         <Table style={{ tableLayout: 'fixed' }}>
           <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
             <TableRow>
-              {customerColumns.map(col => (
-                <TableHead key={col.key} className="text-right relative border-l select-none group hover:bg-muted/30" style={{ width: getColWidth(col) }}>
-                  {col.header}
+              {displayColumns.map(col => (
+                <TableHead
+                  key={col.key}
+                  className={`text-right relative border-l select-none group hover:bg-muted/30 transition-colors ${draggingColId && draggingColId !== col.key ? 'border-l-2 border-l-primary/30' : ''}`}
+                  style={{ width: getColWidth(col), cursor: 'grab' }}
+                  draggable
+                  onDragStart={(e) => { setDraggingColId(col.key); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", col.key) }}
+                  onDragOver={(e) => { if (!draggingColId) return; e.preventDefault(); e.dataTransfer.dropEffect = "move" }}
+                  onDrop={(e) => {
+                    e.preventDefault(); const src = e.dataTransfer.getData("text/plain")
+                    if (!src || src === col.key) { setDraggingColId(null); return }
+                    const order = [...columnOrder]; const fi = order.indexOf(src); const ti = order.indexOf(col.key)
+                    if (fi === -1 || ti === -1) { setDraggingColId(null); return }
+                    order.splice(fi, 1); order.splice(ti, 0, src); setColumnOrder(order); setDraggingColId(null)
+                  }}
+                  onDragEnd={() => setDraggingColId(null)}
+                >
+                  <div className="flex items-center gap-1 cursor-pointer" onClick={() => handleSort(col.key)}>
+                    {col.header}
+                    {sortConfig?.key === col.key && <span className="text-xs">{sortConfig.direction === 'asc' ? '▲' : '▼'}</span>}
+                  </div>
                   <div
                     onMouseDown={(e) => handleResizeStart(col.key, col.minWidth, e)}
                     className="absolute left-0 top-0 h-full w-1 cursor-col-resize touch-none select-none z-20 hover:bg-primary transition-colors duration-200"
@@ -333,28 +388,21 @@ export default function CustomersGrid() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading && filteredCustomers.length === 0 ? (
-              <TableRow><TableCell colSpan={10} className="text-center py-8"><div className="flex items-center justify-center gap-2"><Loader2 className="h-5 w-5 animate-spin" /><span>טוען נתונים...</span></div></TableCell></TableRow>
-            ) : filteredCustomers.length === 0 ? (
-              <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">לא נמצאו לקוחות</TableCell></TableRow>
+            {isLoading && sortedCustomers.length === 0 ? (
+              <TableRow><TableCell colSpan={displayColumns.length} className="text-center py-8"><div className="flex items-center justify-center gap-2"><Loader2 className="h-5 w-5 animate-spin" /><span>טוען נתונים...</span></div></TableCell></TableRow>
+            ) : sortedCustomers.length === 0 ? (
+              <TableRow><TableCell colSpan={displayColumns.length} className="text-center py-8 text-muted-foreground">לא נמצאו לקוחות</TableCell></TableRow>
             ) : (
               <>
-                {startIndex > 0 && <tr style={{ height: `${offsetY}px` }}><td colSpan={10} /></tr>}
+                {startIndex > 0 && <tr style={{ height: `${offsetY}px` }}><td colSpan={displayColumns.length} /></tr>}
                 {visibleCustomers.map((customer) => (
                   <TableRow key={customer.id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleRowClick(customer)} style={{ height: `${ROW_HEIGHT}px` }}>
-                    <TableCell className="font-medium truncate">{customer.fields[NAME_ID] || "-"}</TableCell>
-                    <TableCell className="truncate">{customer.fields[HP_ID] || "-"}</TableCell>
-                    <TableCell className="truncate">{customer.fields[CONTACT_NAME_ID] || "-"}</TableCell>
-                    <TableCell className="truncate">{customer.fields[PHONE_ID] || "-"}</TableCell>
-                    <TableCell className="truncate">{customer.fields[EMAIL_ID] || "-"}</TableCell>
-                    <TableCell className="truncate">{customer.fields[PAYMENT_METHOD_ID] || "-"}</TableCell>
-                    <TableCell className="truncate">{customer.fields[ONGOING_PAYMENT_ID] || "-"}</TableCell>
-                    <TableCell className="truncate">{customer.fields[ACCOUNTING_KEY_NUMBER_ID] || "-"}</TableCell>
-                    <TableCell className="truncate">{customer.fields[CREATED_IN_ACCOUNTING_ID] ? "כן" : "לא"}</TableCell>
-                    <TableCell><span className={`px-2 py-1 rounded-full text-xs ${getCustomerStatus(customer) === 'פעיל' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{getCustomerStatus(customer)}</span></TableCell>
+                    {displayColumns.map(col => (
+                      <TableCell key={col.key} className="truncate">{col.render(customer)}</TableCell>
+                    ))}
                   </TableRow>
                 ))}
-                {endIndex < filteredCustomers.length && <tr style={{ height: `${totalHeight - endIndex * ROW_HEIGHT}px` }}><td colSpan={10} /></tr>}
+                {endIndex < sortedCustomers.length && <tr style={{ height: `${totalHeight - endIndex * ROW_HEIGHT}px` }}><td colSpan={displayColumns.length} /></tr>}
               </>
             )}
           </TableBody>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -387,11 +387,71 @@ export default function CompanyVehiclesGrid() {
     })
   }
 
+  // Column definitions
+  const CV_COL_SIZING_KEY = `companyVehiclesColumnSizing_${tenantId}`
+  const CV_COL_ORDER_KEY = `companyVehiclesColumnOrder_${tenantId}`
+  const cvColumns = [
+    { key: 'alert', header: '', fieldKey: '', defaultWidth: 32, minWidth: 32, sortable: false },
+    { key: 'carNumber', header: 'מספר רכב', fieldKey: F.CAR_NUMBER, defaultWidth: 120, minWidth: 80, sortable: true },
+    { key: 'vehicleType', header: 'סוג רכב', fieldKey: F.VEHICLE_TYPE, defaultWidth: 120, minWidth: 80, sortable: true },
+    { key: 'year', header: 'שנה', fieldKey: F.YEAR, defaultWidth: 80, minWidth: 60, sortable: true },
+    { key: 'insurance', header: 'ביטוח', fieldKey: F.INSURANCE_FILE, defaultWidth: 80, minWidth: 60, sortable: false },
+    { key: 'insuranceExp', header: 'תוקף ביטוח', fieldKey: F.INSURANCE_EXPIRY, defaultWidth: 120, minWidth: 80, sortable: true },
+    { key: 'permit', header: 'היתר הפעלה', fieldKey: F.OPERATION_PERMIT_FILE, defaultWidth: 80, minWidth: 60, sortable: false },
+    { key: 'permitExp', header: 'תוקף היתר', fieldKey: F.OPERATION_PERMIT_EXPIRY, defaultWidth: 120, minWidth: 80, sortable: true },
+    { key: 'license', header: 'רישיון רכב', fieldKey: F.VEHICLE_LICENSE_FILE, defaultWidth: 80, minWidth: 60, sortable: false },
+    { key: 'licenseExp', header: 'תוקף רישיון', fieldKey: F.VEHICLE_LICENSE_EXPIRY, defaultWidth: 120, minWidth: 80, sortable: true },
+  ]
+
+  const [cvColumnWidths, setCvColumnWidths] = useState<Record<string, number>>(() => {
+    if (typeof window !== 'undefined') { try { const s = localStorage.getItem(CV_COL_SIZING_KEY); if (s) return JSON.parse(s) } catch {} }
+    return {}
+  })
+  useEffect(() => { if (typeof window !== 'undefined' && Object.keys(cvColumnWidths).length > 0) { try { localStorage.setItem(CV_COL_SIZING_KEY, JSON.stringify(cvColumnWidths)) } catch {} } }, [cvColumnWidths])
+  const getCvColWidth = (col: typeof cvColumns[0]) => cvColumnWidths[col.key] || col.defaultWidth
+  const handleCvResizeStart = (colKey: string, minWidth: number, e: React.MouseEvent) => {
+    e.stopPropagation(); e.preventDefault()
+    const startX = e.clientX; const startWidth = cvColumnWidths[colKey] || cvColumns.find(c => c.key === colKey)!.defaultWidth
+    const onMouseMove = (me: MouseEvent) => { setCvColumnWidths(old => ({ ...old, [colKey]: Math.max(minWidth, startWidth + (startX - me.clientX)) })) }
+    const onMouseUp = () => { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp) }
+    document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp)
+  }
+
+  const [cvSortConfig, setCvSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null)
+  const handleCvSort = (key: string) => {
+    const col = cvColumns.find(c => c.key === key)
+    if (!col?.sortable) return
+    setCvSortConfig(prev => prev?.key === key ? { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' } : { key, direction: 'asc' })
+  }
+
+  const [cvColumnOrder, setCvColumnOrder] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') { try { const s = localStorage.getItem(CV_COL_ORDER_KEY); if (s) return JSON.parse(s) } catch {} }
+    return cvColumns.map(c => c.key)
+  })
+  useEffect(() => { if (typeof window !== 'undefined' && cvColumnOrder.length > 0) { try { localStorage.setItem(CV_COL_ORDER_KEY, JSON.stringify(cvColumnOrder)) } catch {} } }, [cvColumnOrder])
+  const [cvDraggingColId, setCvDraggingColId] = useState<string | null>(null)
+  const cvDisplayColumns = cvColumnOrder.map(k => cvColumns.find(c => c.key === k)!).filter(Boolean)
+
   const filtered = vehicles.filter(v => {
     if (!searchQuery) return true
     const q = searchQuery.toLowerCase()
     return Object.values(v.fields).some(val => String(val).toLowerCase().includes(q))
   })
+
+  const sortedFiltered = React.useMemo(() => {
+    if (!cvSortConfig) return filtered
+    const col = cvColumns.find(c => c.key === cvSortConfig.key)
+    if (!col || !col.fieldKey) return filtered
+    return [...filtered].sort((a, b) => {
+      let aVal = gf(a, col.fieldKey) ?? ''
+      let bVal = gf(b, col.fieldKey) ?? ''
+      // Handle link fields
+      if (Array.isArray(aVal)) aVal = aVal.map((x: any) => x?.title || '').join('')
+      if (Array.isArray(bVal)) bVal = bVal.map((x: any) => x?.title || '').join('')
+      const cmp = String(aVal).localeCompare(String(bVal), 'he', { numeric: true })
+      return cvSortConfig.direction === 'asc' ? cmp : -cmp
+    })
+  }, [filtered, cvSortConfig])
 
   const rowExpiryAlert = (v: CompanyVehicle) => {
     const statuses = [
@@ -433,55 +493,70 @@ export default function CompanyVehiclesGrid() {
 
       {/* טבלה */}
       <div ref={tableContainerRef} className="border rounded-lg flex-1 overflow-auto bg-background shadow-sm">
-        <Table>
+        <Table style={{ tableLayout: 'fixed' }}>
           <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
             <TableRow>
-              <TableHead className="text-right pr-3 w-8 border-l"></TableHead>
-              <TableHead className="text-right pr-4 border-l">מספר רכב</TableHead>
-              <TableHead className="text-right pr-4 border-l">סוג רכב</TableHead>
-              <TableHead className="text-right pr-4 border-l">שנה</TableHead>
-              <TableHead className="text-right pr-4 border-l">ביטוח</TableHead>
-              <TableHead className="text-right pr-4 border-l">תוקף ביטוח</TableHead>
-              <TableHead className="text-right pr-4 border-l">היתר הפעלה</TableHead>
-              <TableHead className="text-right pr-4 border-l">תוקף היתר</TableHead>
-              <TableHead className="text-right pr-4 border-l">רישיון רכב</TableHead>
-              <TableHead className="text-right pr-4 border-l">תוקף רישיון</TableHead>
+              {cvDisplayColumns.map(col => (
+                <TableHead
+                  key={col.key}
+                  className={`text-right relative border-l select-none group hover:bg-muted/30 pr-4 transition-colors ${cvDraggingColId && cvDraggingColId !== col.key ? 'border-l-2 border-l-primary/30' : ''}`}
+                  style={{ width: getCvColWidth(col), cursor: col.key === 'alert' ? 'default' : 'grab' }}
+                  draggable={col.key !== 'alert'}
+                  onDragStart={(e) => { if (col.key === 'alert') { e.preventDefault(); return }; setCvDraggingColId(col.key); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", col.key) }}
+                  onDragOver={(e) => { if (!cvDraggingColId || col.key === 'alert') return; e.preventDefault(); e.dataTransfer.dropEffect = "move" }}
+                  onDrop={(e) => {
+                    e.preventDefault(); const src = e.dataTransfer.getData("text/plain")
+                    if (!src || src === col.key || col.key === 'alert') { setCvDraggingColId(null); return }
+                    const order = [...cvColumnOrder]; const fi = order.indexOf(src); const ti = order.indexOf(col.key)
+                    if (fi === -1 || ti === -1) { setCvDraggingColId(null); return }
+                    order.splice(fi, 1); order.splice(ti, 0, src); setCvColumnOrder(order); setCvDraggingColId(null)
+                  }}
+                  onDragEnd={() => setCvDraggingColId(null)}
+                >
+                  <div className={`flex items-center gap-1 ${col.sortable ? 'cursor-pointer' : ''}`} onClick={() => handleCvSort(col.key)}>
+                    {col.header}
+                    {cvSortConfig?.key === col.key && <span className="text-xs">{cvSortConfig.direction === 'asc' ? '▲' : '▼'}</span>}
+                  </div>
+                  {col.key !== 'alert' && (
+                    <div onMouseDown={(e) => handleCvResizeStart(col.key, col.minWidth, e)} className="absolute left-0 top-0 h-full w-1 cursor-col-resize touch-none select-none z-20 hover:bg-primary transition-colors duration-200" />
+                  )}
+                </TableHead>
+              ))}
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading && (
-              <TableRow><TableCell colSpan={10} className="text-center py-8">
+              <TableRow><TableCell colSpan={cvDisplayColumns.length} className="text-center py-8">
                 <div className="flex items-center justify-center gap-2"><Loader2 className="h-5 w-5 animate-spin" /><span className="text-muted-foreground">טוען...</span></div>
               </TableCell></TableRow>
             )}
-            {!isLoading && filtered.length === 0 && (
-              <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+            {!isLoading && sortedFiltered.length === 0 && (
+              <TableRow><TableCell colSpan={cvDisplayColumns.length} className="text-center py-8 text-muted-foreground">
                 {searchQuery ? "לא נמצאו תוצאות" : "אין רכבי חברה — הוסף את הראשון"}
               </TableCell></TableRow>
             )}
-            {!isLoading && filtered.map(v => {
+            {!isLoading && sortedFiltered.map(v => {
               const alert = rowExpiryAlert(v)
+              const cellMap: Record<string, React.ReactNode> = {
+                alert: <>
+                  {alert === "expired"  && <span className="inline-block w-2 h-2 rounded-full bg-red-500" title="תוקף פג" />}
+                  {alert === "expiring" && <span className="inline-block w-2 h-2 rounded-full bg-orange-400" title="קרוב לפקיעה" />}
+                </>,
+                carNumber: <span className="font-mono">{String(gf(v, F.CAR_NUMBER) ?? "—")}</span>,
+                vehicleType: <span className="text-muted-foreground">{getLinkTitle(v, F.VEHICLE_TYPE)}</span>,
+                year: <span className="text-muted-foreground">{gf(v, F.YEAR) ? String(gf(v, F.YEAR)) : "—"}</span>,
+                insurance: <span onClick={e => e.stopPropagation()}><FileCell attachments={getAttachments(v, F.INSURANCE_FILE)} onView={viewAttachment} /></span>,
+                insuranceExp: <ExpiryBadge date={gf(v, F.INSURANCE_EXPIRY)} />,
+                permit: <span onClick={e => e.stopPropagation()}><FileCell attachments={getAttachments(v, F.OPERATION_PERMIT_FILE)} onView={viewAttachment} /></span>,
+                permitExp: <ExpiryBadge date={gf(v, F.OPERATION_PERMIT_EXPIRY)} />,
+                license: <span onClick={e => e.stopPropagation()}><FileCell attachments={getAttachments(v, F.VEHICLE_LICENSE_FILE)} onView={viewAttachment} /></span>,
+                licenseExp: <ExpiryBadge date={gf(v, F.VEHICLE_LICENSE_EXPIRY)} />,
+              }
               return (
                 <TableRow key={v.id} className="cursor-pointer hover:bg-muted/50 border-b" onClick={() => openEdit(v)}>
-                  <TableCell className="pr-3 w-8">
-                    {alert === "expired"  && <span className="inline-block w-2 h-2 rounded-full bg-red-500" title="תוקף פג" />}
-                    {alert === "expiring" && <span className="inline-block w-2 h-2 rounded-full bg-orange-400" title="קרוב לפקיעה" />}
-                  </TableCell>
-                  <TableCell className="font-mono pr-4">{String(gf(v, F.CAR_NUMBER) ?? "—")}</TableCell>
-                  <TableCell className="pr-4 text-muted-foreground">{getLinkTitle(v, F.VEHICLE_TYPE)}</TableCell>
-                  <TableCell className="pr-4 text-muted-foreground">{gf(v, F.YEAR) ? String(gf(v, F.YEAR)) : "—"}</TableCell>
-                  <TableCell className="pr-4" onClick={e => e.stopPropagation()}>
-                    <FileCell attachments={getAttachments(v, F.INSURANCE_FILE)} onView={viewAttachment} />
-                  </TableCell>
-                  <TableCell className="pr-4"><ExpiryBadge date={gf(v, F.INSURANCE_EXPIRY)} /></TableCell>
-                  <TableCell className="pr-4" onClick={e => e.stopPropagation()}>
-                    <FileCell attachments={getAttachments(v, F.OPERATION_PERMIT_FILE)} onView={viewAttachment} />
-                  </TableCell>
-                  <TableCell className="pr-4"><ExpiryBadge date={gf(v, F.OPERATION_PERMIT_EXPIRY)} /></TableCell>
-                  <TableCell className="pr-4" onClick={e => e.stopPropagation()}>
-                    <FileCell attachments={getAttachments(v, F.VEHICLE_LICENSE_FILE)} onView={viewAttachment} />
-                  </TableCell>
-                  <TableCell className="pr-4"><ExpiryBadge date={gf(v, F.VEHICLE_LICENSE_EXPIRY)} /></TableCell>
+                  {cvDisplayColumns.map(col => (
+                    <TableCell key={col.key} className="pr-4 truncate">{cellMap[col.key]}</TableCell>
+                  ))}
                 </TableRow>
               )
             })}
