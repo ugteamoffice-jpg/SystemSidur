@@ -30,6 +30,7 @@ interface ListItem {
   id: string;
   title: string
   carNumber?: string
+  vehicleTypeName?: string
 }
 
 function AutoComplete({ options, value, onChange, onItemSelect, placeholder, isError }: any) {
@@ -206,8 +207,34 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
           return [];
         }
       }
-      Promise.all([load(`/api/customers?tenant=${tenantId}`), load(`/api/drivers?tenant=${tenantId}`, true), load(`/api/vehicles?tenant=${tenantId}`)])
-        .then(([c, d, v]) => setLists({ customers: c, drivers: d, vehicles: v }))
+      Promise.all([
+        load(`/api/customers?tenant=${tenantId}`),
+        load(`/api/drivers?tenant=${tenantId}`, true),
+        load(`/api/vehicles?tenant=${tenantId}`),
+        fetch(`/api/company-vehicles?tenant=${tenantId}`).then(r => r.ok ? r.json() : { records: [] }).catch(() => ({ records: [] }))
+      ])
+        .then(([c, d, v, cvData]) => {
+          // מיפוי מספר רכב → סוג רכב מרכבי חברה
+          const carToVehicleType: Record<string, string> = {}
+          const cvFields = tenantFields?.companyVehicles
+          if (cvFields && cvData.records) {
+            for (const cv of cvData.records) {
+              const carNum = String(cv.fields?.[cvFields.CAR_NUMBER] || "").trim()
+              const vType = cv.fields?.[cvFields.VEHICLE_TYPE]
+              let typeName = ""
+              if (Array.isArray(vType)) typeName = vType[0]?.title || vType[0]?.text || ""
+              else if (typeof vType === "object" && vType) typeName = vType.title || vType.text || ""
+              else if (vType) typeName = String(vType)
+              if (carNum && typeName) carToVehicleType[carNum] = typeName
+            }
+          }
+          // הוספת סוג רכב לנהגים לפי מספר רכב
+          const driversWithVehicleType = d.map((driver: ListItem) => ({
+            ...driver,
+            vehicleTypeName: driver.carNumber ? (carToVehicleType[driver.carNumber] || "") : ""
+          }))
+          setLists({ customers: c, drivers: driversWithVehicleType, vehicles: v })
+        })
     }
   }, [open])
 
@@ -688,8 +715,16 @@ export function RideDialog({ onRideSaved, initialData, triggerChild, open: contr
                         setSelectedIds(p => ({ ...p, driverId: "" }));
                       }}
                       onItemSelect={(item: ListItem) => {
-                        setForm(p => ({ ...p, driver: item.title, ...(item.carNumber ? { vehicleNum: item.carNumber } : {}) }));
-                        setSelectedIds(p => ({ ...p, driverId: item.id }));
+                        const autoFields: any = { driver: item.title }
+                        if (item.carNumber) autoFields.vehicleNum = item.carNumber
+                        if (item.vehicleTypeName) autoFields.vehicleType = item.vehicleTypeName
+                        setForm(p => ({ ...p, ...autoFields }));
+                        const autoIds: any = { driverId: item.id }
+                        if (item.vehicleTypeName) {
+                          const match = lists.vehicles.find(v => v.title === item.vehicleTypeName)
+                          if (match) autoIds.vehicleTypeId = match.id
+                        }
+                        setSelectedIds(p => ({ ...p, ...autoIds }));
                       }}
                       placeholder=""
                     />
