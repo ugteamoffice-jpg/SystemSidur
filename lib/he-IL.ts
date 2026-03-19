@@ -27,7 +27,11 @@ export const heILCustom = {
   formFieldAction__forgotPassword: "שכחת סיסמה?",
   formButtonPrimary: "המשך",
   formButtonPrimary__verify: "אמת",
+  formButtonPrimary__save: "שמור",
+  formButtonPrimary__continue: "המשך",
+  formButtonPrimary__finish: "סיום",
   formButtonReset: "ביטול",
+  formButtonCancel: "ביטול",
   footerActionLink__useAnotherMethod: "השתמש בשיטה אחרת",
   backButton: "חזור",
   signIn: {
@@ -211,6 +215,8 @@ export const heILCustom = {
     },
     usernamePage: {
       title: "עדכן שם משתמש",
+      title__set: "הגדר שם משתמש",
+      title__update: "עדכן שם משתמש",
       successMessage: "שם המשתמש שלך עודכן",
     },
     emailAddressPage: {
@@ -237,6 +243,8 @@ export const heILCustom = {
     },
     passwordPage: {
       title: "הגדר סיסמה",
+      title__set: "הגדר סיסמה",
+      title__update: "עדכן סיסמה",
       changePasswordTitle: "שנה סיסמה",
       successMessage: "הסיסמה עודכנה בהצלחה",
       changePasswordSuccessMessage: "הסיסמה שלך עודכנה",
@@ -245,6 +253,16 @@ export const heILCustom = {
     mfaPage: {
       title: "הוסף אימות דו-שלבי",
       formHint: "בחר שיטה להוספה",
+    },
+    mfaPhoneCodePage: {
+      title: "הוסף אימות SMS",
+      primaryButton__addPhoneNumber: "הוסף מספר טלפון",
+      subtitle__availablePhoneNumbers: "בחר מספר טלפון לאימות דו-שלבי באמצעות SMS",
+      subtitle__unavailablePhoneNumbers: "אין מספרי טלפון זמינים לאימות SMS. אנא הוסף מספר חדש.",
+      successTitle: "אימות SMS מופעל",
+      successMessage1: "תקבל קוד אימות SMS בזמן התחברות",
+      successMessage2: "שמור קודי גיבוי אלה במקום בטוח",
+      backButton: "השתמש במספר קיים",
     },
     mfaTOTPPage: {
       title: "הוסף אפליקציית אימות",
