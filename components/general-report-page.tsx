@@ -460,25 +460,27 @@ export function GeneralReportPage() {
               </div>
             </div>
 
-            {/* מסלול + סינון מחירים בשורה אחת */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1.5">
-                <Label className="font-bold text-sm">תיאור מסלול</Label>
-                <div className="relative">
-                  <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input placeholder="חפש..." value={tempFilters.description}
-                    onChange={e => setTempFilters(p => ({ ...p, description: e.target.value }))} className="pr-8 h-9 text-sm" />
-                  {tempFilters.description && (
-                    <button className="absolute left-2.5 top-1/2 -translate-y-1/2" onClick={() => setTempFilters(p => ({ ...p, description: "" }))}>
-                      <X className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
-                    </button>
-                  )}
-                </div>
+            {/* מסלול */}
+            <div className="space-y-1.5">
+              <Label className="font-bold text-sm">תיאור מסלול</Label>
+              <div className="relative">
+                <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input placeholder="חפש מסלול..." value={tempFilters.description}
+                  onChange={e => setTempFilters(p => ({ ...p, description: e.target.value }))} className="pr-8 h-9 text-sm" />
+                {tempFilters.description && (
+                  <button className="absolute left-2.5 top-1/2 -translate-y-1/2" onClick={() => setTempFilters(p => ({ ...p, description: "" }))}>
+                    <X className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+                  </button>
+                )}
               </div>
-              <div className="space-y-1.5">
+            </div>
+
+            {/* סינון מחירים */}
+            <div className="flex gap-2 w-full">
+              <div className="flex-1 space-y-1">
                 <Label className="font-bold text-sm">מחיר לקוח</Label>
                 <Select value={tempFilters.clientPriceFilter} onValueChange={(v: "all" | "with" | "without") => setTempFilters(p => ({ ...p, clientPriceFilter: v }))}>
-                  <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-9 text-sm w-full"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">הכל</SelectItem>
                     <SelectItem value="with">עם מחיר</SelectItem>
@@ -486,10 +488,10 @@ export function GeneralReportPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5">
+              <div className="flex-1 space-y-1">
                 <Label className="font-bold text-sm">מחיר נהג</Label>
                 <Select value={tempFilters.driverPriceFilter} onValueChange={(v: "all" | "with" | "without") => setTempFilters(p => ({ ...p, driverPriceFilter: v }))}>
-                  <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-9 text-sm w-full"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">הכל</SelectItem>
                     <SelectItem value="with">עם מחיר</SelectItem>
