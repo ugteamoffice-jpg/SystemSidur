@@ -3,8 +3,8 @@
 import * as React from "react"
 import { Plus, Pencil, Trash2, Copy, ToggleLeft, ToggleRight, Search, Filter } from "lucide-react"
 import {
-  ColumnDef, ColumnSizingState, ColumnOrderState,
-  flexRender, getCoreRowModel, useReactTable,
+  ColumnDef, ColumnSizingState, ColumnOrderState, SortingState,
+  flexRender, getCoreRowModel, getSortedRowModel, useReactTable,
 } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -114,6 +114,8 @@ export function RecurringRidesPage() {
       try { localStorage.setItem(COL_ORDER_KEY, JSON.stringify(columnOrder)) } catch {}
     }
   }, [columnOrder])
+
+  const [sorting, setSorting] = React.useState<SortingState>([])
 
   const [lists, setLists] = React.useState<{ customers: ListItem[], drivers: ListItem[], vehicles: ListItem[] }>({
     customers: [], drivers: [], vehicles: []
@@ -437,8 +439,9 @@ export function RecurringRidesPage() {
 
   const table = useReactTable({
     data: filteredRides, columns, columnResizeMode: "onChange", getCoreRowModel: getCoreRowModel(),
-    onColumnSizingChange: setColumnSizing, onColumnOrderChange: setColumnOrder,
-    state: { columnSizing, columnOrder },
+    getSortedRowModel: getSortedRowModel(),
+    onColumnSizingChange: setColumnSizing, onColumnOrderChange: setColumnOrder, onSortingChange: setSorting,
+    state: { columnSizing, columnOrder, sorting },
   })
 
   // Drag to reorder columns
@@ -498,8 +501,11 @@ export function RecurringRidesPage() {
                       setDraggedCol(null)
                     }}
                   >
-                    <div className="flex items-center gap-1 cursor-grab">
+                    <div className="flex items-center gap-1 cursor-pointer" onClick={header.column.getToggleSortingHandler()}>
                       {flexRender(header.column.columnDef.header, header.getContext())}
+                      {header.column.id !== "actions" && (
+                        <span className="text-[10px] opacity-60 shrink-0">{header.column.getIsSorted() === "asc" ? "▲" : header.column.getIsSorted() === "desc" ? "▼" : "⇅"}</span>
+                      )}
                     </div>
                     {header.column.getCanResize() && (
                       <div onMouseDown={(e) => {

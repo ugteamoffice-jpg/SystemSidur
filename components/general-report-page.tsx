@@ -98,6 +98,13 @@ export function GeneralReportPage() {
   }, [COL_ORDER_KEY])
   React.useEffect(() => { try { localStorage.setItem(COL_ORDER_KEY, JSON.stringify(columnOrder)) } catch {} }, [columnOrder, COL_ORDER_KEY])
   const [draggedCol, setDraggedCol] = React.useState<string | null>(null)
+  const [grSortCol, setGrSortCol] = React.useState<string | null>(null)
+  const [grSortDir, setGrSortDir] = React.useState<"asc" | "desc">("asc")
+  const handleGrSort = (colId: string) => {
+    if (colId === "sel") return
+    if (grSortCol === colId) setGrSortDir(d => d === "asc" ? "desc" : "asc")
+    else { setGrSortCol(colId); setGrSortDir("asc") }
+  }
 
   const COL_KEY = `generalReportColWidths_${tenantId}`
   const defaultWidths: Record<string, number> = { sel:45, date:95, customer:140, pickup:75, route:200, dropoff:75, vehicleType:100, driver:120, vehicleNum:90, p1:105, p2:115, p3:105, p4:115 }
@@ -317,6 +324,25 @@ export function GeneralReportPage() {
   // Sort by columnOrder
   const colDefMap = Object.fromEntries(colDefs.map(c => [c.id, c]))
   const cols = columnOrder.map(id => colDefMap[id]).filter(Boolean)
+
+  // Sort field mapping
+  const grSortFieldMap: Record<string, string> = {
+    date: WS.DATE, customer: WS.CUSTOMER, pickup: WS.PICKUP_TIME, route: WS.DESCRIPTION,
+    dropoff: WS.DROPOFF_TIME, vehicleType: WS.VEHICLE_TYPE, driver: WS.DRIVER,
+    vehicleNum: WS.VEHICLE_NUM, p1: WS.PRICE_CLIENT_EXCL, p2: WS.PRICE_CLIENT_INCL,
+    p3: WS.PRICE_DRIVER_EXCL, p4: WS.PRICE_DRIVER_INCL,
+  }
+  const sortedGrData = React.useMemo(() => {
+    if (!grSortCol) return filteredData
+    const fk = grSortFieldMap[grSortCol]
+    if (!fk) return filteredData
+    return [...filteredData].sort((a, b) => {
+      let aVal = a.fields[fk] ?? ''; let bVal = b.fields[fk] ?? ''
+      if (Array.isArray(aVal)) aVal = renderLink(aVal); if (Array.isArray(bVal)) bVal = renderLink(bVal)
+      const cmp = typeof aVal === 'number' && typeof bVal === 'number' ? aVal - bVal : String(aVal).localeCompare(String(bVal), 'he', { numeric: true })
+      return grSortDir === 'asc' ? cmp : -cmp
+    })
+  }, [filteredData, grSortCol, grSortDir])
 
   const renderCell = (col: string, rec: RideRecord) => {
     const f = rec.fields
@@ -685,7 +711,10 @@ export function GeneralReportPage() {
                     >
                       {col.id === "sel"
                         ? <div className="flex items-center justify-center"><Checkbox checked={allSelected} onCheckedChange={toggleAll} /></div>
-                        : <div className="flex items-center gap-1 cursor-grab">{col.label}</div>
+                        : <div className="flex items-center gap-1 cursor-pointer" onClick={() => handleGrSort(col.id)}>
+                            <span className="truncate">{col.label}</span>
+                            <span className="text-[10px] opacity-60 shrink-0">{grSortCol === col.id ? (grSortDir === "asc" ? "▲" : "▼") : "⇅"}</span>
+                          </div>
                       }
                       {!col.noResize && (
                         <div onMouseDown={e => handleResizeStart(col.id, e)}
@@ -696,7 +725,7 @@ export function GeneralReportPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredData.map(rec => (
+                {sortedGrData.map(rec => (
                   <TableRow key={rec.id}
                     className={`cursor-pointer hover:bg-muted/50 transition-colors ${selectedIds.has(rec.id) ? "bg-orange-50" : ""}`}
                     onClick={() => toggleRow(rec.id)}>

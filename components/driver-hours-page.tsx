@@ -515,7 +515,7 @@ export function DriverHoursPage() {
                       setDhSortConfig(prev => prev?.key === col.key ? { key: col.key, direction: prev.direction === 'asc' ? 'desc' : 'asc' } : { key: col.key, direction: 'asc' })
                     }}>
                       {col.header}
-                      {dhSortConfig?.key === col.key && <span className="text-xs">{dhSortConfig.direction === 'asc' ? '▲' : '▼'}</span>}
+                      {col.sortable && <span className="text-[10px] opacity-60 shrink-0">{dhSortConfig?.key === col.key ? (dhSortConfig.direction === 'asc' ? '▲' : '▼') : '⇅'}</span>}
                     </div>
                     <div
                       onMouseDown={(e) => {

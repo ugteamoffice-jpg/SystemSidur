@@ -515,7 +515,7 @@ export default function CompanyVehiclesGrid() {
                 >
                   <div className={`flex items-center gap-1 ${col.sortable ? 'cursor-pointer' : ''}`} onClick={() => handleCvSort(col.key)}>
                     {col.header}
-                    {cvSortConfig?.key === col.key && <span className="text-xs">{cvSortConfig.direction === 'asc' ? '▲' : '▼'}</span>}
+                    {col.sortable && <span className="text-[10px] opacity-60 shrink-0">{cvSortConfig?.key === col.key ? (cvSortConfig.direction === 'asc' ? '▲' : '▼') : '⇅'}</span>}
                   </div>
                   {col.key !== 'alert' && (
                     <div onMouseDown={(e) => handleCvResizeStart(col.key, col.minWidth, e)} className="absolute left-0 top-0 h-full w-1 cursor-col-resize touch-none select-none z-20 hover:bg-primary transition-colors duration-200" />

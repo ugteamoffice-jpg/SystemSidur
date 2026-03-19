@@ -377,7 +377,7 @@ export default function CustomersGrid() {
                 >
                   <div className="flex items-center gap-1 cursor-pointer" onClick={() => handleSort(col.key)}>
                     {col.header}
-                    {sortConfig?.key === col.key && <span className="text-xs">{sortConfig.direction === 'asc' ? '▲' : '▼'}</span>}
+                    <span className="text-[10px] opacity-60 shrink-0">{sortConfig?.key === col.key ? (sortConfig.direction === 'asc' ? '▲' : '▼') : '⇅'}</span>
                   </div>
                   <div
                     onMouseDown={(e) => handleResizeStart(col.key, col.minWidth, e)}

@@ -1141,8 +1141,7 @@ function DataGrid({ schema }: { schema?: any }) {
                   >
                     <div className={`flex items-center gap-1 ${header.column.getCanSort() ? 'cursor-pointer' : ''}`} onClick={header.column.getToggleSortingHandler()}>
                       {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                      {header.column.getIsSorted() === "asc" && <span className="text-xs">▲</span>}
-                      {header.column.getIsSorted() === "desc" && <span className="text-xs">▼</span>}
+                      <span className="text-[10px] opacity-60 shrink-0">{header.column.getIsSorted() === "asc" ? "▲" : header.column.getIsSorted() === "desc" ? "▼" : "⇅"}</span>
                     </div>
                     {header.column.getCanResize() && (
                       <div onMouseDown={(e) => {
