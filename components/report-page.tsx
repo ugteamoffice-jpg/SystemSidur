@@ -973,20 +973,21 @@ export function ReportPage({ reportType }: ReportPageProps) {
   return (
     <>
       <Dialog open={showFilterDialog} onOpenChange={setShowFilterDialog}>
-        <DialogContent className="sm:max-w-[480px]" dir="rtl">
+        <DialogContent className="sm:max-w-[520px]" dir="rtl">
           <DialogHeader>
             <DialogTitle>{reportTitles[reportType]}</DialogTitle>
             <DialogDescription>בחר פרמטרים לדוח</DialogDescription>
           </DialogHeader>
 
-          <div className="flex flex-col gap-4 py-2">
-            <div className="space-y-2">
-              <Label className="font-bold">טווח תאריכים</Label>
-              <div className="flex items-center gap-3">
+          <div className="flex flex-col gap-3 py-1">
+            {/* תאריכים */}
+            <div className="space-y-1.5">
+              <Label className="font-bold text-sm">טווח תאריכים</Label>
+              <div className="flex items-center gap-2">
                 <Popover open={startCalOpen} onOpenChange={setStartCalOpen}>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="flex-1 justify-start text-right font-normal h-10">
-                      <CalendarIcon className="ml-2 h-4 w-4" />
+                    <Button variant="outline" className="flex-1 justify-start text-right font-normal h-9 text-sm">
+                      <CalendarIcon className="ml-2 h-3.5 w-3.5" />
                       {tempFilters.startDate ? format(tempFilters.startDate, "dd/MM/yyyy") : "מתאריך"}
                     </Button>
                   </PopoverTrigger>
@@ -1002,11 +1003,11 @@ export function ReportPage({ reportType }: ReportPageProps) {
                     }} locale={he} dir="rtl" initialFocus />
                   </PopoverContent>
                 </Popover>
-                <span className="text-muted-foreground text-sm">עד</span>
+                <span className="text-muted-foreground text-xs">עד</span>
                 <Popover open={endCalOpen} onOpenChange={setEndCalOpen}>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="flex-1 justify-start text-right font-normal h-10">
-                      <CalendarIcon className="ml-2 h-4 w-4" />
+                    <Button variant="outline" className="flex-1 justify-start text-right font-normal h-9 text-sm">
+                      <CalendarIcon className="ml-2 h-3.5 w-3.5" />
                       {tempFilters.endDate ? format(tempFilters.endDate, "dd/MM/yyyy") : "עד תאריך"}
                     </Button>
                   </PopoverTrigger>
@@ -1017,115 +1018,106 @@ export function ReportPage({ reportType }: ReportPageProps) {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label className="font-bold">שם לקוח</Label>
-              <div className="relative" ref={customerRef}>
-                <div className="relative">
-                  <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            {/* לקוח + נהג */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="font-bold text-sm">שם לקוח</Label>
+                <div className="relative" ref={customerRef}>
+                  <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   <Input placeholder="חפש לקוח..." value={tempFilters.customerName}
                     onChange={(e) => { setTempFilters(p => ({ ...p, customerName: e.target.value })); setShowCustomerSuggestions(true) }}
-                    onFocus={() => setShowCustomerSuggestions(true)} className="pr-9 h-10" />
+                    onFocus={() => setShowCustomerSuggestions(true)} className="pr-8 h-9 text-sm" />
                   {tempFilters.customerName && (
-                    <button className="absolute left-3 top-1/2 transform -translate-y-1/2" onClick={() => { setTempFilters(p => ({ ...p, customerName: "" })); setShowCustomerSuggestions(false) }}>
-                      <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                    <button className="absolute left-2.5 top-1/2 -translate-y-1/2" onClick={() => { setTempFilters(p => ({ ...p, customerName: "" })); setShowCustomerSuggestions(false) }}>
+                      <X className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
                     </button>
                   )}
+                  {showCustomerSuggestions && filteredCustomerSuggestions.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 max-h-[140px] overflow-auto bg-popover border rounded-md shadow-md">
+                      {filteredCustomerSuggestions.map((name, i) => (
+                        <button key={i} className="w-full text-right px-3 py-1.5 text-sm hover:bg-accent transition-colors"
+                          onClick={() => { setTempFilters(p => ({ ...p, customerName: name })); setShowCustomerSuggestions(false) }}>{name}</button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                {showCustomerSuggestions && filteredCustomerSuggestions.length > 0 && (
-                  <div className="absolute z-50 w-full mt-1 max-h-[160px] overflow-auto bg-popover border rounded-md shadow-md">
-                    {filteredCustomerSuggestions.map((name, i) => (
-                      <button key={i} className="w-full text-right px-3 py-2 text-sm hover:bg-accent transition-colors"
-                        onClick={() => { setTempFilters(p => ({ ...p, customerName: name })); setShowCustomerSuggestions(false) }}>
-                        {name}
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="font-bold">שם נהג</Label>
-              <div className="relative" ref={driverRef}>
-                <div className="relative">
-                  <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <div className="space-y-1.5">
+                <Label className="font-bold text-sm">שם נהג</Label>
+                <div className="relative" ref={driverRef}>
+                  <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   <Input placeholder="חפש נהג..." value={tempFilters.driverName}
                     onChange={(e) => { setTempFilters(p => ({ ...p, driverName: e.target.value })); setShowDriverSuggestions(true) }}
-                    onFocus={() => setShowDriverSuggestions(true)} className="pr-9 h-10" />
+                    onFocus={() => setShowDriverSuggestions(true)} className="pr-8 h-9 text-sm" />
                   {tempFilters.driverName && (
-                    <button className="absolute left-3 top-1/2 transform -translate-y-1/2" onClick={() => { setTempFilters(p => ({ ...p, driverName: "" })); setShowDriverSuggestions(false) }}>
-                      <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                    <button className="absolute left-2.5 top-1/2 -translate-y-1/2" onClick={() => { setTempFilters(p => ({ ...p, driverName: "" })); setShowDriverSuggestions(false) }}>
+                      <X className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+                    </button>
+                  )}
+                  {showDriverSuggestions && filteredDriverSuggestions.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 max-h-[140px] overflow-auto bg-popover border rounded-md shadow-md">
+                      {filteredDriverSuggestions.map((name, i) => (
+                        <button key={i} className="w-full text-right px-3 py-1.5 text-sm hover:bg-accent transition-colors"
+                          onClick={() => { setTempFilters(p => ({ ...p, driverName: name })); setShowDriverSuggestions(false) }}>{name}</button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* מסלול + סינון */}
+            <div className="grid grid-cols-4 gap-3">
+              <div className="space-y-1.5">
+                <Label className="font-bold text-sm">מסלול</Label>
+                <div className="relative">
+                  <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input placeholder="חפש..." value={tempFilters.description}
+                    onChange={(e) => setTempFilters(p => ({ ...p, description: e.target.value }))}
+                    className="pr-8 h-9 text-sm" />
+                  {tempFilters.description && (
+                    <button className="absolute left-2.5 top-1/2 -translate-y-1/2" onClick={() => setTempFilters(p => ({ ...p, description: "" }))}>
+                      <X className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
                     </button>
                   )}
                 </div>
-                {showDriverSuggestions && filteredDriverSuggestions.length > 0 && (
-                  <div className="absolute z-50 w-full mt-1 max-h-[160px] overflow-auto bg-popover border rounded-md shadow-md">
-                    {filteredDriverSuggestions.map((name, i) => (
-                      <button key={i} className="w-full text-right px-3 py-2 text-sm hover:bg-accent transition-colors"
-                        onClick={() => { setTempFilters(p => ({ ...p, driverName: name })); setShowDriverSuggestions(false) }}>
-                        {name}
-                      </button>
-                    ))}
-                  </div>
-                )}
+              </div>
+              <div className="space-y-1.5">
+                <Label className="font-bold text-sm">חשבונית</Label>
+                <Select value={tempFilters.invoiceFilter} onValueChange={(v: "all" | "with" | "without") => setTempFilters(p => ({ ...p, invoiceFilter: v }))}>
+                  <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">הכל</SelectItem>
+                    <SelectItem value="with">עם</SelectItem>
+                    <SelectItem value="without">ללא</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="font-bold text-sm">מחיר לקוח</Label>
+                <Select value={tempFilters.clientPriceFilter} onValueChange={(v: "all" | "with" | "without") => setTempFilters(p => ({ ...p, clientPriceFilter: v }))}>
+                  <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">הכל</SelectItem>
+                    <SelectItem value="with">עם</SelectItem>
+                    <SelectItem value="without">ללא</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="font-bold text-sm">מחיר נהג</Label>
+                <Select value={tempFilters.driverPriceFilter} onValueChange={(v: "all" | "with" | "without") => setTempFilters(p => ({ ...p, driverPriceFilter: v }))}>
+                  <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">הכל</SelectItem>
+                    <SelectItem value="with">עם</SelectItem>
+                    <SelectItem value="without">ללא</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label className="font-bold">תיאור מסלול</Label>
-              <div className="relative">
-                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="חפש מסלול..." value={tempFilters.description}
-                  onChange={(e) => setTempFilters(p => ({ ...p, description: e.target.value }))}
-                  className="pr-9 h-10" />
-                {tempFilters.description && (
-                  <button className="absolute left-3 top-1/2 transform -translate-y-1/2" onClick={() => setTempFilters(p => ({ ...p, description: "" }))}>
-                    <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="font-bold">סינון נוסף</Label>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">חשבונית</Label>
-                  <Select value={tempFilters.invoiceFilter} onValueChange={(v: "all" | "with" | "without") => setTempFilters(p => ({ ...p, invoiceFilter: v }))}>
-                    <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">הכל</SelectItem>
-                      <SelectItem value="with">עם חשבונית</SelectItem>
-                      <SelectItem value="without">ללא חשבונית</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">מחיר לקוח</Label>
-                  <Select value={tempFilters.clientPriceFilter} onValueChange={(v: "all" | "with" | "without") => setTempFilters(p => ({ ...p, clientPriceFilter: v }))}>
-                    <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">הכל</SelectItem>
-                      <SelectItem value="with">עם מחיר</SelectItem>
-                      <SelectItem value="without">ללא מחיר</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">מחיר נהג</Label>
-                  <Select value={tempFilters.driverPriceFilter} onValueChange={(v: "all" | "with" | "without") => setTempFilters(p => ({ ...p, driverPriceFilter: v }))}>
-                    <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">הכל</SelectItem>
-                      <SelectItem value="with">עם מחיר</SelectItem>
-                      <SelectItem value="without">ללא מחיר</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-
-            <Button onClick={applyFilters} disabled={isLoading} className="h-10 mt-2">
+            <Button onClick={applyFilters} disabled={isLoading} className="h-10 mt-1">
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <Search className="h-4 w-4 ml-2" />}
               הצג דוח
             </Button>
