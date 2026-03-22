@@ -1187,6 +1187,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
           </Button>
 
           {/* Bulk Action Button - Always visible but disabled if nothing is selected */}
+          {reportType === "report-invoices" && (
           <Button 
             variant={selectedRowIds.size > 0 ? "default" : "outline"} 
             size="sm" 
@@ -1196,6 +1197,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
           >
             עדכן חשבונית
           </Button>
+          )}
 
           {/* Export Button + Search - side by side */}
           {hasSearched && filteredData.length > 0 && (
