@@ -48,9 +48,15 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
     if (activePage === page) {
       window.location.reload()
     } else {
-      window.open(window.location.pathname + "?page=" + page, "luz_" + page)
+      const w = window.open(window.location.pathname + "?page=" + page, "luz_" + page)
+      if (w) w.focus()
     }
   }
+
+  // Set window name so duplicate tabs are reused
+  useEffect(() => {
+    window.name = "luz_" + activePage
+  }, [activePage])
 
   const COLUMN_VISIBILITY_KEY = `workScheduleColumnVisibility_${tenantId}`
 
