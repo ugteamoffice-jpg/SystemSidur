@@ -7,6 +7,7 @@ import { ClerkProvider } from "@clerk/nextjs"
 import { heILCustom } from "@/lib/he-IL"
 import "./globals.css"
 import { ErrorReporter } from "@/components/error-reporter"
+import { DisableContextMenu } from "@/components/disable-context-menu"
 import "../temp.ts"
 
 const varelaRound = Varela_Round({
@@ -50,6 +51,7 @@ export default function RootLayout({
             {children}
             <Toaster />
             <ErrorReporter />
+            <DisableContextMenu />
           </ThemeProvider>
         </body>
       </html>
