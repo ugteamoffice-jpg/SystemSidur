@@ -189,6 +189,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
         { id: "pickup", label: "הלוך", width: colWidths.pickup || 80, render: mkPickup },
         { id: "route", label: "מסלול", width: colWidths.route || 200, render: mkRoute },
         { id: "vehicleType", label: "סוג רכב", width: colWidths.vehicleType || 100, render: mkVehicle },
+        { id: "driver", label: "שם נהג", width: colWidths.driver || 110, render: mkDriver },
         { id: "p1", label: 'לקוח לפני מע"מ', width: colWidths.p1 || 110, render: mkP1 },
         { id: "p2", label: 'לקוח כולל מע"מ', width: colWidths.p2 || 110, render: mkP2 },
       ]
