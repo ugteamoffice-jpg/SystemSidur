@@ -205,11 +205,12 @@ export default function DriversGrid() {
     } catch { return [] }
   }
 
-  const uploadContractFile = async (recordId: string) => {
+  const uploadContractFile = async (recordId: string, file?: File | null) => {
+    const f = file || contractFile
     const DRV = (tenantFields as any)?.drivers
-    if (!contractFile || !DRV?.CONTRACT) return
+    if (!f || !DRV?.CONTRACT) return
     const fd = new FormData()
-    fd.append("file", contractFile)
+    fd.append("file", f)
     fd.append("tableId", (tenantTables as any)?.DRIVERS || "")
     fd.append("recordId", recordId)
     fd.append("fieldId", DRV.CONTRACT)
@@ -217,20 +218,30 @@ export default function DriversGrid() {
   }
 
   const handleCreateDriver = async () => {
+    const filteredFields = Object.entries(newDriver).reduce((acc, [key, value]) => {
+      if (value !== "" && value !== undefined && value !== null) acc[key] = value
+      return acc
+    }, {} as any)
+    filteredFields[STATUS_FIELD_ID] = "פעיל"
+    
+    // Optimistic: close dialog + add temp record
+    const tempId = "temp_" + Date.now()
+    const tempDriver: Driver = { id: tempId, fields: { ...filteredFields } }
+    setDrivers(prev => [tempDriver, ...prev])
+    setIsDialogOpen(false); const savedContractFile = contractFile; setContractFile(null); resetForm()
+    
     try {
-      const filteredFields = Object.entries(newDriver).reduce((acc, [key, value]) => {
-        if (value !== "" && value !== undefined && value !== null) acc[key] = value
-        return acc
-      }, {} as any)
-      filteredFields[STATUS_FIELD_ID] = "פעיל"
       const response = await fetch(`/api/drivers?tenant=${tenantId}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fields: filteredFields }) })
       if (!response.ok) throw new Error("Failed")
       const created = await response.json()
       const newId = created?.records?.[0]?.id || created?.id
-      if (newId) await uploadContractFile(newId)
+      if (newId && savedContractFile) await uploadContractFile(newId, savedContractFile)
       toast({ title: "נוצר בהצלחה" })
-      setIsDialogOpen(false); setContractFile(null); resetForm(); fetchDrivers();
-    } catch (error) { toast({ title: "שגיאה", description: "נכשל", variant: "destructive" }) }
+      fetchDrivers() // refresh to get real ID
+    } catch (error) {
+      setDrivers(prev => prev.filter(d => d.id !== tempId))
+      toast({ title: "שגיאה", description: "נכשל ביצירת נהג", variant: "destructive" })
+    }
   }
 
   const handleUpdateDriver = async () => {
@@ -272,20 +283,26 @@ export default function DriversGrid() {
   }
 
   const saveDriverAndOptionalRides = async (fields: any, ridesToUpdate: any[]) => {
+    const prevDrivers = [...drivers]
+    const savedContractFile = contractFile
+
+    // Optimistic: update UI immediately
+    if (editingDriverId) {
+      setDrivers(prev => prev.map(d => d.id === editingDriverId ? { ...d, fields: { ...d.fields, ...fields } } : d))
+    }
+    setContractFile(null)
+    setIsDialogOpen(false); setEditingDriverId(null); resetForm(); setFutureRidesDialog(false); setPendingSaveFields(null)
+
     try {
-      // 1. עדכן נהג
       const res = await fetch(`/api/drivers?tenant=${tenantId}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ recordId: editingDriverId, fields })
       })
       if (!res.ok) throw new Error("Failed")
 
-      // 2. עדכן נסיעות עתידיות אם נבחר
       if (ridesToUpdate.length > 0) {
-        setIsUpdatingFuture(true)
         const WS_VEHICLE_NUM = tenantFields?.workSchedule?.VEHICLE_NUM || ""
         const newCarNumber = fields[CAR_NUMBER_ID] || ""
-        // Batch PATCH — 50 נסיעות בכל קריאה
         const chunks = []
         for (let i = 0; i < ridesToUpdate.length; i += 50) chunks.push(ridesToUpdate.slice(i, i + 50))
         for (const chunk of chunks) {
@@ -295,43 +312,55 @@ export default function DriversGrid() {
             body: JSON.stringify({ records })
           })
         }
-        setIsUpdatingFuture(false)
         toast({ title: `הנהג ו-${ridesToUpdate.length} נסיעות עתידיות עודכנו` })
       } else {
         toast({ title: "עודכן בהצלחה" })
       }
 
-      if (editingDriverId) await uploadContractFile(editingDriverId)
-      setContractFile(null)
-      setIsDialogOpen(false); setEditingDriverId(null); resetForm(); setFutureRidesDialog(false); setPendingSaveFields(null)
-      fetchDrivers()
-    } catch { toast({ title: "שגיאה", description: "נכשל", variant: "destructive" }) }
+      if (editingDriverId && savedContractFile) await uploadContractFile(editingDriverId, savedContractFile)
+    } catch {
+      setDrivers(prevDrivers)
+      toast({ title: "שגיאה", description: "נכשל בעדכון", variant: "destructive" })
+    }
   }
 
   const handlePermanentDelete = async () => {
     if (!editingDriverId) return
+    const prevDrivers = [...drivers]
+    const deletedId = editingDriverId
+
+    // Optimistic: remove immediately
+    setDrivers(prev => prev.filter(d => d.id !== deletedId))
+    setDeleteConfirmOpen(false); setIsDialogOpen(false); setEditingDriverId(null); resetForm()
+    toast({ title: "הנהג נמחק לצמיתות" })
+
     try {
-      const response = await fetch(`/api/drivers?tenant=${tenantId}&recordId=${editingDriverId}`, { method: "DELETE" })
+      const response = await fetch(`/api/drivers?tenant=${tenantId}&recordId=${deletedId}`, { method: "DELETE" })
       if (!response.ok) throw new Error("Failed")
-      toast({ title: "הנהג נמחק לצמיתות" })
-      setDeleteConfirmOpen(false)
-      setIsDialogOpen(false)
-      setEditingDriverId(null)
-      resetForm()
-      setDrivers(prev => prev.filter(d => d.id !== editingDriverId))
-    } catch (error) { toast({ title: "שגיאה", description: "המחיקה נכשלה", variant: "destructive" }) }
+    } catch {
+      setDrivers(prevDrivers)
+      toast({ title: "שגיאה", description: "המחיקה נכשלה", variant: "destructive" })
+    }
   }
 
   const handleDeleteDriver = async () => {
     if (!editingDriverId) return
+    const prevDrivers = [...drivers]
+    const toggledId = editingDriverId
+    const newStatus = (newDriver[STATUS_FIELD_ID] || "פעיל") === "לא פעיל" ? "פעיל" : "לא פעיל"
+
+    // Optimistic: update status immediately
+    setDrivers(prev => prev.map(d => d.id === toggledId ? { ...d, fields: { ...d.fields, [STATUS_FIELD_ID]: newStatus } } : d))
+    setIsDialogOpen(false); setEditingDriverId(null); resetForm()
+    toast({ title: "סטטוס עודכן" })
+
     try {
-      const newStatus = (newDriver[STATUS_FIELD_ID] || "פעיל") === "לא פעיל" ? "פעיל" : "לא פעיל"
-      const response = await fetch(`/api/drivers?tenant=${tenantId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recordId: editingDriverId, fields: { [STATUS_FIELD_ID]: newStatus } }) })
+      const response = await fetch(`/api/drivers?tenant=${tenantId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recordId: toggledId, fields: { [STATUS_FIELD_ID]: newStatus } }) })
       if (!response.ok) throw new Error("Failed")
-      setIsDialogOpen(false); setEditingDriverId(null); resetForm(); 
-      setDrivers(prev => prev.map(d => d.id === editingDriverId ? { ...d, fields: { ...d.fields, [STATUS_FIELD_ID]: newStatus } } : d));
-      toast({ title: "סטטוס עודכן" })
-    } catch (error) { toast({ title: "שגיאה", description: "נכשל", variant: "destructive" }) }
+    } catch {
+      setDrivers(prevDrivers)
+      toast({ title: "שגיאה", description: "נכשל", variant: "destructive" })
+    }
   }
 
   const handleRowClick = (driver: Driver) => { 

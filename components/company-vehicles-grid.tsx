@@ -282,48 +282,66 @@ export default function CompanyVehiclesGrid() {
       toast({ title: "שגיאה", description: "יש למלא מספר רכב", variant: "destructive" })
       return
     }
-    setIsSaving(true)
+    const fields = buildFields()
+    const tempId = "temp_" + Date.now()
+    setVehicles(prev => [{ id: tempId, fields: { ...fields } } as CompanyVehicle, ...prev])
+    closeDialog()
+
     try {
       const res = await fetch(`/api/company-vehicles?tenant=${tenantId}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fields: buildFields() })
+        body: JSON.stringify({ fields })
       })
       if (!res.ok) throw new Error()
       const data = await res.json()
       const newId = data.records?.[0]?.id
       if (newId && tableId) await uploadPendingFiles(newId, tableId)
       toast({ title: "רכב נוסף בהצלחה" })
-      closeDialog(); fetchVehicles()
+      fetchVehicles()
     } catch {
+      setVehicles(prev => prev.filter(v => v.id !== tempId))
       toast({ title: "שגיאה", description: "לא ניתן להוסיף רכב", variant: "destructive" })
-    } finally { setIsSaving(false) }
+    }
   }
 
   const handleUpdate = async () => {
     if (!editingId) return
-    setIsSaving(true)
+    const prevVehicles = [...vehicles]
+    const fields = buildFields()
+    const updatedId = editingId
+
+    setVehicles(prev => prev.map(v => v.id === updatedId ? { ...v, fields: { ...v.fields, ...fields } } : v))
+    closeDialog()
+    toast({ title: "רכב עודכן בהצלחה" })
+
     try {
-      const res = await fetch(`/api/company-vehicles/${editingId}?tenant=${tenantId}`, {
+      const res = await fetch(`/api/company-vehicles/${updatedId}?tenant=${tenantId}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fields: buildFields() })
+        body: JSON.stringify({ fields })
       })
       if (!res.ok) throw new Error()
-      if (tableId) await uploadPendingFiles(editingId, tableId)
-      toast({ title: "רכב עודכן בהצלחה" })
-      closeDialog(); fetchVehicles()
+      if (tableId) await uploadPendingFiles(updatedId, tableId)
+      fetchVehicles() // refresh for file URLs
     } catch {
+      setVehicles(prevVehicles)
       toast({ title: "שגיאה", description: "לא ניתן לעדכן רכב", variant: "destructive" })
-    } finally { setIsSaving(false) }
+    }
   }
 
   const handleDelete = async () => {
     if (!editingId) return
+    const prevVehicles = [...vehicles]
+    const deletedId = editingId
+
+    setVehicles(prev => prev.filter(v => v.id !== deletedId))
+    setDeleteConfirmOpen(false); closeDialog()
+    toast({ title: "רכב נמחק" })
+
     try {
-      const res = await fetch(`/api/company-vehicles/${editingId}?tenant=${tenantId}`, { method: "DELETE" })
+      const res = await fetch(`/api/company-vehicles/${deletedId}?tenant=${tenantId}`, { method: "DELETE" })
       if (!res.ok) throw new Error()
-      toast({ title: "רכב נמחק" })
-      setDeleteConfirmOpen(false); closeDialog(); fetchVehicles()
     } catch {
+      setVehicles(prevVehicles)
       toast({ title: "שגיאה", description: "לא ניתן למחוק רכב", variant: "destructive" })
     }
   }

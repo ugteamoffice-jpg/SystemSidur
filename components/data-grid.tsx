@@ -473,6 +473,9 @@ function DataGrid({ schema }: { schema?: any }) {
   }
 
   const updateRecordField = async (recordId: string, fieldKey: string, value: any) => {
+    const prevData = [...data]
+    // Optimistic: update immediately
+    setData(prev => prev.map(rec => rec.id === recordId ? { ...rec, fields: { ...rec.fields, [fieldKey]: value } } : rec))
     try {
       const response = await fetch(`/api/work-schedule?tenant=${tenantId}`, {
         method: "PATCH",
@@ -480,8 +483,7 @@ function DataGrid({ schema }: { schema?: any }) {
         body: JSON.stringify({ recordId, fields: { [fieldKey]: value } })
       });
       if (!response.ok) throw new Error("Update failed");
-      setData(prev => prev.map(rec => rec.id === recordId ? { ...rec, fields: { ...rec.fields, [fieldKey]: value } } : rec));
-    } catch (error) { toast({ title: "שגיאה בעדכון", variant: "destructive" }); fetchData(); }
+    } catch { setData(prevData); toast({ title: "שגיאה בעדכון", variant: "destructive" }) }
   }
 
   // עדכון אופטימיסטי + תור: מעדכן UI מיד, שולח דרך התור ברקע

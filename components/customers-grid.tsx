@@ -151,44 +151,66 @@ export default function CustomersGrid() {
   }
 
   const handleCreateCustomer = async () => {
+    const filteredFields = Object.entries(newCustomer).reduce((acc, [key, value]) => {
+      if (value !== "" && value !== undefined && value !== null) acc[key] = value
+      return acc
+    }, {} as any)
+    filteredFields[STATUS_FIELD_ID] = "פעיל"
+
+    const tempId = "temp_" + Date.now()
+    setCustomers(prev => [{ id: tempId, fields: { ...filteredFields } }, ...prev])
+    setIsDialogOpen(false); resetForm()
+
     try {
-      const filteredFields = Object.entries(newCustomer).reduce((acc, [key, value]) => {
-        if (value !== "" && value !== undefined && value !== null) acc[key] = value
-        return acc
-      }, {} as any)
-      filteredFields[STATUS_FIELD_ID] = "פעיל"
       const response = await fetch(`/api/customers?tenant=${tenantId}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fields: filteredFields }) })
       if (!response.ok) throw new Error("Failed")
       toast({ title: "נוצר בהצלחה" })
-      setIsDialogOpen(false); resetForm(); fetchCustomers();
-    } catch (error) { toast({ title: "שגיאה", description: "נכשל", variant: "destructive" }) }
+      fetchCustomers()
+    } catch {
+      setCustomers(prev => prev.filter(c => c.id !== tempId))
+      toast({ title: "שגיאה", description: "נכשל", variant: "destructive" })
+    }
   }
 
   const handleUpdateCustomer = async () => {
     if (!editingCustomerId) return
+    const prevCustomers = [...customers]
+    const filteredFields = Object.entries(newCustomer).reduce((acc, [key, value]) => {
+      if (value !== "" && value !== undefined && value !== null) acc[key] = value
+      return acc
+    }, {} as any)
+
+    // Optimistic
+    setCustomers(prev => prev.map(c => c.id === editingCustomerId ? { ...c, fields: { ...c.fields, ...filteredFields } } : c))
+    setIsDialogOpen(false); setEditingCustomerId(null); resetForm()
+    toast({ title: "עודכן בהצלחה" })
+
     try {
-      const filteredFields = Object.entries(newCustomer).reduce((acc, [key, value]) => {
-        if (value !== "" && value !== undefined && value !== null) acc[key] = value
-        return acc
-      }, {} as any)
       const response = await fetch(`/api/customers?tenant=${tenantId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recordId: editingCustomerId, fields: filteredFields }) })
       if (!response.ok) throw new Error("Failed")
-      toast({ title: "עודכן בהצלחה" })
-      setIsDialogOpen(false); setEditingCustomerId(null); resetForm();
-      setCustomers(prev => prev.map(c => c.id === editingCustomerId ? { ...c, fields: { ...c.fields, ...filteredFields } } : c));
-    } catch (error) { toast({ title: "שגיאה", description: "נכשל", variant: "destructive" }) }
+    } catch {
+      setCustomers(prevCustomers)
+      toast({ title: "שגיאה", description: "נכשל בעדכון", variant: "destructive" })
+    }
   }
 
   const handleDeleteCustomer = async () => {
     if (!editingCustomerId) return
+    const prevCustomers = [...customers]
+    const toggledId = editingCustomerId
+    const newStatus = (newCustomer[STATUS_FIELD_ID] || "פעיל") === "לא פעיל" ? "פעיל" : "לא פעיל"
+
+    setCustomers(prev => prev.map(c => c.id === toggledId ? { ...c, fields: { ...c.fields, [STATUS_FIELD_ID]: newStatus } } : c))
+    setIsDialogOpen(false); setEditingCustomerId(null); resetForm()
+    toast({ title: "סטטוס עודכן" })
+
     try {
-      const newStatus = (newCustomer[STATUS_FIELD_ID] || "פעיל") === "לא פעיל" ? "פעיל" : "לא פעיל"
-      const response = await fetch(`/api/customers?tenant=${tenantId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recordId: editingCustomerId, fields: { [STATUS_FIELD_ID]: newStatus } }) })
+      const response = await fetch(`/api/customers?tenant=${tenantId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recordId: toggledId, fields: { [STATUS_FIELD_ID]: newStatus } }) })
       if (!response.ok) throw new Error("Failed")
-      setIsDialogOpen(false); setEditingCustomerId(null); resetForm(); 
-      setCustomers(prev => prev.map(c => c.id === editingCustomerId ? { ...c, fields: { ...c.fields, [STATUS_FIELD_ID]: newStatus } } : c));
-      toast({ title: "סטטוס עודכן" })
-    } catch (error) { toast({ title: "שגיאה", description: "נכשל", variant: "destructive" }) }
+    } catch {
+      setCustomers(prevCustomers)
+      toast({ title: "שגיאה", description: "נכשל", variant: "destructive" })
+    }
   }
 
   const handleRowClick = (customer: Customer) => { 

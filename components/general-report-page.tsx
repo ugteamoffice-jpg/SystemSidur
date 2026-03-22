@@ -251,48 +251,76 @@ export function GeneralReportPage() {
 
   const handleBulkDelete = async () => {
     if (selectedIds.size === 0) return
-    setIsUpdating(true)
-    const results = await Promise.all(Array.from(selectedIds).map(id =>
+    const prevData = [...allData]
+    const idsToDelete = new Set(selectedIds)
+    const count = idsToDelete.size
+
+    // Optimistic: remove immediately
+    setAllData(prev => prev.filter(r => !idsToDelete.has(r.id)))
+    setShowDeleteDialog(false); setSelectedIds(new Set()); setIsUpdating(false)
+    toast({ title: `נמחקו ${count} נסיעות` })
+
+    const results = await Promise.all(Array.from(idsToDelete).map(id =>
       requestQueue.add(async () => {
         const res = await fetch(`/api/work-schedule/${id}?tenant=${tenantId}`, { method: "DELETE" })
         return res.ok
       }).catch(() => false)
     ))
     const errors = results.filter(ok => !ok).length
-    setIsUpdating(false); setShowDeleteDialog(false); setSelectedIds(new Set())
-    await applyFilters()
-    errors > 0 ? toast({ title: "שגיאה", description: `נכשלה מחיקת ${errors} נסיעות`, variant: "destructive" })
-               : toast({ title: `נמחקו ${selectedIds.size} נסיעות` })
+    if (errors > 0) {
+      setAllData(prevData)
+      toast({ title: "שגיאה", description: `נכשלה מחיקת ${errors} נסיעות`, variant: "destructive" })
+    }
   }
 
   const handleBulkUpdateDriver = async () => {
     if (!bulkDriverId || selectedIds.size === 0) return
-    setIsUpdating(true)
-    const results = await Promise.all(Array.from(selectedIds).map(id =>
+    const prevData = [...allData]
+    const idsToUpdate = new Set(selectedIds)
+    const count = idsToUpdate.size
+    const driverId = bulkDriverId
+    const driverName = bulkDriverName
+
+    // Optimistic: update immediately
+    setAllData(prev => prev.map(r => idsToUpdate.has(r.id) ? { ...r, fields: { ...r.fields, [WS.DRIVER]: [{ title: driverName }], _driverName: driverName } } : r))
+    setShowDriverDialog(false); setBulkDriverId(""); setBulkDriverName(""); setIsUpdating(false)
+    toast({ title: `עודכן נהג ב-${count} נסיעות` })
+
+    const results = await Promise.all(Array.from(idsToUpdate).map(id =>
       requestQueue.add(async () => {
         const res = await fetch(`/api/work-schedule/${id}?tenant=${tenantId}`, {
           method: "PATCH", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ fields: { [WS.DRIVER]: [bulkDriverId] } })
+          body: JSON.stringify({ fields: { [WS.DRIVER]: [driverId] } })
         }); return res.ok
       }).catch(() => false)
     ))
     const errors = results.filter(ok => !ok).length
-    setIsUpdating(false); setShowDriverDialog(false); setBulkDriverId(""); setBulkDriverName("")
-    await applyFilters()
-    errors > 0 ? toast({ title: "שגיאה", description: `נכשל עדכון ${errors} נסיעות`, variant: "destructive" })
-               : toast({ title: `עודכן נהג ב-${selectedIds.size} נסיעות` })
+    if (errors > 0) {
+      setAllData(prevData)
+      toast({ title: "שגיאה", description: `נכשל עדכון ${errors} נסיעות`, variant: "destructive" })
+    }
   }
 
   const handleBulkUpdatePrices = async () => {
     if (selectedIds.size === 0 || (!updateClient && !updateDriver)) return
-    setIsUpdating(true)
     const fields: Record<string, any> = {}
     if (updateClient && priceClientExcl !== "") fields[WS.PRICE_CLIENT_EXCL] = parseFloat(priceClientExcl) || 0
     if (updateClient && priceClientIncl !== "") fields[WS.PRICE_CLIENT_INCL] = parseFloat(priceClientIncl) || 0
     if (updateDriver && priceDriverExcl !== "") fields[WS.PRICE_DRIVER_EXCL] = parseFloat(priceDriverExcl) || 0
     if (updateDriver && priceDriverIncl !== "") fields[WS.PRICE_DRIVER_INCL] = parseFloat(priceDriverIncl) || 0
-    if (Object.keys(fields).length === 0) { setIsUpdating(false); toast({ title: "שים לב", description: "לא הוזנו ערכים", variant: "destructive" }); return }
-    const results = await Promise.all(Array.from(selectedIds).map(id =>
+    if (Object.keys(fields).length === 0) { toast({ title: "שים לב", description: "לא הוזנו ערכים", variant: "destructive" }); return }
+
+    const prevData = [...allData]
+    const idsToUpdate = new Set(selectedIds)
+    const count = idsToUpdate.size
+
+    // Optimistic: update immediately
+    setAllData(prev => prev.map(r => idsToUpdate.has(r.id) ? { ...r, fields: { ...r.fields, ...fields } } : r))
+    setShowPriceDialog(false); setIsUpdating(false)
+    setPriceClientExcl(""); setPriceClientIncl(""); setPriceDriverExcl(""); setPriceDriverIncl("")
+    toast({ title: `מחירים עודכנו ב-${count} נסיעות` })
+
+    const results = await Promise.all(Array.from(idsToUpdate).map(id =>
       requestQueue.add(async () => {
         const res = await fetch(`/api/work-schedule/${id}?tenant=${tenantId}`, {
           method: "PATCH", headers: { "Content-Type": "application/json" },
@@ -301,11 +329,10 @@ export function GeneralReportPage() {
       }).catch(() => false)
     ))
     const errors = results.filter(ok => !ok).length
-    setIsUpdating(false); setShowPriceDialog(false)
-    setPriceClientExcl(""); setPriceClientIncl(""); setPriceDriverExcl(""); setPriceDriverIncl("")
-    await applyFilters()
-    errors > 0 ? toast({ title: "שגיאה", description: `נכשל עדכון ${errors} נסיעות`, variant: "destructive" })
-               : toast({ title: `מחירים עודכנו ב-${selectedIds.size} נסיעות` })
+    if (errors > 0) {
+      setAllData(prevData)
+      toast({ title: "שגיאה", description: `נכשל עדכון ${errors} נסיעות`, variant: "destructive" })
+    }
   }
 
   const colDefs = [

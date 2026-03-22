@@ -104,74 +104,49 @@ export default function VehiclesGrid() {
   }
 
   const handleCreateVehicle = async () => {
-    try {
-      const filteredFields = Object.entries(newVehicle).reduce((acc, [key, value]) => {
-        if (value !== "" && value !== undefined && value !== null) {
-          acc[key] = value
-        }
-        return acc
-      }, {} as any)
+    const filteredFields = Object.entries(newVehicle).reduce((acc, [key, value]) => {
+      if (value !== "" && value !== undefined && value !== null) acc[key] = value
+      return acc
+    }, {} as any)
 
+    const tempId = "temp_" + Date.now()
+    setVehicles(prev => [{ id: tempId, fields: { ...filteredFields } }, ...prev])
+    setIsDialogOpen(false); resetForm()
+
+    try {
       const response = await fetch(`/api/vehicles?tenant=${tenantId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fields: filteredFields }),
       })
-
-      if (!response.ok) {
-        throw new Error("Failed to create")
-      }
-
-      toast({
-        title: "סוג רכב נוצר בהצלחה",
-      })
-
-      setIsDialogOpen(false)
-      resetForm()
+      if (!response.ok) throw new Error("Failed")
+      toast({ title: "סוג רכב נוצר בהצלחה" })
       fetchVehicles()
-    } catch (error) {
-      console.error("Error creating vehicle:", error)
-      toast({
-        title: "שגיאה",
-        description: "לא ניתן ליצור סוג רכב",
-        variant: "destructive",
-      })
+    } catch {
+      setVehicles(prev => prev.filter(v => v.id !== tempId))
+      toast({ title: "שגיאה", description: "לא ניתן ליצור סוג רכב", variant: "destructive" })
     }
   }
 
   const handleUpdateVehicle = async () => {
     if (!editingVehicleId) return
+    const prevVehicles = [...vehicles]
+    const fields: any = {}
+    if (newVehicle[VEHICLE_TYPE_FIELD_ID]) fields[VEHICLE_TYPE_FIELD_ID] = newVehicle[VEHICLE_TYPE_FIELD_ID]
+    const updatedId = editingVehicleId
+
+    setVehicles(prev => prev.map(v => v.id === updatedId ? { ...v, fields: { ...v.fields, ...fields } } : v))
+    setIsDialogOpen(false); setEditingVehicleId(null); resetForm()
+    toast({ title: "סוג רכב עודכן בהצלחה" })
 
     try {
-      // שליחת רק שדה סוג רכב - שדות מקושרים הם read-only
-      const fields: any = {}
-      if (newVehicle[VEHICLE_TYPE_FIELD_ID]) {
-        fields[VEHICLE_TYPE_FIELD_ID] = newVehicle[VEHICLE_TYPE_FIELD_ID]
-      }
-
-      const response = await fetch(`/api/vehicles/${editingVehicleId}?tenant=${tenantId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch(`/api/vehicles/${updatedId}?tenant=${tenantId}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fields }),
       })
-
-      if (!response.ok) throw new Error("Failed to update")
-
-      toast({
-        title: "סוג רכב עודכן בהצלחה",
-      })
-
-      setIsDialogOpen(false)
-      setEditingVehicleId(null)
-      resetForm()
-      fetchVehicles()
-    } catch (error) {
-      console.error("Error updating vehicle:", error)
-      toast({
-        title: "שגיאה",
-        description: "לא ניתן לעדכן סוג רכב",
-        variant: "destructive",
-      })
+      if (!response.ok) throw new Error("Failed")
+    } catch {
+      setVehicles(prevVehicles)
+      toast({ title: "שגיאה", description: "לא ניתן לעדכן סוג רכב", variant: "destructive" })
     }
   }
 

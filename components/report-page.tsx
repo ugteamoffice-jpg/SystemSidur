@@ -325,7 +325,10 @@ export function ReportPage({ reportType }: ReportPageProps) {
   }, [tenantFields, tenantId])
 
   const bulkUpdateField = React.useCallback(async (ids: string[], fieldKey: string, value: any) => {
-    await Promise.all(ids.map(id =>
+    const prevData = allData.slice()
+    // Optimistic: update immediately
+    setAllData(prev => prev.map(r => ids.includes(r.id) ? { ...r, fields: { ...r.fields, [fieldKey]: value } } : r))
+    const results = await Promise.all(ids.map(id =>
       requestQueue.add(async () => {
         const res = await fetch(`/api/work-schedule/${id}?tenant=${tenantId}`, {
           method: "PATCH",
@@ -333,11 +336,15 @@ export function ReportPage({ reportType }: ReportPageProps) {
           body: JSON.stringify({ fields: { [fieldKey]: value } })
         })
         if (!res.ok) throw new Error(`PATCH failed`)
-      }).catch(() => {})
+        return true
+      }).catch(() => false)
     ))
-    // Update local data
-    setAllData(prev => prev.map(r => ids.includes(r.id) ? { ...r, fields: { ...r.fields, [fieldKey]: value } } : r))
-  }, [tenantId])
+    const failCount = results.filter(ok => !ok).length
+    if (failCount > 0) {
+      setAllData(prevData)
+      toast({ title: `${failCount} רשומות נכשלו בעדכון`, variant: "destructive" })
+    }
+  }, [tenantId, allData])
 
   const handleAssignDriver = React.useCallback(async () => {
     const driver = driversList.find(d => d.id === selectedDriverId)
@@ -518,10 +525,18 @@ export function ReportPage({ reportType }: ReportPageProps) {
   // --- Bulk Update Invoice ---
   const handleBulkUpdateInvoice = async () => {
     if (selectedRowIds.size === 0) return
-    setIsUpdatingInvoice(true)
-
+    const prevData = [...allData]
     const valueToSave = bulkInvoiceNum.trim() === "" ? null : bulkInvoiceNum
     const ids = Array.from(selectedRowIds)
+
+    // Optimistic: update immediately
+    setAllData(prev => prev.map(r => ids.includes(r.id) ? { ...r, fields: { ...r.fields, [INVOICE_FIELD_ID]: valueToSave } } : r))
+    setShowInvoiceDialog(false)
+    const savedInvoiceNum = bulkInvoiceNum
+    setBulkInvoiceNum("")
+    toast({ title: "מספרי החשבונית עודכנו בהצלחה" })
+
+    setIsUpdatingInvoice(true)
     setInvoiceProgress({ current: 0, total: ids.length })
 
     const results = await Promise.all(ids.map((id) =>
@@ -541,17 +556,12 @@ export function ReportPage({ reportType }: ReportPageProps) {
     ))
     const errorCount = results.filter(ok => !ok).length
 
-    await applyFilters()
-
     setIsUpdatingInvoice(false)
     setInvoiceProgress({ current: 0, total: 0 })
-    setShowInvoiceDialog(false)
-    setBulkInvoiceNum("")
 
     if (errorCount > 0) {
+      setAllData(prevData)
       toast({ title: "שגיאה", description: `נכשל בעדכון של ${errorCount} נסיעות`, variant: "destructive" })
-    } else {
-      toast({ title: "מספרי החשבונית עודכנו בהצלחה" })
     }
   }
 
