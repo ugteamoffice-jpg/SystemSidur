@@ -262,7 +262,7 @@ export function GeneralReportPage() {
     setIsUpdating(false); setShowDeleteDialog(false); setSelectedIds(new Set())
     await applyFilters()
     errors > 0 ? toast({ title: "שגיאה", description: `נכשלה מחיקת ${errors} נסיעות`, variant: "destructive" })
-               : toast({ title: "הצלחה", description: `נמחקו ${selectedIds.size} נסיעות` })
+               : toast({ title: `נמחקו ${selectedIds.size} נסיעות` })
   }
 
   const handleBulkUpdateDriver = async () => {
@@ -280,7 +280,7 @@ export function GeneralReportPage() {
     setIsUpdating(false); setShowDriverDialog(false); setBulkDriverId(""); setBulkDriverName("")
     await applyFilters()
     errors > 0 ? toast({ title: "שגיאה", description: `נכשל עדכון ${errors} נסיעות`, variant: "destructive" })
-               : toast({ title: "הצלחה", description: `עודכן נהג ב-${selectedIds.size} נסיעות` })
+               : toast({ title: `עודכן נהג ב-${selectedIds.size} נסיעות` })
   }
 
   const handleBulkUpdatePrices = async () => {
@@ -305,7 +305,7 @@ export function GeneralReportPage() {
     setPriceClientExcl(""); setPriceClientIncl(""); setPriceDriverExcl(""); setPriceDriverIncl("")
     await applyFilters()
     errors > 0 ? toast({ title: "שגיאה", description: `נכשל עדכון ${errors} נסיעות`, variant: "destructive" })
-               : toast({ title: "הצלחה", description: `מחירים עודכנו ב-${selectedIds.size} נסיעות` })
+               : toast({ title: `מחירים עודכנו ב-${selectedIds.size} נסיעות` })
   }
 
   const colDefs = [

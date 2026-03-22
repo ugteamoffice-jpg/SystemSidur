@@ -159,7 +159,7 @@ export default function CustomersGrid() {
       filteredFields[STATUS_FIELD_ID] = "פעיל"
       const response = await fetch(`/api/customers?tenant=${tenantId}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fields: filteredFields }) })
       if (!response.ok) throw new Error("Failed")
-      toast({ title: "הצלחה", description: "נוצר בהצלחה" })
+      toast({ title: "נוצר בהצלחה" })
       setIsDialogOpen(false); resetForm(); fetchCustomers();
     } catch (error) { toast({ title: "שגיאה", description: "נכשל", variant: "destructive" }) }
   }
@@ -173,7 +173,7 @@ export default function CustomersGrid() {
       }, {} as any)
       const response = await fetch(`/api/customers?tenant=${tenantId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recordId: editingCustomerId, fields: filteredFields }) })
       if (!response.ok) throw new Error("Failed")
-      toast({ title: "הצלחה", description: "עודכן בהצלחה" })
+      toast({ title: "עודכן בהצלחה" })
       setIsDialogOpen(false); setEditingCustomerId(null); resetForm();
       setCustomers(prev => prev.map(c => c.id === editingCustomerId ? { ...c, fields: { ...c.fields, ...filteredFields } } : c));
     } catch (error) { toast({ title: "שגיאה", description: "נכשל", variant: "destructive" }) }
@@ -187,7 +187,7 @@ export default function CustomersGrid() {
       if (!response.ok) throw new Error("Failed")
       setIsDialogOpen(false); setEditingCustomerId(null); resetForm(); 
       setCustomers(prev => prev.map(c => c.id === editingCustomerId ? { ...c, fields: { ...c.fields, [STATUS_FIELD_ID]: newStatus } } : c));
-      toast({ title: "הצלחה", description: "סטטוס עודכן" })
+      toast({ title: "סטטוס עודכן" })
     } catch (error) { toast({ title: "שגיאה", description: "נכשל", variant: "destructive" }) }
   }
 

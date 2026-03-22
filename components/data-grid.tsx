@@ -544,7 +544,7 @@ function DataGrid({ schema }: { schema?: any }) {
         toast({ title: `${failCount} נסיעות נכשלו בשיבוץ נהג`, variant: "destructive" })
         fetchData()
       } else {
-        toast({ title: "הצלחה", description: `נהג ${driver.title} שובץ ל-${ids.length} נסיעות` })
+        toast({ title: `נהג ${driver.title} שובץ ל-${ids.length} נסיעות` })
       }
     })
   }
@@ -698,8 +698,7 @@ function DataGrid({ schema }: { schema?: any }) {
       setDuplicateProgress({ current: totalCreated, total: totalOperations })
       
       toast({ 
-        title: "הצלחה", 
-        description: `${totalCreated} נסיעות שוכפלו בהצלחה` 
+        title: `${totalCreated} נסיעות שוכפלו בהצלחה` 
       })
       
       setShowDuplicateDialog(false)

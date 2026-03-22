@@ -123,8 +123,7 @@ export default function VehiclesGrid() {
       }
 
       toast({
-        title: "הצלחה",
-        description: "סוג רכב נוצר בהצלחה",
+        title: "סוג רכב נוצר בהצלחה",
       })
 
       setIsDialogOpen(false)
@@ -159,8 +158,7 @@ export default function VehiclesGrid() {
       if (!response.ok) throw new Error("Failed to update")
 
       toast({
-        title: "הצלחה",
-        description: "סוג רכב עודכן בהצלחה",
+        title: "סוג רכב עודכן בהצלחה",
       })
 
       setIsDialogOpen(false)

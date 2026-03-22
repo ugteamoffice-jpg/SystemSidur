@@ -228,7 +228,7 @@ export default function DriversGrid() {
       const created = await response.json()
       const newId = created?.records?.[0]?.id || created?.id
       if (newId) await uploadContractFile(newId)
-      toast({ title: "הצלחה", description: "נוצר בהצלחה" })
+      toast({ title: "נוצר בהצלחה" })
       setIsDialogOpen(false); setContractFile(null); resetForm(); fetchDrivers();
     } catch (error) { toast({ title: "שגיאה", description: "נכשל", variant: "destructive" }) }
   }
@@ -296,9 +296,9 @@ export default function DriversGrid() {
           })
         }
         setIsUpdatingFuture(false)
-        toast({ title: "הצלחה", description: `הנהג ו-${ridesToUpdate.length} נסיעות עתידיות עודכנו` })
+        toast({ title: `הנהג ו-${ridesToUpdate.length} נסיעות עתידיות עודכנו` })
       } else {
-        toast({ title: "הצלחה", description: "עודכן בהצלחה" })
+        toast({ title: "עודכן בהצלחה" })
       }
 
       if (editingDriverId) await uploadContractFile(editingDriverId)
@@ -313,7 +313,7 @@ export default function DriversGrid() {
     try {
       const response = await fetch(`/api/drivers?tenant=${tenantId}&recordId=${editingDriverId}`, { method: "DELETE" })
       if (!response.ok) throw new Error("Failed")
-      toast({ title: "הצלחה", description: "הנהג נמחק לצמיתות" })
+      toast({ title: "הנהג נמחק לצמיתות" })
       setDeleteConfirmOpen(false)
       setIsDialogOpen(false)
       setEditingDriverId(null)
@@ -330,7 +330,7 @@ export default function DriversGrid() {
       if (!response.ok) throw new Error("Failed")
       setIsDialogOpen(false); setEditingDriverId(null); resetForm(); 
       setDrivers(prev => prev.map(d => d.id === editingDriverId ? { ...d, fields: { ...d.fields, [STATUS_FIELD_ID]: newStatus } } : d));
-      toast({ title: "הצלחה", description: "סטטוס עודכן" })
+      toast({ title: "סטטוס עודכן" })
     } catch (error) { toast({ title: "שגיאה", description: "נכשל", variant: "destructive" }) }
   }
 

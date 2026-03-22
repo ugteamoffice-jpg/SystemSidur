@@ -305,7 +305,7 @@ export function SplitRideDialog({ open, onOpenChange, record, onSplit }: any) {
       // Delete original
       await fetch(`/api/work-schedule?tenant=${tenantId}&id=${record.id}`, { method: 'DELETE' })
 
-      toast({ title: "הצלחה", description: "הנסיעה פוצלה בהצלחה להלוך וחזור" })
+      toast({ title: "הנסיעה פוצלה בהצלחה להלוך וחזור" })
       onOpenChange(false)
       if (onSplit) onSplit()
     } catch (error) {

@@ -68,7 +68,7 @@ export function AdminUsersPage() {
       
       // Show success with credentials
       setCreatedInfo({ username: newUser.username, password: newUser.password })
-      toast({ title: "הצלחה", description: `המשתמש ${newUser.username} נוצר בהצלחה` })
+      toast({ title: `המשתמש ${newUser.username} נוצר בהצלחה` })
       fetchUsers()
     } catch (error: any) {
       toast({ title: "שגיאה", description: error.message || "יצירת המשתמש נכשלה", variant: "destructive" })
@@ -83,7 +83,7 @@ export function AdminUsersPage() {
     try {
       const res = await fetch(`/api/admin/users?tenant=${tenantId}&userId=${deleteConfirm.id}`, { method: "DELETE" })
       if (!res.ok) throw new Error("Failed")
-      toast({ title: "הצלחה", description: "המשתמש הוסר" })
+      toast({ title: "המשתמש הוסר" })
       setDeleteConfirm(null)
       fetchUsers()
     } catch {

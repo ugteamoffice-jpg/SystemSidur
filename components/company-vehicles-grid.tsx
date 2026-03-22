@@ -292,7 +292,7 @@ export default function CompanyVehiclesGrid() {
       const data = await res.json()
       const newId = data.records?.[0]?.id
       if (newId && tableId) await uploadPendingFiles(newId, tableId)
-      toast({ title: "הצלחה", description: "רכב נוסף בהצלחה" })
+      toast({ title: "רכב נוסף בהצלחה" })
       closeDialog(); fetchVehicles()
     } catch {
       toast({ title: "שגיאה", description: "לא ניתן להוסיף רכב", variant: "destructive" })
@@ -309,7 +309,7 @@ export default function CompanyVehiclesGrid() {
       })
       if (!res.ok) throw new Error()
       if (tableId) await uploadPendingFiles(editingId, tableId)
-      toast({ title: "הצלחה", description: "רכב עודכן בהצלחה" })
+      toast({ title: "רכב עודכן בהצלחה" })
       closeDialog(); fetchVehicles()
     } catch {
       toast({ title: "שגיאה", description: "לא ניתן לעדכן רכב", variant: "destructive" })
@@ -321,7 +321,7 @@ export default function CompanyVehiclesGrid() {
     try {
       const res = await fetch(`/api/company-vehicles/${editingId}?tenant=${tenantId}`, { method: "DELETE" })
       if (!res.ok) throw new Error()
-      toast({ title: "הצלחה", description: "רכב נמחק" })
+      toast({ title: "רכב נמחק" })
       setDeleteConfirmOpen(false); closeDialog(); fetchVehicles()
     } catch {
       toast({ title: "שגיאה", description: "לא ניתן למחוק רכב", variant: "destructive" })

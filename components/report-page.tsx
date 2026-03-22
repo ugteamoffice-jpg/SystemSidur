@@ -550,7 +550,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
     if (errorCount > 0) {
       toast({ title: "שגיאה", description: `נכשל בעדכון של ${errorCount} נסיעות`, variant: "destructive" })
     } else {
-      toast({ title: "הצלחה", description: "מספרי החשבונית עודכנו בהצלחה" })
+      toast({ title: "מספרי החשבונית עודכנו בהצלחה" })
     }
   }
 
