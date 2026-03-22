@@ -42,6 +42,9 @@ export function AutoAssignDialog({ open, onOpenChange, currentDate, existingReco
   const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set())
   const [templates, setTemplates] = React.useState<RecurringRide[]>([])
   const [loading, setLoading] = React.useState(false)
+  const [startCalOpen, setStartCalOpen] = React.useState(false)
+  const [endCalOpen, setEndCalOpen] = React.useState(false)
+  const [progress, setProgress] = React.useState({ current: 0, total: 0 })
 
   // Load templates when dialog opens
   React.useEffect(() => {
@@ -104,18 +107,23 @@ export function AutoAssignDialog({ open, onOpenChange, currentDate, existingReco
     try {
       const days = eachDayOfInterval({ start: startDate, end: endDate })
 
+      // חישוב סה"כ פריטים
+      let totalItems = 0
+      for (const day of days) {
+        totalItems += selected.filter(t => t.activeDays.includes(day.getDay())).length
+      }
+      setProgress({ current: 0, total: totalItems })
+      let processed = 0
+
       for (const day of days) {
         const dayOfWeek = day.getDay()
         const dateStr = format(day, "yyyy-MM-dd")
 
-        // Get templates active for this day of week
         const dayTemplates = selected.filter(t => t.activeDays.includes(dayOfWeek))
 
         for (const t of dayTemplates) {
           const settings = getSettingsForDay(t, dayOfWeek)
 
-          // Check for duplicates: same description + pickup time on same date
-          // Check in existing records (for first/current date) and also check API
           const isDuplicate = existingRecords.some(r =>
             r.fields[WS.DATE] === dateStr &&
             r.fields[WS.DESCRIPTION] === t.description &&
@@ -124,6 +132,8 @@ export function AutoAssignDialog({ open, onOpenChange, currentDate, existingReco
 
           if (isDuplicate) {
             skipped++
+            processed++
+            setProgress({ current: processed, total: totalItems })
             continue
           }
 
@@ -156,6 +166,8 @@ export function AutoAssignDialog({ open, onOpenChange, currentDate, existingReco
             body: JSON.stringify(payload)
           })
           if (res.ok) created++
+          processed++
+          setProgress({ current: processed, total: totalItems })
         }
       }
 
@@ -169,6 +181,7 @@ export function AutoAssignDialog({ open, onOpenChange, currentDate, existingReco
       toast({ title: "שגיאה", description: "לא הצלחנו ליצור חלק מהנסיעות", variant: "destructive" })
     } finally {
       setLoading(false)
+      setProgress({ current: 0, total: 0 })
     }
   }
 
@@ -200,7 +213,7 @@ export function AutoAssignDialog({ open, onOpenChange, currentDate, existingReco
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-sm">מתאריך</Label>
-              <Popover>
+              <Popover open={startCalOpen} onOpenChange={setStartCalOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full justify-start text-right text-sm h-9">
                     <CalendarIcon className="ml-2 h-4 w-4" />
@@ -209,7 +222,7 @@ export function AutoAssignDialog({ open, onOpenChange, currentDate, existingReco
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar mode="single" selected={startDate}
-                    onSelect={(d) => d && setStartDate(d)}
+                    onSelect={(d) => { if (d) { setStartDate(d); setStartCalOpen(false) } }}
                     month={startMonth} onMonthChange={setStartMonth}
                     locale={he} dir="rtl" fixedWeeks />
                 </PopoverContent>
@@ -217,7 +230,7 @@ export function AutoAssignDialog({ open, onOpenChange, currentDate, existingReco
             </div>
             <div className="space-y-1">
               <Label className="text-sm">עד תאריך</Label>
-              <Popover>
+              <Popover open={endCalOpen} onOpenChange={setEndCalOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full justify-start text-right text-sm h-9">
                     <CalendarIcon className="ml-2 h-4 w-4" />
@@ -226,7 +239,7 @@ export function AutoAssignDialog({ open, onOpenChange, currentDate, existingReco
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar mode="single" selected={endDate}
-                    onSelect={(d) => d && setEndDate(d)}
+                    onSelect={(d) => { if (d) { setEndDate(d); setEndCalOpen(false) } }}
                     month={endMonth} onMonthChange={setEndMonth}
                     locale={he} dir="rtl" fixedWeeks />
                 </PopoverContent>
@@ -297,6 +310,14 @@ export function AutoAssignDialog({ open, onOpenChange, currentDate, existingReco
         </div>
 
         <DialogFooter className="flex-row-reverse gap-2 mt-2">
+          {loading && progress.total > 0 && (
+            <div className="w-full space-y-1 mb-2">
+              <div className="w-full bg-gray-200 rounded-full h-2.5">
+                <div className="bg-orange-500 h-2.5 rounded-full transition-all duration-200" style={{ width: `${Math.round((progress.current / progress.total) * 100)}%` }} />
+              </div>
+              <p className="text-xs text-muted-foreground text-center">משבץ... {progress.current}/{progress.total}</p>
+            </div>
+          )}
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>ביטול</Button>
           <Button onClick={handleAssign} disabled={loading || selectedIds.size === 0}>
             {loading ? <><Loader2 className="ml-2 h-4 w-4 animate-spin" /> משבץ...</> : <>
