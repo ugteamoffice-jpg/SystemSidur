@@ -177,7 +177,6 @@ export function ReportPage({ reportType }: ReportPageProps) {
         { id: "route", label: "מסלול", width: colWidths.route || 200, render: mkRoute },
         { id: "dropoff", label: "חזור", width: colWidths.dropoff || 80, render: mkDropoff },
         { id: "vehicleType", label: "סוג רכב", width: colWidths.vehicleType || 100, render: mkVehicle },
-        { id: "driver", label: "שם נהג", width: colWidths.driver || 110, render: mkDriver },
         { id: "vehicleNum", label: "מספר רכב", width: colWidths.vehicleNum || 85, render: mkVehicleNum },
         { id: "p3", label: 'נהג לפני מע"מ', width: colWidths.p3 || 100, render: mkP3 },
         { id: "p4", label: 'נהג כולל מע"מ', width: colWidths.p4 || 100, render: mkP4 },
@@ -362,6 +361,10 @@ export function ReportPage({ reportType }: ReportPageProps) {
   }
 
   const applyFilters = async () => {
+    if (reportType === "report-driver" && !tempFilters.driverName.trim()) {
+      toast({ title: "שגיאה", description: "יש לבחור שם נהג", variant: "destructive" })
+      return
+    }
     setFilters(tempFilters)
     setShowFilterDialog(false)
     setSelectedRowIds(new Set()) // איפוס בחירות בחיפוש מחדש
@@ -1054,7 +1057,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label className="font-bold text-sm">שם נהג</Label>
+                <Label className="font-bold text-sm">שם נהג {reportType === "report-driver" && <span className="text-red-500">*</span>}</Label>
                 <div className="relative" ref={driverRef}>
                   <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   <Input placeholder="חפש נהג..." value={tempFilters.driverName}
