@@ -48,7 +48,7 @@ export function AppHeader({ activePage, onPageChange }: AppHeaderProps) {
     if (activePage === page) {
       window.location.reload()
     } else {
-      window.open(window.location.pathname + "?page=" + page, "_blank")
+      window.open(window.location.pathname + "?page=" + page, "luz_" + page)
     }
   }
 
