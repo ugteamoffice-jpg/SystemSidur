@@ -365,6 +365,10 @@ export function ReportPage({ reportType }: ReportPageProps) {
       toast({ title: "שגיאה", description: "יש לבחור שם נהג", variant: "destructive" })
       return
     }
+    if (reportType === "report-customer" && !tempFilters.customerName.trim()) {
+      toast({ title: "שגיאה", description: "יש לבחור שם לקוח", variant: "destructive" })
+      return
+    }
     setFilters(tempFilters)
     setShowFilterDialog(false)
     setSelectedRowIds(new Set()) // איפוס בחירות בחיפוש מחדש
@@ -1035,7 +1039,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
             {/* לקוח + נהג */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="font-bold text-sm">שם לקוח</Label>
+                <Label className="font-bold text-sm">שם לקוח {reportType === "report-customer" && <span className="text-red-500">*</span>}</Label>
                 <div className="relative" ref={customerRef}>
                   <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   <Input placeholder="חפש לקוח..." value={tempFilters.customerName}
