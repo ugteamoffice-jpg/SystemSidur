@@ -77,7 +77,7 @@ export async function GET(request: Request) {
         continue
       }
 
-      const client = createTeableClient(config.apiUrl, apiKey)
+      const client = createTeableClient(config, tenantId)
       const CV = config.fields.companyVehicles
 
       // שלוף את כל רכבי החברה
