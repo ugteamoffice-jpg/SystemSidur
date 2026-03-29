@@ -65,9 +65,10 @@ export async function GET(request: Request) {
       }
 
       // בדוק אם יש מייל מוגדר
-      const alertEmail = process.env.ALERT_EMAIL
+      const rawConfig = JSON.parse(fs.readFileSync(path.join(tenantsDir, file), "utf-8"))
+      const alertEmail = rawConfig.alertEmail
       if (!alertEmail) {
-        results.push({ tenant: tenantId, sent: false, alerts: 0, error: "no ALERT_EMAIL env var" })
+        results.push({ tenant: tenantId, sent: false, alerts: 0, error: "no alertEmail in config" })
         continue
       }
 
