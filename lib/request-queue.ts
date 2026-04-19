@@ -45,7 +45,7 @@ class RequestQueue {
         } catch (e: any) {
           lastError = e
           if (attempt < this.maxRetries) {
-            const backoff = Math.min(500 * Math.pow(2, attempt) + Math.random() * 500, 5000)
+            const backoff = Math.min(1000 * Math.pow(2, attempt) + Math.random() * 500, 8000)
             console.warn(`Request failed (attempt ${attempt + 1}/${this.maxRetries + 1}), retrying in ${Math.round(backoff)}ms...`)
             await new Promise(r => setTimeout(r, backoff))
           }
@@ -66,5 +66,5 @@ class RequestQueue {
 }
 
 // singleton - תור אחד לכל האפליקציה
-// 2 בקשות בו זמנית, 150ms דיליי, 3 ניסיונות חוזרים
-export const requestQueue = new RequestQueue(2, 150, 3)
+// בקשה אחת בכל פעם, 300ms דיליי, 4 ניסיונות חוזרים
+export const requestQueue = new RequestQueue(1, 300, 4)
