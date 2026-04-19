@@ -160,19 +160,29 @@ export function AutoAssignDialog({ open, onOpenChange, currentDate, existingReco
           }
           Object.keys(payload.fields).forEach(k => payload.fields[k] === undefined && delete payload.fields[k])
 
-          const res = await fetch(`/api/work-schedule?tenant=${tenantId}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-          })
-          if (res.ok) created++
+          let res: Response | null = null
+          for (let attempt = 0; attempt < 3; attempt++) {
+            res = await fetch(`/api/work-schedule?tenant=${tenantId}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload)
+            })
+            if (res.ok) { created++; break }
+            // נכשל — חכה וננסה שוב
+            await new Promise(r => setTimeout(r, 500 * (attempt + 1)))
+          }
+          if (res && !res.ok) { const errText = await res.text().catch(() => ""); console.warn(`Auto-assign POST failed after retries ${res.status}:`, errText) }
           processed++
           setProgress({ current: processed, total: totalItems })
+          // השהיה קצרה למניעת עומס על השרת
+          await new Promise(r => setTimeout(r, 250))
         }
       }
 
+      const failed = processed - created - skipped
       const parts = [`נוצרו ${created} נסיעות`]
       if (skipped > 0) parts.push(`${skipped} דולגו (כפילויות)`)
+      if (failed > 0) parts.push(`${failed} נכשלו`)
       toast({ title: "שיבוץ הושלם", description: parts.join(", ") })
       onOpenChange(false)
       onComplete()

@@ -4,7 +4,7 @@
  */
 
 const WINDOW_MS = 60 * 1000  // חלון של דקה
-const MAX_REQUESTS = 300      // מקסימום 300 בקשות לדקה לכל IP
+const MAX_REQUESTS = 600      // מקסימום 600 בקשות לדקה לכל IP
 
 interface RateEntry {
   count: number
