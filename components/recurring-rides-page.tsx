@@ -185,10 +185,6 @@ export function RecurringRidesPage() {
       toast({ title: "שגיאה", description: "יש למלא לקוח ומסלול", variant: "destructive" })
       return
     }
-    if (!form.defaults.pickupTime) {
-      toast({ title: "שגיאה", description: "יש למלא שעת התייצבות", variant: "destructive" })
-      return
-    }
     if (form.activeDays.length === 0) {
       toast({ title: "שגיאה", description: "יש לבחור לפחות יום אחד", variant: "destructive" })
       return
@@ -288,7 +284,7 @@ export function RecurringRidesPage() {
           {hasOverride && (
             <button onClick={() => clearDayOverride(day)}
               className="text-xs text-red-500 hover:underline">
-              אפס לברירת מחדל
+              אפס הגדרות יום
             </button>
           )}
         </div>
@@ -345,6 +341,18 @@ export function RecurringRidesPage() {
             <Label className="text-xs">מחיר נהג כולל מע״מ</Label>
             <Input type="number" value={getDayVal(day, "driverIncl")}
               onChange={e => setDayVat(day, e.target.value, "incl", "driver")} className="h-9 font-bold" />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <Label className="text-xs">הערות מנהל</Label>
+            <Textarea value={getDayVal(day, "managerNotes")}
+              onChange={e => setDayOverride(day, "managerNotes", e.target.value)} className="text-right text-sm" rows={2} />
+          </div>
+          <div>
+            <Label className="text-xs">הערות נהג</Label>
+            <Textarea value={getDayVal(day, "driverNotes")}
+              onChange={e => setDayOverride(day, "driverNotes", e.target.value)} className="text-right text-sm" rows={2} />
           </div>
         </div>
       </div>
@@ -575,65 +583,6 @@ export function RecurringRidesPage() {
                 <div className="space-y-1">
                   <Label>תיאור (מסלול) *</Label>
                   <Textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} className="text-right" />
-                </div>
-
-                {/* ברירת מחדל */}
-                <div className="border-t pt-3 space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">ברירת מחדל (לכל הימים)</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label>שעת התייצבות *</Label>
-                      <Input type="time" value={form.defaults.pickupTime}
-                        onChange={e => setForm(p => ({ ...p, defaults: { ...p.defaults, pickupTime: e.target.value } }))} />
-                    </div>
-                    <div className="space-y-1">
-                      <Label>שעת חזור</Label>
-                      <Input type="time" value={form.defaults.dropoffTime}
-                        onChange={e => setForm(p => ({ ...p, defaults: { ...p.defaults, dropoffTime: e.target.value } }))} />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="space-y-1">
-                      <Label>סוג רכב</Label>
-                      <AutoComplete options={lists.vehicles} value={form.defaults.vehicleTypeName}
-                        onChange={(v: string) => setForm(p => ({ ...p, defaults: { ...p.defaults, vehicleTypeName: v, vehicleTypeId: "" } }))}
-                        onSelect={(o: ListItem) => setForm(p => ({ ...p, defaults: { ...p.defaults, vehicleTypeName: o.title, vehicleTypeId: o.id } }))}
-                        placeholder="" />
-                    </div>
-                    <div className="space-y-1">
-                      <Label>נהג</Label>
-                      <AutoComplete options={lists.drivers} value={form.defaults.driverName}
-                        onChange={(v: string) => setForm(p => ({ ...p, defaults: { ...p.defaults, driverName: v, driverId: "" } }))}
-                        onSelect={(o: ListItem) => setForm(p => ({ ...p, defaults: { ...p.defaults, driverName: o.title, driverId: o.id } }))}
-                        placeholder="" />
-                    </div>
-                    <div className="space-y-1">
-                      <Label>מס׳ רכב</Label>
-                      <Input value={form.defaults.vehicleNum}
-                        onChange={e => setForm(p => ({ ...p, defaults: { ...p.defaults, vehicleNum: e.target.value } }))} className="text-right" />
-                    </div>
-                  </div>
-                  {/* מחירים ברירת מחדל */}
-                  <div className="grid grid-cols-4 gap-2">
-                    <div><Label className="text-xs">מחיר לקוח לפני מע״מ</Label><Input type="number" value={form.defaults.clientExcl}
-                      onChange={e => setForm(p => ({ ...p, defaults: calcVat(e.target.value, "excl", "client", p.defaults) }))} className="h-8 text-sm" /></div>
-                    <div><Label className="text-xs">מחיר לקוח כולל מע״מ</Label><Input type="number" value={form.defaults.clientIncl}
-                      onChange={e => setForm(p => ({ ...p, defaults: calcVat(e.target.value, "incl", "client", p.defaults) }))} className="h-8 text-sm font-bold" /></div>
-                    <div><Label className="text-xs">מחיר נהג לפני מע״מ</Label><Input type="number" value={form.defaults.driverExcl}
-                      onChange={e => setForm(p => ({ ...p, defaults: calcVat(e.target.value, "excl", "driver", p.defaults) }))} className="h-8 text-sm" /></div>
-                    <div><Label className="text-xs">מחיר נהג כולל מע״מ</Label><Input type="number" value={form.defaults.driverIncl}
-                      onChange={e => setForm(p => ({ ...p, defaults: calcVat(e.target.value, "incl", "driver", p.defaults) }))} className="h-8 text-sm font-bold" /></div>
-                  </div>
-                  <div className="space-y-1">
-                    <Label>הערות מנהל</Label>
-                    <Textarea value={form.defaults.managerNotes}
-                      onChange={e => setForm(p => ({ ...p, defaults: { ...p.defaults, managerNotes: e.target.value } }))} className="text-right" rows={2} />
-                  </div>
-                  <div className="space-y-1">
-                    <Label>הערות נהג</Label>
-                    <Textarea value={form.defaults.driverNotes}
-                      onChange={e => setForm(p => ({ ...p, defaults: { ...p.defaults, driverNotes: e.target.value } }))} className="text-right" rows={2} />
-                  </div>
                 </div>
 
                 {/* פרטי מזמין */}
