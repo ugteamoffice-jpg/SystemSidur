@@ -101,24 +101,17 @@ export function AutoAssignDialog({ open, onOpenChange, currentDate, existingReco
     }
 
     setLoading(true)
-    let created = 0
     let skipped = 0
 
     try {
       const days = eachDayOfInterval({ start: startDate, end: endDate })
 
-      // חישוב סה"כ פריטים
-      let totalItems = 0
-      for (const day of days) {
-        totalItems += selected.filter(t => t.activeDays.includes(day.getDay())).length
-      }
-      setProgress({ current: 0, total: totalItems })
-      let processed = 0
+      // אסוף את כל הנסיעות ליצירה
+      const ridesToCreate: any[] = []
 
       for (const day of days) {
         const dayOfWeek = day.getDay()
         const dateStr = format(day, "yyyy-MM-dd")
-
         const dayTemplates = selected.filter(t => t.activeDays.includes(dayOfWeek))
 
         for (const t of dayTemplates) {
@@ -132,57 +125,56 @@ export function AutoAssignDialog({ open, onOpenChange, currentDate, existingReco
 
           if (isDuplicate) {
             skipped++
-            processed++
-            setProgress({ current: processed, total: totalItems })
             continue
           }
 
-          const payload: any = {
-            fields: {
-              [WS.DATE]: dateStr,
-              [WS.DESCRIPTION]: t.description,
-              [WS.PICKUP_TIME]: settings.pickupTime || null,
-              [WS.DROPOFF_TIME]: settings.dropoffTime || null,
-              [WS.VEHICLE_NUM]: settings.vehicleNum || null,
-              [WS.MANAGER_NOTES]: settings.managerNotes || null,
-              [WS.DRIVER_NOTES]: settings.driverNotes || null,
-              [WS.ORDER_NAME]: t.orderName || null,
-              [WS.MOBILE]: t.mobile || null,
-              [WS.ID_NUM]: t.idNum ? Number(t.idNum) : null,
-              [WS.PRICE_CLIENT_EXCL]: settings.clientExcl ? parseFloat(settings.clientExcl) : null,
-              [WS.PRICE_CLIENT_INCL]: settings.clientIncl ? parseFloat(settings.clientIncl) : null,
-              [WS.PRICE_DRIVER_EXCL]: settings.driverExcl ? parseFloat(settings.driverExcl) : null,
-              [WS.PRICE_DRIVER_INCL]: settings.driverIncl ? parseFloat(settings.driverIncl) : null,
-              [WS.CUSTOMER]: t.customerId ? [t.customerId] : null,
-              [WS.DRIVER]: settings.driverId ? [settings.driverId] : null,
-              [WS.VEHICLE_TYPE]: settings.vehicleTypeId ? [settings.vehicleTypeId] : null,
-            }
+          const fields: any = {
+            [WS.DATE]: dateStr,
+            [WS.DESCRIPTION]: t.description,
+            [WS.PICKUP_TIME]: settings.pickupTime || null,
+            [WS.DROPOFF_TIME]: settings.dropoffTime || null,
+            [WS.VEHICLE_NUM]: settings.vehicleNum || null,
+            [WS.MANAGER_NOTES]: settings.managerNotes || null,
+            [WS.DRIVER_NOTES]: settings.driverNotes || null,
+            [WS.ORDER_NAME]: t.orderName || null,
+            [WS.MOBILE]: t.mobile || null,
+            [WS.ID_NUM]: t.idNum ? Number(t.idNum) : null,
+            [WS.PRICE_CLIENT_EXCL]: settings.clientExcl ? parseFloat(settings.clientExcl) : null,
+            [WS.PRICE_CLIENT_INCL]: settings.clientIncl ? parseFloat(settings.clientIncl) : null,
+            [WS.PRICE_DRIVER_EXCL]: settings.driverExcl ? parseFloat(settings.driverExcl) : null,
+            [WS.PRICE_DRIVER_INCL]: settings.driverIncl ? parseFloat(settings.driverIncl) : null,
+            [WS.CUSTOMER]: t.customerId ? [t.customerId] : null,
+            [WS.DRIVER]: settings.driverId ? [settings.driverId] : null,
+            [WS.VEHICLE_TYPE]: settings.vehicleTypeId ? [settings.vehicleTypeId] : null,
           }
-          Object.keys(payload.fields).forEach(k => payload.fields[k] === undefined && delete payload.fields[k])
-
-          let res: Response | null = null
-          for (let attempt = 0; attempt < 3; attempt++) {
-            res = await fetch(`/api/work-schedule?tenant=${tenantId}`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload)
-            })
-            if (res.ok) { created++; break }
-            // נכשל — חכה וננסה שוב
-            await new Promise(r => setTimeout(r, 500 * (attempt + 1)))
-          }
-          if (res && !res.ok) { const errText = await res.text().catch(() => ""); console.warn(`Auto-assign POST failed after retries ${res.status}:`, errText) }
-          processed++
-          setProgress({ current: processed, total: totalItems })
-          // השהיה קצרה למניעת עומס על השרת
-          await new Promise(r => setTimeout(r, 250))
+          Object.keys(fields).forEach(k => fields[k] === undefined && delete fields[k])
+          ridesToCreate.push({ fields })
         }
       }
 
-      const failed = processed - created - skipped
-      const parts = [`נוצרו ${created} נסיעות`]
+      setProgress({ current: 0, total: ridesToCreate.length })
+
+      if (ridesToCreate.length === 0) {
+        toast({ title: "שיבוץ הושלם", description: skipped > 0 ? `${skipped} דולגו (כפילויות)` : "אין נסיעות חדשות ליצירה" })
+        onOpenChange(false)
+        onComplete()
+        return
+      }
+
+      // שליחה אחת לשרת — השרת יוצר אחת אחת
+      const res = await fetch(`/api/bulk-create?tenant=${tenantId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rides: ridesToCreate })
+      })
+
+      if (!res.ok) throw new Error("Bulk create failed")
+      const result = await res.json()
+      setProgress({ current: result.created + (result.failed || 0), total: ridesToCreate.length })
+
+      const parts = [`נוצרו ${result.created} נסיעות`]
       if (skipped > 0) parts.push(`${skipped} דולגו (כפילויות)`)
-      if (failed > 0) parts.push(`${failed} נכשלו`)
+      if (result.failed > 0) parts.push(`${result.failed} נכשלו`)
       toast({ title: "שיבוץ הושלם", description: parts.join(", ") })
       onOpenChange(false)
       onComplete()
