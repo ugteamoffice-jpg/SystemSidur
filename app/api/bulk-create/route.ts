@@ -29,7 +29,7 @@ export async function POST(request: Request) {
             'Authorization': `Bearer ${apiKey}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ fields: rides[i].fields }),
+          body: JSON.stringify({ fieldKeyType: "name", typecast: true, records: [{ fields: rides[i].fields }] }),
         });
 
         if (res.ok) {
