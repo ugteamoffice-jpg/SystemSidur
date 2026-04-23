@@ -737,17 +737,11 @@ function DataGrid({ schema }: { schema?: any }) {
   // Delayed fetch to allow Teable to commit changes before re-reading
   const fetchDataAfterSave = React.useCallback(async () => {
     const scrollTop = tableScrollRef.current?.scrollTop || 0
-    console.log('[fetchDataAfterSave] Waiting 800ms for Teable commit...')
     await new Promise(r => setTimeout(r, 800))
-    console.log('[fetchDataAfterSave] First fetch attempt...')
-    await fetchData()
-    requestAnimationFrame(() => { if (tableScrollRef.current) tableScrollRef.current.scrollTop = scrollTop })
-    // Retry after 2 seconds in case of eventual consistency
-    setTimeout(async () => {
-      console.log('[fetchDataAfterSave] Retry fetch...')
+    try {
       await fetchData()
       requestAnimationFrame(() => { if (tableScrollRef.current) tableScrollRef.current.scrollTop = scrollTop })
-    }, 2000)
+    } catch {}
   }, [])
 
 
