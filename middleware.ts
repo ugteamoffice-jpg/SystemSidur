@@ -1,5 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
+import fs from 'fs'
+import path from 'path'
 
 // רק דפי התחברות הם public — כל השאר (כולל API) דורש auth
 const isPublicRoute = createRouteMatcher([
@@ -8,9 +10,47 @@ const isPublicRoute = createRouteMatcher([
   '/api/cron/(.*)',
 ])
 
+// טעינת מיפוי orgId → tenantId
+let orgToTenant: Record<string, string> = {}
+try {
+  const tenantsDir = path.join(process.cwd(), 'config', 'tenants')
+  const files = fs.readdirSync(tenantsDir).filter(f => f.endsWith('.json'))
+  for (const file of files) {
+    const config = JSON.parse(fs.readFileSync(path.join(tenantsDir, file), 'utf-8'))
+    if (config.clerkOrgId) {
+      orgToTenant[config.clerkOrgId] = config.id
+    }
+  }
+} catch {}
+
 export default clerkMiddleware(async (auth, req) => {
   const url = req.nextUrl
   const pathParts = url.pathname.split('/').filter(Boolean)
+
+  // בדיקת auth — כל route שאינו public דורש התחברות
+  if (!isPublicRoute(req)) {
+    const { userId, orgId } = await auth()
+    if (!userId) {
+      // API route — החזר 401 במקום redirect
+      if (pathParts[0] === 'api') {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+      const signInUrl = new URL('/sign-in', req.url)
+      signInUrl.searchParams.set('redirect_url', req.url)
+      return NextResponse.redirect(signInUrl)
+    }
+
+    // אם המשתמש מגיע ל-root — הפנה לטננט הנכון לפי הארגון שלו
+    if (pathParts.length === 0 || (pathParts.length === 1 && pathParts[0] === '')) {
+      if (orgId && orgToTenant[orgId]) {
+        const tenantUrl = new URL(`/${orgToTenant[orgId]}`, req.url)
+        return NextResponse.redirect(tenantUrl)
+      }
+      // fallback — אם אין orgId, הפנה לטננט ברירת מחדל
+      const tenantUrl = new URL('/UrbanTours', req.url)
+      return NextResponse.redirect(tenantUrl)
+    }
+  }
 
   // שליפת tenant
   let tenantId = 'UrbanTours'
@@ -31,20 +71,6 @@ export default clerkMiddleware(async (auth, req) => {
     if (!tenantId) tenantId = 'UrbanTours'
   } else {
     tenantId = pathParts[0] || 'UrbanTours'
-  }
-
-  // בדיקת auth — כל route שאינו public דורש התחברות
-  if (!isPublicRoute(req)) {
-    const { userId } = await auth()
-    if (!userId) {
-      // API route — החזר 401 במקום redirect
-      if (pathParts[0] === 'api') {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-      }
-      const signInUrl = new URL('/sign-in', req.url)
-      signInUrl.searchParams.set('redirect_url', req.url)
-      return NextResponse.redirect(signInUrl)
-    }
   }
 
   const response = NextResponse.next()
