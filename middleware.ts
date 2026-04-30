@@ -1,7 +1,5 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
-import fs from 'fs'
-import path from 'path'
 
 // רק דפי התחברות הם public — כל השאר (כולל API) דורש auth
 const isPublicRoute = createRouteMatcher([
@@ -10,18 +8,11 @@ const isPublicRoute = createRouteMatcher([
   '/api/cron/(.*)',
 ])
 
-// טעינת מיפוי orgId → tenantId
-let orgToTenant: Record<string, string> = {}
-try {
-  const tenantsDir = path.join(process.cwd(), 'config', 'tenants')
-  const files = fs.readdirSync(tenantsDir).filter(f => f.endsWith('.json'))
-  for (const file of files) {
-    const config = JSON.parse(fs.readFileSync(path.join(tenantsDir, file), 'utf-8'))
-    if (config.clerkOrgId) {
-      orgToTenant[config.clerkOrgId] = config.id
-    }
-  }
-} catch {}
+// מיפוי orgId → tenantId
+const orgToTenant: Record<string, string> = {
+  'org_39lR1eqB9RpLJdKts5F4rk7b2lc': 'UrbanTours',
+  'org_39lR4XBEVZ4dLgPs8CulhYhXBlK': 'VikoLahyani',
+}
 
 export default clerkMiddleware(async (auth, req) => {
   const url = req.nextUrl
