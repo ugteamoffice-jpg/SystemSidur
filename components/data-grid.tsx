@@ -510,7 +510,6 @@ function DataGrid({ schema }: { schema?: any }) {
     operationQueue.flushNow().then(() => {
       toast({ title: `נהג ${driver.title} שובץ ל-${ids.length} נסיעות` })
     })
-    })
   }
 
   const handleDeleteSelected = async () => {
