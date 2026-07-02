@@ -252,52 +252,56 @@ export function GeneralReportPage() {
   const handleBulkDelete = async () => {
     if (selectedIds.size === 0) return
     const prevData = [...allData]
-    const idsToDelete = new Set(selectedIds)
-    const count = idsToDelete.size
+    const idsToDelete = Array.from(selectedIds)
+    const count = idsToDelete.length
 
     // Optimistic: remove immediately
-    setAllData(prev => prev.filter(r => !idsToDelete.has(r.id)))
+    setAllData(prev => prev.filter(r => !selectedIds.has(r.id)))
     setShowDeleteDialog(false); setSelectedIds(new Set()); setIsUpdating(false)
     toast({ title: `נמחקו ${count} נסיעות` })
 
-    const results = await Promise.all(Array.from(idsToDelete).map(id =>
-      requestQueue.add(async () => {
-        const res = await fetch(`/api/work-schedule/${id}?tenant=${tenantId}`, { method: "DELETE" })
-        return res.ok
-      }).catch(() => false)
-    ))
-    const errors = results.filter(ok => !ok).length
-    if (errors > 0) {
+    try {
+      const res = await fetch(`/api/bulk-update?tenant=${tenantId}`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ operations: idsToDelete.map(id => ({ type: "delete", recordId: id })) })
+      })
+      const result = await res.json()
+      if (result.failed > 0) {
+        setAllData(prevData)
+        toast({ title: "שגיאה", description: `נכשלה מחיקת ${result.failed} נסיעות`, variant: "destructive" })
+      }
+    } catch {
       setAllData(prevData)
-      toast({ title: "שגיאה", description: `נכשלה מחיקת ${errors} נסיעות`, variant: "destructive" })
+      toast({ title: "שגיאה", description: "נכשלה מחיקה", variant: "destructive" })
     }
   }
 
   const handleBulkUpdateDriver = async () => {
     if (!bulkDriverId || selectedIds.size === 0) return
     const prevData = [...allData]
-    const idsToUpdate = new Set(selectedIds)
-    const count = idsToUpdate.size
+    const idsToUpdate = Array.from(selectedIds)
+    const count = idsToUpdate.length
     const driverId = bulkDriverId
     const driverName = bulkDriverName
 
     // Optimistic: update immediately
-    setAllData(prev => prev.map(r => idsToUpdate.has(r.id) ? { ...r, fields: { ...r.fields, [WS.DRIVER]: [{ title: driverName }], _driverName: driverName } } : r))
+    setAllData(prev => prev.map(r => selectedIds.has(r.id) ? { ...r, fields: { ...r.fields, [WS.DRIVER]: [{ title: driverName }], _driverName: driverName } } : r))
     setShowDriverDialog(false); setBulkDriverId(""); setBulkDriverName(""); setIsUpdating(false)
     toast({ title: `עודכן נהג ב-${count} נסיעות` })
 
-    const results = await Promise.all(Array.from(idsToUpdate).map(id =>
-      requestQueue.add(async () => {
-        const res = await fetch(`/api/work-schedule/${id}?tenant=${tenantId}`, {
-          method: "PATCH", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ fields: { [WS.DRIVER]: [driverId] } })
-        }); return res.ok
-      }).catch(() => false)
-    ))
-    const errors = results.filter(ok => !ok).length
-    if (errors > 0) {
+    try {
+      const res = await fetch(`/api/bulk-update?tenant=${tenantId}`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ operations: idsToUpdate.map(id => ({ type: "update", recordId: id, fields: { [WS.DRIVER]: [driverId] } })) })
+      })
+      const result = await res.json()
+      if (result.failed > 0) {
+        setAllData(prevData)
+        toast({ title: "שגיאה", description: `נכשל עדכון ${result.failed} נסיעות`, variant: "destructive" })
+      }
+    } catch {
       setAllData(prevData)
-      toast({ title: "שגיאה", description: `נכשל עדכון ${errors} נסיעות`, variant: "destructive" })
+      toast({ title: "שגיאה", description: "נכשל עדכון", variant: "destructive" })
     }
   }
 
@@ -311,27 +315,28 @@ export function GeneralReportPage() {
     if (Object.keys(fields).length === 0) { toast({ title: "שים לב", description: "לא הוזנו ערכים", variant: "destructive" }); return }
 
     const prevData = [...allData]
-    const idsToUpdate = new Set(selectedIds)
-    const count = idsToUpdate.size
+    const idsToUpdate = Array.from(selectedIds)
+    const count = idsToUpdate.length
 
     // Optimistic: update immediately
-    setAllData(prev => prev.map(r => idsToUpdate.has(r.id) ? { ...r, fields: { ...r.fields, ...fields } } : r))
+    setAllData(prev => prev.map(r => selectedIds.has(r.id) ? { ...r, fields: { ...r.fields, ...fields } } : r))
     setShowPriceDialog(false); setIsUpdating(false)
     setPriceClientExcl(""); setPriceClientIncl(""); setPriceDriverExcl(""); setPriceDriverIncl("")
     toast({ title: `מחירים עודכנו ב-${count} נסיעות` })
 
-    const results = await Promise.all(Array.from(idsToUpdate).map(id =>
-      requestQueue.add(async () => {
-        const res = await fetch(`/api/work-schedule/${id}?tenant=${tenantId}`, {
-          method: "PATCH", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ fields })
-        }); return res.ok
-      }).catch(() => false)
-    ))
-    const errors = results.filter(ok => !ok).length
-    if (errors > 0) {
+    try {
+      const res = await fetch(`/api/bulk-update?tenant=${tenantId}`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ operations: idsToUpdate.map(id => ({ type: "update", recordId: id, fields })) })
+      })
+      const result = await res.json()
+      if (result.failed > 0) {
+        setAllData(prevData)
+        toast({ title: "שגיאה", description: `נכשל עדכון ${result.failed} נסיעות`, variant: "destructive" })
+      }
+    } catch {
       setAllData(prevData)
-      toast({ title: "שגיאה", description: `נכשל עדכון ${errors} נסיעות`, variant: "destructive" })
+      toast({ title: "שגיאה", description: "נכשל עדכון", variant: "destructive" })
     }
   }
 

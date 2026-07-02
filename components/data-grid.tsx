@@ -17,7 +17,7 @@ import {
 import { Calendar as CalendarIcon, LayoutDashboard, AlertCircle, CheckCircle2, UserMinus, Trash2, Loader2, ChevronLeft, ChevronRight, CalendarCheck } from "lucide-react"
 import { format } from "date-fns"
 import { he } from "date-fns/locale"
-import { requestQueue } from "@/lib/request-queue"
+import { operationQueue } from "@/lib/operation-queue"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -273,6 +273,7 @@ function createColumns(WS: any): ColumnDef<WorkScheduleRecord>[] {
 function DataGrid({ schema }: { schema?: any }) {
   const fields = useTenantFields()
   const { tenantId } = useTenant()
+  React.useEffect(() => { operationQueue.setTenant(tenantId) }, [tenantId])
   const COLUMN_SIZING_KEY = `workScheduleColumnSizing_${tenantId}`
   const COLUMN_ORDER_KEY  = `workScheduleColumnOrder_${tenantId}`
   const COLUMN_VISIBILITY_KEY = `workScheduleColumnVisibility_${tenantId}`
@@ -473,47 +474,24 @@ function DataGrid({ schema }: { schema?: any }) {
   }
 
   const updateRecordField = async (recordId: string, fieldKey: string, value: any) => {
-    const prevData = [...data]
     // Optimistic: update immediately
     setData(prev => prev.map(rec => rec.id === recordId ? { ...rec, fields: { ...rec.fields, [fieldKey]: value } } : rec))
-    try {
-      const response = await fetch(`/api/work-schedule?tenant=${tenantId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ recordId, fields: { [fieldKey]: value } })
-      });
-      if (!response.ok) throw new Error("Update failed");
-    } catch { setData(prevData); toast({ title: "שגיאה בעדכון", variant: "destructive" }) }
+    // נכנס לתור — יישלח עם שאר הפעולות
+    operationQueue.add({ type: "update", recordId, fields: { [fieldKey]: value } })
   }
 
-  // עדכון אופטימיסטי + תור: מעדכן UI מיד, שולח דרך התור ברקע
+  // עדכון אופטימיסטי + תור פעולות
   const bulkUpdateField = (records: any[], fieldKey: string, value: any) => {
     const ids = records.map(r => r.original.id)
-    // עדכון UI מיידי
     setData(prev => prev.map(rec => ids.includes(rec.id) ? { ...rec, fields: { ...rec.fields, [fieldKey]: value } } : rec))
     setRowSelection({})
-    // שרת ברקע דרך התור
-    Promise.all(ids.map(id =>
-      requestQueue.add(async () => {
-        const res = await fetch(`/api/work-schedule?tenant=${tenantId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ recordId: id, fields: { [fieldKey]: value } })
-        })
-        if (!res.ok) throw new Error(`PATCH failed: ${res.status}`)
-        return true
-      }).catch(() => false)
-    )).then(results => {
-      const failCount = results.filter(ok => !ok).length
-      if (failCount > 0) {
-        toast({ title: `${failCount} רשומות נכשלו בעדכון`, variant: "destructive" })
-        fetchData()
-      }
-    })
+    ids.forEach(id => operationQueue.add({ type: "update", recordId: id, fields: { [fieldKey]: value } }))
+    // שליחה מיידית כי זה bulk
+    operationQueue.flushNow()
   }
 
   const fetchDriversList = async () => {
-    driverNamesRef.current = new Map() // force reload
+    driverNamesRef.current = new Map()
     await loadDriversIfNeeded()
   }
 
@@ -523,31 +501,15 @@ function DataGrid({ schema }: { schema?: any }) {
     if (!driver) return
     const selectedRows = table.getFilteredSelectedRowModel().rows
     const ids = selectedRows.map(r => r.original.id)
-    // עדכון UI מיידי
     setData(prev => prev.map(rec => ids.includes(rec.id) ? { ...rec, fields: { ...rec.fields, [WS.DRIVER]: [{ id: driver.id, title: driver.title }], _driverFullName: driver.title } } : rec))
     setRowSelection({})
     setShowDriverAssignDialog(false)
     setSelectedDriverId("")
     setDriverSearch("")
-    // שרת ברקע
-    Promise.all(ids.map(id =>
-      requestQueue.add(async () => {
-        const res = await fetch(`/api/work-schedule?tenant=${tenantId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ recordId: id, fields: { [WS.DRIVER]: [driver.id] } })
-        })
-        if (!res.ok) throw new Error(`PATCH failed: ${res.status}`)
-        return true
-      }).catch(() => false)
-    )).then(results => {
-      const failCount = results.filter(ok => !ok).length
-      if (failCount > 0) {
-        toast({ title: `${failCount} נסיעות נכשלו בשיבוץ נהג`, variant: "destructive" })
-        fetchData()
-      } else {
-        toast({ title: `נהג ${driver.title} שובץ ל-${ids.length} נסיעות` })
-      }
+    ids.forEach(id => operationQueue.add({ type: "update", recordId: id, fields: { [WS.DRIVER]: [driver.id] } }))
+    operationQueue.flushNow().then(() => {
+      toast({ title: `נהג ${driver.title} שובץ ל-${ids.length} נסיעות` })
+    })
     })
   }
 
@@ -561,28 +523,8 @@ function DataGrid({ schema }: { schema?: any }) {
     setRowSelection({})
     setShowDeleteDialog(false)
     
-    // מחיקה בקבוצות של 10 (batch delete)
-    const chunkSize = 10
-    let failCount = 0
-    for (let i = 0; i < idsToDelete.length; i += chunkSize) {
-      const chunk = idsToDelete.slice(i, i + chunkSize)
-      try {
-        const ok = await requestQueue.add(async () => {
-          const params = new URLSearchParams()
-          params.set('tenant', tenantId)
-          chunk.forEach(id => params.append('id', id))
-          const res = await fetch(`/api/work-schedule?${params.toString()}`, { method: "DELETE" })
-          if (!res.ok) throw new Error(`Delete failed: ${res.status}`)
-          return true
-        })
-        if (!ok) failCount += chunk.length
-      } catch { failCount += chunk.length }
-    }
-    
-    if (failCount > 0) {
-      toast({ title: `${failCount} נסיעות נכשלו במחיקה`, variant: "destructive" })
-      fetchData()
-    }
+    idsToDelete.forEach(id => operationQueue.add({ type: "delete", recordId: id }))
+    const result = await operationQueue.flushNow()
   }
 
   const handleDuplicate = async () => {
@@ -736,26 +678,30 @@ function DataGrid({ schema }: { schema?: any }) {
 
   // Delayed fetch to allow Teable to commit changes before re-reading
   const fetchDataAfterSave = React.useCallback(async () => {
-    const scrollTop = tableScrollRef.current?.scrollTop || 0
-    await new Promise(r => setTimeout(r, 800))
+    // דיליי ארוך — נותן לשרת זמן להתאושש
+    await new Promise(r => setTimeout(r, 3000))
     try {
+      const scrollTop = tableScrollRef.current?.scrollTop || 0
       await fetchData()
       requestAnimationFrame(() => { if (tableScrollRef.current) tableScrollRef.current.scrollTop = scrollTop })
     } catch {}
   }, [])
 
 
-  // Sync ref and fetch when date changes
+  // Sync ref and fetch when date changes (debounced)
+  const dateChangeTimeout = React.useRef<NodeJS.Timeout | null>(null)
   React.useEffect(() => {
     dateFilterRef.current = dateFilter
-    fetchData()
+    if (dateChangeTimeout.current) clearTimeout(dateChangeTimeout.current)
+    dateChangeTimeout.current = setTimeout(() => fetchData(), 500)
+    return () => { if (dateChangeTimeout.current) clearTimeout(dateChangeTimeout.current) }
   }, [dateFilter])
 
-  // Auto-refresh every 30 seconds so all users see the latest data
+  // Auto-refresh every 2 minutes so all users see the latest data
   React.useEffect(() => {
     const interval = setInterval(() => {
       fetchData()
-    }, 30000)
+    }, 120000)
     return () => clearInterval(interval)
   }, [])
 

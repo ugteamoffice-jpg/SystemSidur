@@ -67,4 +67,4 @@ class RequestQueue {
 
 // singleton - תור אחד לכל האפליקציה
 // בקשה אחת בכל פעם, 300ms דיליי, 4 ניסיונות חוזרים
-export const requestQueue = new RequestQueue(1, 300, 4)
+export const requestQueue = new RequestQueue(1, 500, 4)

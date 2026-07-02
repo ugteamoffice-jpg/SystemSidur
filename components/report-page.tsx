@@ -327,21 +327,19 @@ export function ReportPage({ reportType }: ReportPageProps) {
     const prevData = allData.slice()
     // Optimistic: update immediately
     setAllData(prev => prev.map(r => ids.includes(r.id) ? { ...r, fields: { ...r.fields, [fieldKey]: value } } : r))
-    const results = await Promise.all(ids.map(id =>
-      requestQueue.add(async () => {
-        const res = await fetch(`/api/work-schedule/${id}?tenant=${tenantId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ fields: { [fieldKey]: value } })
-        })
-        if (!res.ok) throw new Error(`PATCH failed`)
-        return true
-      }).catch(() => false)
-    ))
-    const failCount = results.filter(ok => !ok).length
-    if (failCount > 0) {
+    try {
+      const res = await fetch(`/api/bulk-update?tenant=${tenantId}`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ operations: ids.map(id => ({ type: "update", recordId: id, fields: { [fieldKey]: value } })) })
+      })
+      const result = await res.json()
+      if (result.failed > 0) {
+        setAllData(prevData)
+        toast({ title: `${result.failed} רשומות נכשלו בעדכון`, variant: "destructive" })
+      }
+    } catch {
       setAllData(prevData)
-      toast({ title: `${failCount} רשומות נכשלו בעדכון`, variant: "destructive" })
+      toast({ title: "שגיאה בעדכון", variant: "destructive" })
     }
   }, [tenantId, allData])
 
@@ -539,36 +537,22 @@ export function ReportPage({ reportType }: ReportPageProps) {
     // Optimistic: update immediately
     setAllData(prev => prev.map(r => ids.includes(r.id) ? { ...r, fields: { ...r.fields, [INVOICE_FIELD_ID]: valueToSave } } : r))
     setShowInvoiceDialog(false)
-    const savedInvoiceNum = bulkInvoiceNum
     setBulkInvoiceNum("")
     toast({ title: "מספרי החשבונית עודכנו בהצלחה" })
 
-    setIsUpdatingInvoice(true)
-    setInvoiceProgress({ current: 0, total: ids.length })
-
-    const results = await Promise.all(ids.map((id) =>
-      requestQueue.add(async () => {
-        const res = await fetch(`/api/work-schedule/${id}?tenant=${tenantId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ fields: { [INVOICE_FIELD_ID]: valueToSave } })
-        })
-        if (!res.ok) throw new Error(`PATCH failed: ${res.status}`)
-        setInvoiceProgress(prev => ({ ...prev, current: prev.current + 1 }))
-        return true
-      }).catch(() => {
-        setInvoiceProgress(prev => ({ ...prev, current: prev.current + 1 }))
-        return false
+    try {
+      const res = await fetch(`/api/bulk-update?tenant=${tenantId}`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ operations: ids.map(id => ({ type: "update", recordId: id, fields: { [INVOICE_FIELD_ID]: valueToSave } })) })
       })
-    ))
-    const errorCount = results.filter(ok => !ok).length
-
-    setIsUpdatingInvoice(false)
-    setInvoiceProgress({ current: 0, total: 0 })
-
-    if (errorCount > 0) {
+      const result = await res.json()
+      if (result.failed > 0) {
+        setAllData(prevData)
+        toast({ title: "שגיאה", description: `נכשל בעדכון של ${result.failed} נסיעות`, variant: "destructive" })
+      }
+    } catch {
       setAllData(prevData)
-      toast({ title: "שגיאה", description: `נכשל בעדכון של ${errorCount} נסיעות`, variant: "destructive" })
+      toast({ title: "שגיאה", description: "נכשל בעדכון", variant: "destructive" })
     }
   }
 
