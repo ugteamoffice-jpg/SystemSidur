@@ -1,35 +1,44 @@
+// app/api/customers/route.ts — היברידי: Sheets אם מוגדר, אחרת Teable
 import { NextResponse } from 'next/server';
 import { getTenantFromRequest, isTenantError } from '@/lib/api-tenant-helper';
+import { createSheetsClient, tenantUsesSheets } from '@/lib/sheets-client-tenant';
 
 export const dynamic = 'force-dynamic';
+type Ctx = Exclude<Awaited<ReturnType<typeof getTenantFromRequest>>, NextResponse>;
+
+async function teableAll(ctx: Ctx) {
+  const { config, apiKey } = ctx;
+  let allRecords: unknown[] = [];
+  let skip = 0;
+  const take = 1000;
+  let hasMore = true;
+  while (hasMore) {
+    const endpoint = `${config.apiUrl}/api/table/${config.tables.CUSTOMERS}/record?take=${take}&skip=${skip}&fieldKeyType=name`;
+    const response = await fetch(endpoint, { headers: { 'Authorization': `Bearer ${apiKey}` }, cache: 'no-store' });
+    if (!response.ok) throw new Error(`Teable API error: ${response.status}`);
+    const data = await response.json();
+    const records = data.records || [];
+    if (records.length === 0) { hasMore = false; }
+    else {
+      allRecords = [...allRecords, ...records];
+      skip += records.length;
+      if (records.length < take) hasMore = false;
+    }
+  }
+  return allRecords;
+}
 
 export async function GET(request: Request) {
   try {
     const ctx = await getTenantFromRequest(request);
     if (isTenantError(ctx)) return ctx;
-    const { config, apiKey } = ctx;
-    const TABLE_ID = config.tables.CUSTOMERS;
-    const API_URL = config.apiUrl;
-
-    let allRecords: any[] = [];
-    let skip = 0;
-    const take = 1000;
-    let hasMore = true;
-
-    while (hasMore) {
-      const endpoint = `${API_URL}/api/table/${TABLE_ID}/record?take=${take}&skip=${skip}&fieldKeyType=name`;
-      const response = await fetch(endpoint, { headers: { 'Authorization': `Bearer ${apiKey}` }, cache: 'no-store' });
-      if (!response.ok) throw new Error(`Teable API error: ${response.status}`);
-      const data = await response.json();
-      const records = data.records || [];
-      if (records.length === 0) { hasMore = false; }
-      else {
-        allRecords = [...allRecords, ...records];
-        skip += records.length;
-        if (records.length < take) hasMore = false;
-      }
+    if (tenantUsesSheets(ctx.config)) {
+      const sheets = createSheetsClient(ctx.config, ctx.tenantId);
+      const { records } = await sheets.getRecords(ctx.config.tables.CUSTOMERS);
+      return NextResponse.json({ records, nextCursor: null });
     }
-    return NextResponse.json({ records: allRecords, nextCursor: null });
+    const records = await teableAll(ctx);
+    return NextResponse.json({ records, nextCursor: null });
   } catch (error) {
     console.error("Server Error:", error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
@@ -40,12 +49,14 @@ export async function POST(request: Request) {
   try {
     const ctx = await getTenantFromRequest(request);
     if (isTenantError(ctx)) return ctx;
-    const { config, apiKey } = ctx;
-    const TABLE_ID = config.tables.CUSTOMERS;
-    const API_URL = config.apiUrl;
-
     const body = await request.json();
-    const endpoint = `${API_URL}/api/table/${TABLE_ID}/record?fieldKeyType=name`;
+    if (tenantUsesSheets(ctx.config)) {
+      const sheets = createSheetsClient(ctx.config, ctx.tenantId);
+      const record = await sheets.createRecord(ctx.config.tables.CUSTOMERS, body.fields);
+      return NextResponse.json({ records: [record] });
+    }
+    const { config, apiKey } = ctx;
+    const endpoint = `${config.apiUrl}/api/table/${config.tables.CUSTOMERS}/record?fieldKeyType=name`;
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
@@ -61,13 +72,15 @@ export async function PATCH(request: Request) {
   try {
     const ctx = await getTenantFromRequest(request);
     if (isTenantError(ctx)) return ctx;
-    const { config, apiKey } = ctx;
-    const TABLE_ID = config.tables.CUSTOMERS;
-    const API_URL = config.apiUrl;
-
     const body = await request.json();
     const { recordId, fields } = body;
-    const endpoint = `${API_URL}/api/table/${TABLE_ID}/record?fieldKeyType=name`;
+    if (tenantUsesSheets(ctx.config)) {
+      const sheets = createSheetsClient(ctx.config, ctx.tenantId);
+      const record = await sheets.updateRecord(ctx.config.tables.CUSTOMERS, recordId, fields);
+      return NextResponse.json({ records: [record] });
+    }
+    const { config, apiKey } = ctx;
+    const endpoint = `${config.apiUrl}/api/table/${config.tables.CUSTOMERS}/record?fieldKeyType=name`;
     const response = await fetch(endpoint, {
       method: 'PATCH',
       headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },

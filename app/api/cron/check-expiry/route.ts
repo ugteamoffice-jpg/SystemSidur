@@ -1,16 +1,28 @@
+// app/api/cron/check-expiry/route.ts — גרסה היברידית
+// טננט עם config.sheets -> קורא מ-Google Sheets; טננט בלי -> ממשיך מ-Teable.
+// ככה ההתראות של כל הטננטים עובדות גם באמצע המיגרציה.
 import { NextResponse } from "next/server"
 import { Resend } from "resend"
 import fs from "fs"
 import path from "path"
 import { loadTenantConfigServer, getTenantApiKey } from "@/lib/tenant-config"
 import { createTeableClient } from "@/lib/teable-client-tenant"
+import { createSheetsClient } from "@/lib/sheets-client-tenant"
 
 const WARN_DAYS = 7
 
-function getDaysUntilExpiry(dateStr: string | undefined): number | null {
+// שמות השדות בעברית (כמו ב-sheets-schema / field-names)
+const F = {
+  CAR_NUMBER: "מספר רכב",
+  INSURANCE_EXPIRY: "תוקף ביטוח",
+  OPERATION_PERMIT_EXPIRY: "תוקף היתר הפעלה",
+  VEHICLE_LICENSE_EXPIRY: "תוקף רישיון רכב",
+}
+
+function getDaysUntilExpiry(dateStr: string | undefined | null): number | null {
   if (!dateStr) return null
   try {
-    const d = new Date(dateStr)
+    const d = new Date(String(dateStr))
     if (isNaN(d.getTime())) return null
     const now = new Date()
     now.setHours(0, 0, 0, 0)
@@ -27,44 +39,39 @@ function statusText(days: number | null): string {
   return ""
 }
 
-function formatDate(dateStr: string | undefined): string {
+function formatDate(dateStr: string | undefined | null): string {
   if (!dateStr) return "—"
   try {
-    const d = new Date(dateStr)
+    const d = new Date(String(dateStr))
     return `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}/${d.getFullYear()}`
   } catch { return "—" }
 }
 
 export async function GET(request: Request) {
-  // אימות secret
   const url = new URL(request.url)
   const secret = url.searchParams.get("secret")
   if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
-
   if (!process.env.RESEND_API_KEY) {
     return NextResponse.json({ error: "RESEND_API_KEY not configured" }, { status: 500 })
   }
 
   const resend = new Resend(process.env.RESEND_API_KEY)
-  const results: { tenant: string; sent: boolean; alerts: number; error?: string }[] = []
+  const results: { tenant: string; source?: string; sent: boolean; alerts: number; error?: string }[] = []
 
-  // טען את כל הטננטים
   const tenantsDir = path.join(process.cwd(), "config", "tenants")
   const tenantFiles = fs.readdirSync(tenantsDir).filter(f => f.endsWith(".json"))
 
   for (const file of tenantFiles) {
     const tenantId = file.replace(".json", "")
-    
     try {
       const config = await loadTenantConfigServer(tenantId)
-      if (!config || !config.tables.COMPANY_VEHICLES || !config.fields.companyVehicles) {
+      if (!config || !config.tables.COMPANY_VEHICLES) {
         results.push({ tenant: tenantId, sent: false, alerts: 0, error: "no company vehicles config" })
         continue
       }
 
-      // בדוק אם יש מייל מוגדר
       const rawConfig = JSON.parse(fs.readFileSync(path.join(tenantsDir, file), "utf-8"))
       const alertEmail = rawConfig.alertEmail
       if (!alertEmail) {
@@ -72,67 +79,64 @@ export async function GET(request: Request) {
         continue
       }
 
-      const apiKey = getTenantApiKey(tenantId)
-      if (!apiKey) {
-        results.push({ tenant: tenantId, sent: false, alerts: 0, error: "no API key" })
-        continue
+      // --- שליפת רכבי החברה: Sheets אם מוגדר, אחרת Teable ---
+      const usesSheets = !!rawConfig.sheets?.spreadsheetId
+      let allRecords: Array<{ fields: Record<string, unknown> }> = []
+
+      if (usesSheets) {
+        const sheets = createSheetsClient(config as never, tenantId)
+        const data = await sheets.getRecords(config.tables.COMPANY_VEHICLES)
+        allRecords = data.records
+      } else {
+        const apiKey = getTenantApiKey(tenantId)
+        if (!apiKey) {
+          results.push({ tenant: tenantId, sent: false, alerts: 0, error: "no API key" })
+          continue
+        }
+        const client = createTeableClient(config, tenantId)
+        while (true) {
+          const res = await client.getRecords(config.tables.COMPANY_VEHICLES, {
+            take: 200, skip: allRecords.length, fieldKeyType: "name",
+          })
+          const batch = res.records || []
+          if (batch.length === 0) break
+          allRecords.push(...batch)
+          if (batch.length < 200) break
+        }
       }
 
-      const client = createTeableClient(config, tenantId)
-      const CV = config.fields.companyVehicles
-
-      // שלוף את כל רכבי החברה
-      const allRecords: any[] = []
-      let offset: string | undefined
-      while (true) {
-        const res = await client.getRecords(config.tables.COMPANY_VEHICLES, { take: 200, skip: allRecords.length })
-        const batch = res.records || []
-        if (batch.length === 0) break
-        allRecords.push(...batch)
-        if (batch.length < 200) break
-      }
-
-      // בדוק תוקפים
+      // --- בדיקת תוקפים (שמות שדות בעברית בשני המקורות) ---
       const alerts: {
         carNumber: string
-        insuranceDays: number | null
-        insuranceDate: string
-        permitDays: number | null
-        permitDate: string
-        licenseDays: number | null
-        licenseDate: string
+        insuranceDays: number | null; insuranceDate: string
+        permitDays: number | null; permitDate: string
+        licenseDays: number | null; licenseDate: string
       }[] = []
 
       for (const rec of allRecords) {
-        const f = rec.fields
-        const carNumber = String(f[CV.CAR_NUMBER] || "—")
-        const insDays = getDaysUntilExpiry(f[CV.INSURANCE_EXPIRY])
-        const permDays = getDaysUntilExpiry(f[CV.OPERATION_PERMIT_EXPIRY])
-        const licDays = getDaysUntilExpiry(f[CV.VEHICLE_LICENSE_EXPIRY])
+        const f = rec.fields as Record<string, string | undefined>
+        const insDays = getDaysUntilExpiry(f[F.INSURANCE_EXPIRY])
+        const permDays = getDaysUntilExpiry(f[F.OPERATION_PERMIT_EXPIRY])
+        const licDays = getDaysUntilExpiry(f[F.VEHICLE_LICENSE_EXPIRY])
 
         const hasAlert = (insDays !== null && insDays <= WARN_DAYS) ||
                          (permDays !== null && permDays <= WARN_DAYS) ||
                          (licDays !== null && licDays <= WARN_DAYS)
-
         if (hasAlert) {
           alerts.push({
-            carNumber,
-            insuranceDays: insDays,
-            insuranceDate: formatDate(f[CV.INSURANCE_EXPIRY]),
-            permitDays: permDays,
-            permitDate: formatDate(f[CV.OPERATION_PERMIT_EXPIRY]),
-            licenseDays: licDays,
-            licenseDate: formatDate(f[CV.VEHICLE_LICENSE_EXPIRY]),
+            carNumber: String(f[F.CAR_NUMBER] || "—"),
+            insuranceDays: insDays, insuranceDate: formatDate(f[F.INSURANCE_EXPIRY]),
+            permitDays: permDays, permitDate: formatDate(f[F.OPERATION_PERMIT_EXPIRY]),
+            licenseDays: licDays, licenseDate: formatDate(f[F.VEHICLE_LICENSE_EXPIRY]),
           })
         }
       }
 
       if (alerts.length === 0) {
-        results.push({ tenant: tenantId, sent: false, alerts: 0 })
+        results.push({ tenant: tenantId, source: usesSheets ? "sheets" : "teable", sent: false, alerts: 0 })
         continue
       }
 
-      // בנה HTML למייל
       const rows = alerts.map(a => {
         const insStatus = statusText(a.insuranceDays)
         const permStatus = statusText(a.permitDays)
@@ -169,7 +173,6 @@ export async function GET(request: Request) {
       `
 
       const fromEmail = process.env.RESEND_FROM_EMAIL || "alerts@resend.dev"
-
       await resend.emails.send({
         from: fromEmail,
         to: alertEmail,
@@ -177,9 +180,9 @@ export async function GET(request: Request) {
         html,
       })
 
-      results.push({ tenant: tenantId, sent: true, alerts: alerts.length })
-    } catch (err: any) {
-      results.push({ tenant: tenantId, sent: false, alerts: 0, error: err.message })
+      results.push({ tenant: tenantId, source: usesSheets ? "sheets" : "teable", sent: true, alerts: alerts.length })
+    } catch (err: unknown) {
+      results.push({ tenant: tenantId, sent: false, alerts: 0, error: err instanceof Error ? err.message : String(err) })
     }
   }
 

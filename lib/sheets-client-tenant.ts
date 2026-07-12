@@ -15,6 +15,7 @@ import { getSheetsStore } from "@/lib/sheets/store"
 // מיפוי מפתחות הטבלאות בקונפיג הטננט -> מפתחות הסכמה/טאבים
 const TABLE_KEY_MAP: Record<string, string> = {
   WORK_SCHEDULE: "work-schedule",
+  WORK_SCHEDULE_VIEW: "work-schedule",
   DRIVERS: "drivers",
   CUSTOMERS: "customers",
   VEHICLES: "vehicles",
@@ -26,6 +27,11 @@ const TABLE_KEY_MAP: Record<string, string> = {
 
 export interface SheetsTenantConfig extends TenantConfig {
   sheets?: { spreadsheetId: string }
+}
+
+/** האם הטננט עבר ל-Google Sheets? (יש spreadsheetId בקונפיג) */
+export function tenantUsesSheets(config: { sheets?: { spreadsheetId?: string } }): boolean {
+  return !!config?.sheets?.spreadsheetId
 }
 
 export function createSheetsClient(config: SheetsTenantConfig, tenantId: string) {

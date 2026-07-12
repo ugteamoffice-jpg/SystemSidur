@@ -1,13 +1,17 @@
+// app/api/vehicle-types/route.ts — היברידי
 import { NextResponse } from "next/server"
 import { getTenantFromRequest, isTenantError } from "@/lib/api-tenant-helper"
+import { createSheetsClient, tenantUsesSheets } from "@/lib/sheets-client-tenant"
 
 export async function GET(request: Request) {
   try {
     const ctx = await getTenantFromRequest(request);
     if (isTenantError(ctx)) return ctx;
-    const { client, config } = ctx;
-
-    const data = await client.getRecords(config.tables.VEHICLE_TYPES, {
+    if (tenantUsesSheets(ctx.config)) {
+      const sheets = createSheetsClient(ctx.config, ctx.tenantId);
+      return NextResponse.json(await sheets.getRecords(ctx.config.tables.VEHICLE_TYPES, { take: 1000 }))
+    }
+    const data = await ctx.client.getRecords(ctx.config.tables.VEHICLE_TYPES, {
       fieldKeyType: "name",
       take: 1000,
     })

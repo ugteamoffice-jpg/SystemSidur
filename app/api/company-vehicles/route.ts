@@ -1,5 +1,7 @@
+// app/api/company-vehicles/route.ts — היברידי
 import { NextResponse } from 'next/server'
 import { getTenantFromRequest, isTenantError } from '@/lib/api-tenant-helper'
+import { createSheetsClient, tenantUsesSheets } from '@/lib/sheets-client-tenant'
 
 async function safeJson(r: Response) {
   const t = await r.text()
@@ -11,13 +13,15 @@ export async function GET(request: Request) {
   try {
     const ctx = await getTenantFromRequest(request)
     if (isTenantError(ctx)) return ctx
-    const { config, apiKey } = ctx
-
-    const TABLE_ID = config.tables.COMPANY_VEHICLES
+    const TABLE_ID = ctx.config.tables.COMPANY_VEHICLES
     if (!TABLE_ID) return NextResponse.json({ records: [], notConfigured: true })
-
-    const res = await fetch(`${config.apiUrl}/api/table/${TABLE_ID}/record?take=1000&fieldKeyType=name`, {
-      headers: { Authorization: `Bearer ${apiKey}` }, cache: 'no-store'
+    if (tenantUsesSheets(ctx.config)) {
+      const sheets = createSheetsClient(ctx.config, ctx.tenantId)
+      const data = await sheets.getRecords(TABLE_ID)
+      return NextResponse.json({ ...data, tableId: TABLE_ID })
+    }
+    const res = await fetch(`${ctx.config.apiUrl}/api/table/${TABLE_ID}/record?take=1000&fieldKeyType=name`, {
+      headers: { Authorization: `Bearer ${ctx.apiKey}` }, cache: 'no-store'
     })
     if (!res.ok) return NextResponse.json({ error: 'Failed' }, { status: res.status })
     const data = await safeJson(res) || { records: [] }
@@ -31,15 +35,17 @@ export async function POST(request: Request) {
   try {
     const ctx = await getTenantFromRequest(request)
     if (isTenantError(ctx)) return ctx
-    const { config, apiKey } = ctx
-
-    const TABLE_ID = config.tables.COMPANY_VEHICLES
+    const TABLE_ID = ctx.config.tables.COMPANY_VEHICLES
     if (!TABLE_ID) return NextResponse.json({ error: 'לא הוגדרה טבלת רכבי חברה' }, { status: 400 })
-
     const body = await request.json()
-    const res = await fetch(`${config.apiUrl}/api/table/${TABLE_ID}/record`, {
+    if (tenantUsesSheets(ctx.config)) {
+      const sheets = createSheetsClient(ctx.config, ctx.tenantId)
+      const record = await sheets.createRecord(TABLE_ID, body.fields)
+      return NextResponse.json({ records: [record] })
+    }
+    const res = await fetch(`${ctx.config.apiUrl}/api/table/${TABLE_ID}/record`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${ctx.apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ fieldKeyType: 'name', typecast: true, records: [{ fields: body.fields }] })
     })
     if (!res.ok) return NextResponse.json({ error: 'Failed' }, { status: res.status })
