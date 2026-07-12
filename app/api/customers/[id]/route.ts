@@ -1,5 +1,7 @@
+// app/api/customers/[id]/route.ts — היברידי
 import { NextResponse } from 'next/server';
 import { getTenantFromRequest, isTenantError } from '@/lib/api-tenant-helper';
+import { createSheetsClient, tenantUsesSheets } from '@/lib/sheets-client-tenant';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,20 +19,22 @@ export async function PATCH(
     const { id } = await params;
     const ctx = await getTenantFromRequest(request);
     if (isTenantError(ctx)) return ctx;
-    const { config, apiKey } = ctx;
-    const TABLE_ID = config.tables.CUSTOMERS;
-    const API_URL = config.apiUrl;
-
     const body = await request.json();
-    const endpoint = `${API_URL}/api/table/${TABLE_ID}/record?fieldKeyType=name`;
 
+    if (tenantUsesSheets(ctx.config)) {
+      const sheets = createSheetsClient(ctx.config, ctx.tenantId);
+      const record = await sheets.updateRecord(ctx.config.tables.CUSTOMERS, id, body.fields);
+      return NextResponse.json({ records: [record] });
+    }
+
+    const { config, apiKey } = ctx;
+    const endpoint = `${config.apiUrl}/api/table/${config.tables.CUSTOMERS}/record?fieldKeyType=name`;
     const response = await fetch(endpoint, {
       method: 'PATCH',
       headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ fieldKeyType: "name", typecast: true, records: [{ id, fields: body.fields }] }),
       cache: 'no-store'
     });
-
     if (!response.ok) {
       const errorData = await safeJsonParse(response);
       return NextResponse.json({ error: "Update Failed", details: errorData }, { status: response.status });
