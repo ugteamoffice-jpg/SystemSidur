@@ -1,0 +1,482 @@
+{
+  "version": 1,
+  "systemColumns": [
+    {
+      "key": "_id",
+      "header": "_id"
+    },
+    {
+      "key": "_deleted",
+      "header": "_deleted"
+    },
+    {
+      "key": "_updatedAt",
+      "header": "_updatedAt"
+    }
+  ],
+  "tables": {
+    "work-schedule": {
+      "sheetName": "סידור עבודה",
+      "csvFile": "סידור_עבודה.csv",
+      "idFromCsvColumn": "ID",
+      "columns": [
+        {
+          "key": "date",
+          "header": "תאריך",
+          "type": "date",
+          "csv": "תאריך"
+        },
+        {
+          "key": "pickupTime",
+          "header": "התייצבות",
+          "type": "time",
+          "csv": "התייצבות"
+        },
+        {
+          "key": "customerName",
+          "header": "שם לקוח",
+          "type": "text",
+          "csv": "שם לקוח"
+        },
+        {
+          "key": "description",
+          "header": "תיאור",
+          "type": "text",
+          "csv": "תיאור"
+        },
+        {
+          "key": "returnTime",
+          "header": "חזור",
+          "type": "time",
+          "csv": "חזור"
+        },
+        {
+          "key": "vehicleType",
+          "header": "סוג רכב",
+          "type": "text",
+          "csv": "סוג רכב"
+        },
+        {
+          "key": "driverName",
+          "header": "שם נהג",
+          "type": "text",
+          "csv": "שם נהג"
+        },
+        {
+          "key": "sent",
+          "header": "שלח",
+          "type": "boolean",
+          "csv": "שלח"
+        },
+        {
+          "key": "approved",
+          "header": "מאושר",
+          "type": "boolean",
+          "csv": "מאושר"
+        },
+        {
+          "key": "priceCustomerNoVat",
+          "header": "מחיר לקוח+ מע\"מ",
+          "type": "number",
+          "csv": "מחיר לקוח+ מע\"מ"
+        },
+        {
+          "key": "priceCustomerWithVat",
+          "header": "מחיר לקוח כולל מע\"מ",
+          "type": "number",
+          "csv": "מחיר לקוח כולל מע\"מ"
+        },
+        {
+          "key": "vat",
+          "header": "מע\"מ",
+          "type": "number",
+          "csv": "מע\"מ"
+        },
+        {
+          "key": "priceDriverNoVat",
+          "header": "מחיר נהג+ מע\"מ",
+          "type": "number",
+          "csv": "מחיר נהג+ מע\"מ"
+        },
+        {
+          "key": "priceDriverWithVat",
+          "header": "מחיר נהג כולל מע\"מ",
+          "type": "number",
+          "csv": "מחיר נהג כולל מע\"מ"
+        },
+        {
+          "key": "profitNoVat",
+          "header": "רווח+ מע\"מ",
+          "type": "number",
+          "csv": "רווח+ מע\"מ"
+        },
+        {
+          "key": "driverNotes",
+          "header": "הערות לנהג",
+          "type": "text",
+          "csv": "הערות לנהג"
+        },
+        {
+          "key": "managerNotes",
+          "header": "הערות מנהל",
+          "type": "text",
+          "csv": "הערות מנהל"
+        },
+        {
+          "key": "ordererName",
+          "header": "שם מזמין",
+          "type": "text",
+          "csv": "שם מזמין"
+        },
+        {
+          "key": "ordererPhone",
+          "header": "טלפון נייד",
+          "type": "phone",
+          "csv": "טלפון נייד"
+        },
+        {
+          "key": "ordererIdNumber",
+          "header": "ת\"ז",
+          "type": "text",
+          "csv": "ת\"ז"
+        },
+        {
+          "key": "orderForm",
+          "header": "טופס הזמנה",
+          "type": "fileLink",
+          "csv": "טופס הזמנה"
+        },
+        {
+          "key": "fileUploadedAt",
+          "header": "תאריך ושעה העלאת קובץ",
+          "type": "datetime",
+          "csv": "תאריך ושעה העלאת קובץ"
+        },
+        {
+          "key": "vehicleNumber",
+          "header": "מספר רכב",
+          "type": "text",
+          "csv": "מספר רכב"
+        },
+        {
+          "key": "invoiceNumber",
+          "header": "מספר חשבונית",
+          "type": "text",
+          "csv": "מספר חשבונית"
+        },
+        {
+          "key": "sentReset",
+          "header": "אפס שליחה",
+          "type": "boolean",
+          "csv": null
+        },
+        {
+          "key": "orderFormAttachment",
+          "header": "קובץ הזמנה",
+          "type": "fileLink",
+          "csv": null
+        }
+      ]
+    },
+    "drivers": {
+      "sheetName": "נהגים",
+      "csvFile": "קבלנים_נהגים.csv",
+      "columns": [
+        {
+          "key": "firstName",
+          "header": "שם פרטי",
+          "type": "text",
+          "csv": "שם פרטי"
+        },
+        {
+          "key": "lastName",
+          "header": "שם משפחה",
+          "type": "text",
+          "csv": "שם משפחה"
+        },
+        {
+          "key": "phone",
+          "header": "טלפון נייד",
+          "type": "phone",
+          "csv": "טלפון נייד"
+        },
+        {
+          "key": "vehicleTypes",
+          "header": "סוג רכב/ים",
+          "type": "text",
+          "csv": "סוג רכב/ים"
+        },
+        {
+          "key": "driverStatus",
+          "header": "סטטוס נהג",
+          "type": "select",
+          "csv": "סטטוס נהג",
+          "options": [
+            "פעיל",
+            "לא פעיל"
+          ]
+        },
+        {
+          "key": "vehicleNumber",
+          "header": "מספר רכב",
+          "type": "text",
+          "csv": "מספר רכב"
+        },
+        {
+          "key": "driverType",
+          "header": "סוג נהג",
+          "type": "select",
+          "csv": "סוג נהג",
+          "options": [
+            "קבלן",
+            "שכיר"
+          ]
+        },
+        {
+          "key": "salaryConfig",
+          "header": "SALARY_CONFIG",
+          "type": "json",
+          "csv": "SALARY_CONFIG"
+        },
+        {
+          "key": "contract",
+          "header": "חוזה עבודה",
+          "type": "fileLink",
+          "csv": "חוזה עבודה"
+        }
+      ]
+    },
+    "customers": {
+      "sheetName": "לקוחות",
+      "csvFile": "לקוחות.csv",
+      "columns": [
+        {
+          "key": "customerName",
+          "header": "שם לקוח",
+          "type": "text",
+          "csv": "שם לקוח"
+        },
+        {
+          "key": "companyId",
+          "header": "ח.פ",
+          "type": "text",
+          "csv": "ח.פ"
+        },
+        {
+          "key": "contactName",
+          "header": "שם א.קשר",
+          "type": "text",
+          "csv": "שם א.קשר"
+        },
+        {
+          "key": "phone",
+          "header": "טלפון נייד",
+          "type": "phone",
+          "csv": "טלפון נייד"
+        },
+        {
+          "key": "email",
+          "header": "אימייל",
+          "type": "text",
+          "csv": "אימייל"
+        },
+        {
+          "key": "paymentTermsDays",
+          "header": "תשלום שוטף+",
+          "type": "number",
+          "csv": "תשלום שוטף+"
+        },
+        {
+          "key": "paymentMethod",
+          "header": "אופן תשלום",
+          "type": "select",
+          "csv": "אופן תשלום",
+          "options": [
+            "מזומן",
+            "העברה בנקאית",
+            "צ'ק"
+          ]
+        },
+        {
+          "key": "createdInAccounting",
+          "header": "נוצר בהנהלת חשבונות",
+          "type": "boolean",
+          "csv": "נוצר בהנהלת חשבונות"
+        },
+        {
+          "key": "customerStatus",
+          "header": "סטטוס לקוח",
+          "type": "select",
+          "csv": "סטטוס לקוח",
+          "options": [
+            "פעיל",
+            "לא פעיל"
+          ]
+        },
+        {
+          "key": "accountingKey",
+          "header": "מס' מפתח הנה\"ח",
+          "type": "text",
+          "csv": "מס' מפתח הנה\"ח"
+        }
+      ]
+    },
+    "vehicles": {
+      "sheetName": "סוגי רכבים",
+      "csvFile": "סוגי_רכבים.csv",
+      "columns": [
+        {
+          "key": "vehicleType",
+          "header": "סוג רכב",
+          "type": "text",
+          "csv": "סוג רכב"
+        }
+      ]
+    },
+    "company-vehicles": {
+      "sheetName": "רכבי חברה",
+      "csvFile": "רכבי_חברה.csv",
+      "columns": [
+        {
+          "key": "label",
+          "header": "Label",
+          "type": "text",
+          "csv": "Label"
+        },
+        {
+          "key": "vehicleType",
+          "header": "סוג רכב",
+          "type": "text",
+          "csv": "סוג רכב"
+        },
+        {
+          "key": "vehicleNumber",
+          "header": "מספר רכב",
+          "type": "text",
+          "csv": "מספר רכב"
+        },
+        {
+          "key": "insurance",
+          "header": "ביטוח",
+          "type": "fileLink",
+          "csv": "ביטוח"
+        },
+        {
+          "key": "insuranceExpiry",
+          "header": "תוקף ביטוח",
+          "type": "date",
+          "csv": "תוקף ביטוח"
+        },
+        {
+          "key": "operatingPermit",
+          "header": "היתר הפעלה",
+          "type": "fileLink",
+          "csv": "היתר הפעלה"
+        },
+        {
+          "key": "operatingPermitExpiry",
+          "header": "תוקף היתר הפעלה",
+          "type": "date",
+          "csv": "תוקף היתר הפעלה"
+        },
+        {
+          "key": "vehicleLicense",
+          "header": "רישיון רכב",
+          "type": "fileLink",
+          "csv": "רישיון רכב"
+        },
+        {
+          "key": "vehicleLicenseExpiry",
+          "header": "תוקף רישיון רכב",
+          "type": "date",
+          "csv": "תוקף רישיון רכב"
+        },
+        {
+          "key": "year",
+          "header": "שנה",
+          "type": "text",
+          "csv": "שנה"
+        }
+      ]
+    },
+    "driver-hours": {
+      "sheetName": "שעות נהג",
+      "csvFile": "DRIVER_HOURS.csv",
+      "columns": [
+        {
+          "key": "driverName",
+          "header": "נהג",
+          "type": "text",
+          "csv": "נהג"
+        },
+        {
+          "key": "date",
+          "header": "תאריך",
+          "type": "date",
+          "csv": "תאריך"
+        },
+        {
+          "key": "startTime",
+          "header": "שעת התחלה",
+          "type": "time",
+          "csv": "שעת התחלה"
+        },
+        {
+          "key": "endTime",
+          "header": "שעת סיום",
+          "type": "time",
+          "csv": "שעת סיום"
+        },
+        {
+          "key": "notes",
+          "header": "הערות",
+          "type": "text",
+          "csv": "הערות"
+        }
+      ]
+    },
+    "recurring-rides": {
+      "sheetName": "נסיעות קבועות",
+      "csvFile": null,
+      "comment": "TODO: מוגדר כרגע כפלייסהולדר. כשמעבירים מ-localStorage — להדביק את מבנה ה-JSON ונעדכן את העמודות.",
+      "columns": [
+        {
+          "key": "template",
+          "header": "תבנית (JSON)",
+          "type": "json",
+          "csv": null
+        }
+      ]
+    },
+    "employees": {
+      "sheetName": "עובדים",
+      "csvFile": "עובדים.csv",
+      "optional": true,
+      "comment": "אופציונלי — מועבר רק אם הפלטפורמה משתמשת בטבלה. עמודת הסיסמה הושמטה בכוונה.",
+      "columns": [
+        {
+          "key": "employeeName",
+          "header": "שם עובד",
+          "type": "text",
+          "csv": "שם עובד"
+        },
+        {
+          "key": "email",
+          "header": "אימייל",
+          "type": "text",
+          "csv": "אימייל"
+        },
+        {
+          "key": "role",
+          "header": "תפקיד",
+          "type": "select",
+          "csv": "תפקיד",
+          "options": [
+            "אדמין מערכת",
+            "מנהל"
+          ]
+        }
+      ]
+    }
+  }
+}
