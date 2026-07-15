@@ -27,10 +27,11 @@ const nextConfig = {
             value: [
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://clerk.com https://*.clerk.accounts.dev https://js.stripe.com",
+              "worker-src 'self' blob:",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https:",
               "font-src 'self' data:",
-              "connect-src 'self' https://clerk.com https://*.clerk.accounts.dev https://teable-production-bedd.up.railway.app wss:",
+              "connect-src 'self' https://clerk.com https://*.clerk.accounts.dev https://teable-production-bedd.up.railway.app https://*.googleapis.com wss:",
               "frame-src 'self' https://clerk.com https://*.clerk.accounts.dev",
               "frame-ancestors 'none'",
             ].join("; "),
