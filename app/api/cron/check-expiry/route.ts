@@ -186,5 +186,88 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, results })
+  // ===== ניטור קיבולת Google Sheets (מגבלת 10M תאים לקובץ) =====
+  // התראות טכניות למנהל המערכת בלבד — לא ללקוחות הטננטים
+  const CELL_LIMIT = 10_000_000
+  const WARN_PCT = 0.70   // 🟡 מתקרב למגבלה
+  const CRIT_PCT = 0.90   // 🔴 דחוף
+  const adminEmail = process.env.ADMIN_ALERT_EMAIL || "Ugteamoffice@gmail.com"
+  const capacity: { tenant: string; cells: number; pct: string; level: string; error?: string }[] = []
+
+  try {
+    const { getSheetsApi } = await import("@/lib/sheets/google-sheets")
+    const api = getSheetsApi()
+
+    for (const file of tenantFiles) {
+      const tenantId = file.replace(".json", "")
+      try {
+        const rawConfig = JSON.parse(fs.readFileSync(path.join(tenantsDir, file), "utf-8"))
+        const sid = rawConfig?.sheets?.spreadsheetId
+        if (!sid) continue
+
+        const meta = await api.getSpreadsheetMeta(sid)
+        const perSheet = (meta.sheets || []).map(s => ({
+          title: s.properties?.title || "?",
+          rows: s.properties?.gridProperties?.rowCount || 0,
+          cells: (s.properties?.gridProperties?.rowCount || 0) * (s.properties?.gridProperties?.columnCount || 0),
+        }))
+        const cells = perSheet.reduce((sum, s) => sum + s.cells, 0)
+        const pct = cells / CELL_LIMIT
+        const level = pct >= CRIT_PCT ? "critical" : pct >= WARN_PCT ? "warning" : "ok"
+        capacity.push({ tenant: tenantId, cells, pct: `${(pct * 100).toFixed(1)}%`, level })
+
+        if (level !== "ok") {
+          const isCrit = level === "critical"
+          const color = isCrit ? "#dc2626" : "#d97706"
+          const topSheets = [...perSheet].sort((a, b) => b.cells - a.cells).slice(0, 6)
+          const rows = topSheets.map(s => `
+            <tr>
+              <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:right">${s.title}</td>
+              <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:right">${s.rows.toLocaleString()}</td>
+              <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:right;font-weight:600">${s.cells.toLocaleString()}</td>
+            </tr>`).join("")
+
+          const html = `
+            <div dir="rtl" style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto">
+              <div style="background:${color};color:#fff;padding:16px 24px;border-radius:8px 8px 0 0">
+                <h2 style="margin:0">${isCrit ? "🔴 דחוף — קיבולת Google Sheets" : "🟡 התראת קיבולת Google Sheets"}</h2>
+              </div>
+              <div style="border:1px solid #e2e8f0;border-top:none;padding:24px;border-radius:0 0 8px 8px">
+                <p style="font-size:15px;margin:0 0 8px">
+                  הטננט <b>${tenantId}</b> נמצא על <b style="color:${color}">${(pct * 100).toFixed(1)}%</b>
+                  ממגבלת התאים של Google Sheets.
+                </p>
+                <p style="color:#475569;font-size:13px;margin:0 0 16px">
+                  ${cells.toLocaleString()} תאים מתוך ${CELL_LIMIT.toLocaleString()}
+                  ${isCrit ? "— שמירות עלולות להיכשל בקרוב. נדרש פיצול קובץ או ניקוי גיליונות." : "— מומלץ לתכנן פיצול או ניקוי בחודשים הקרובים."}
+                </p>
+                <table style="border-collapse:collapse;width:100%;font-size:13px">
+                  <thead>
+                    <tr style="background:#f8fafc">
+                      <th style="padding:8px 12px;border:1px solid #e2e8f0;text-align:right">גיליון</th>
+                      <th style="padding:8px 12px;border:1px solid #e2e8f0;text-align:right">שורות</th>
+                      <th style="padding:8px 12px;border:1px solid #e2e8f0;text-align:right">תאים</th>
+                    </tr>
+                  </thead>
+                  <tbody>${rows}</tbody>
+                </table>
+                <p style="color:#94a3b8;font-size:12px;margin:16px 0 0">הודעה אוטומטית ממערכת לו״ז — ניטור קיבולת</p>
+              </div>
+            </div>
+          `
+          const fromEmail = process.env.RESEND_FROM_EMAIL || "alerts@resend.dev"
+          await resend.emails.send({
+            from: fromEmail,
+            to: adminEmail,
+            subject: `${isCrit ? "🔴 דחוף" : "🟡"} קיבולת Sheets — ${tenantId} על ${(pct * 100).toFixed(1)}%`,
+            html,
+          })
+        }
+      } catch (err: unknown) {
+        capacity.push({ tenant: tenantId, cells: 0, pct: "?", level: "error", error: err instanceof Error ? err.message : String(err) })
+      }
+    }
+  } catch { /* GOOGLE_SA_KEY לא מוגדר — מדלגים על הניטור */ }
+
+  return NextResponse.json({ ok: true, results, sheetsCapacity: capacity })
 }
