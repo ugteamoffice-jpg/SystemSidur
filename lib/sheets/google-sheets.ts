@@ -95,6 +95,15 @@ export class SheetsApi {
     return data.values || []
   }
 
+  /** מטא-דאטה של הקובץ: גיליונות ומידות הגריד (לניטור קיבולת מול מגבלת 10M תאים) */
+  async getSpreadsheetMeta(spreadsheetId: string): Promise<{
+    sheets?: Array<{ properties?: { title?: string; gridProperties?: { rowCount?: number; columnCount?: number } } }>
+  }> {
+    return this.request(
+      `${SHEETS_BASE}/${spreadsheetId}?fields=${encodeURIComponent("sheets(properties(title,gridProperties(rowCount,columnCount)))")}`
+    )
+  }
+
   /** כתיבת מספר טווחים בבקשה אחת (RAW) */
   async batchUpdateValues(
     spreadsheetId: string,
