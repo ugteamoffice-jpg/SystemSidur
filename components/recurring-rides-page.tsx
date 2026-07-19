@@ -26,7 +26,7 @@ import {
   EMPTY_DAY_SETTINGS
 } from "@/lib/recurring-rides"
 
-interface ListItem { id: string; title: string }
+interface ListItem { id: string; title: string; carNumber?: string; vehicleTypeName?: string }
 
 function AutoComplete({ options, value, onChange, onSelect, placeholder }: any) {
   const [show, setShow] = React.useState(false)
@@ -70,6 +70,7 @@ const emptyForm: FormState = {
 
 export function RecurringRidesPage() {
   const { tenantId } = useTenant()
+  const tenantFields = useTenantFields()
   const { toast } = useToast()
 
   const [rides, setRides] = React.useState<RecurringRide[]>([])
@@ -124,20 +125,48 @@ export function RecurringRidesPage() {
   React.useEffect(() => { setRides(loadRecurringRides(tenantId)) }, [tenantId])
 
   React.useEffect(() => {
-    const load = async (url: string) => {
+    const load = async (url: string, isDrivers = false) => {
       try {
         const r = await fetch(url); const d = await r.json()
-        return d.records ? d.records.map((x: any) => ({
-          id: x.id, title: x.fields && Object.values(x.fields)[0] ? String(Object.values(x.fields)[0]) : ""
-        })) : []
+        return d.records ? d.records.map((x: any) => {
+          if (isDrivers && tenantFields?.drivers) {
+            const name = String(x.fields?.[tenantFields.drivers.FIRST_NAME] || "").trim()
+            const carNum = x.fields?.[tenantFields.drivers.CAR_NUMBER] || ""
+            return { id: x.id, title: name, carNumber: String(carNum) }
+          }
+          return {
+            id: x.id, title: x.fields && Object.values(x.fields)[0] ? String(Object.values(x.fields)[0]) : ""
+          }
+        }) : []
       } catch { return [] }
     }
     Promise.all([
       load(`/api/customers?tenant=${tenantId}`),
-      load(`/api/drivers?tenant=${tenantId}`),
-      load(`/api/vehicles?tenant=${tenantId}`)
-    ]).then(([c, d, v]) => setLists({ customers: c, drivers: d, vehicles: v }))
-  }, [tenantId])
+      load(`/api/drivers?tenant=${tenantId}`, true),
+      load(`/api/vehicles?tenant=${tenantId}`),
+      fetch(`/api/company-vehicles?tenant=${tenantId}`).then(r => r.ok ? r.json() : { records: [] }).catch(() => ({ records: [] }))
+    ]).then(([c, d, v, cvData]) => {
+      // מיפוי מספר רכב → סוג רכב מרכבי חברה
+      const carToVehicleType: Record<string, string> = {}
+      const cvFields = tenantFields?.companyVehicles
+      if (cvFields && cvData.records) {
+        for (const cv of cvData.records) {
+          const carNum = String(cv.fields?.[cvFields.CAR_NUMBER] || "").trim()
+          const vType = cv.fields?.[cvFields.VEHICLE_TYPE]
+          let typeName = ""
+          if (Array.isArray(vType)) typeName = vType[0]?.title || vType[0]?.text || ""
+          else if (typeof vType === "object" && vType) typeName = (vType as any).title || (vType as any).text || ""
+          else if (vType) typeName = String(vType)
+          if (carNum && typeName) carToVehicleType[carNum] = typeName
+        }
+      }
+      const driversWithVehicleType = d.map((driver: ListItem) => ({
+        ...driver,
+        vehicleTypeName: driver.carNumber ? (carToVehicleType[driver.carNumber] || "") : ""
+      }))
+      setLists({ customers: c, drivers: driversWithVehicleType, vehicles: v })
+    })
+  }, [tenantId, tenantFields])
 
   const reload = () => setRides(loadRecurringRides(tenantId))
 
@@ -321,7 +350,15 @@ export function RecurringRidesPage() {
             <Label className="text-xs">נהג</Label>
             <AutoComplete options={lists.drivers} value={getDayVal(day, "driverName")}
               onChange={(v: string) => setDayOverride(day, "driverName", v)}
-              onSelect={(o: ListItem) => { setDayOverride(day, "driverName", o.title); setDayOverride(day, "driverId", o.id) }}
+              onSelect={(o: ListItem) => {
+                setDayOverride(day, "driverName", o.title); setDayOverride(day, "driverId", o.id)
+                if (o.carNumber) setDayOverride(day, "vehicleNum", o.carNumber)
+                if (o.vehicleTypeName) {
+                  setDayOverride(day, "vehicleTypeName", o.vehicleTypeName)
+                  const match = lists.vehicles.find(v => v.title === o.vehicleTypeName)
+                  if (match) setDayOverride(day, "vehicleTypeId", match.id)
+                }
+              }}
               placeholder="" />
           </div>
           <div>
@@ -627,7 +664,15 @@ export function RecurringRidesPage() {
                       <Label className="text-xs">נהג</Label>
                       <AutoComplete options={lists.drivers} value={form.defaults.driverName}
                         onChange={(v: string) => setDefault("driverName", v)}
-                        onSelect={(o: ListItem) => { setDefault("driverName", o.title); setDefault("driverId", o.id) }}
+                        onSelect={(o: ListItem) => {
+                          setDefault("driverName", o.title); setDefault("driverId", o.id)
+                          if (o.carNumber) setDefault("vehicleNum", o.carNumber)
+                          if (o.vehicleTypeName) {
+                            setDefault("vehicleTypeName", o.vehicleTypeName)
+                            const match = lists.vehicles.find(v => v.title === o.vehicleTypeName)
+                            if (match) setDefault("vehicleTypeId", match.id)
+                          }
+                        }}
                         placeholder="" />
                     </div>
                     <div>
