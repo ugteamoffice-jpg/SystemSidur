@@ -274,6 +274,15 @@ export function RecurringRidesPage() {
     })
   }
 
+  // כתיבה לברירות המחדל (ממולא פעם אחת — כל הימים יורשים)
+  const setDefault = (field: string, value: string) => {
+    setForm(prev => ({ ...prev, defaults: { ...prev.defaults, [field]: value } }))
+  }
+
+  const setDefaultVat = (value: string, type: "excl" | "incl", side: "client" | "driver") => {
+    setForm(prev => ({ ...prev, defaults: { ...prev.defaults, ...calcVat(value, type, side, prev.defaults) } }))
+  }
+
   // Render per-day settings section
   const renderDaySettings = (day: number) => {
     const hasOverride = form.dayOverrides[day] && Object.keys(form.dayOverrides[day]).length > 0
@@ -598,6 +607,78 @@ export function RecurringRidesPage() {
 
               {/* Tab: שיבוץ לפי יום */}
               <TabsContent value="schedule" className="space-y-3 mt-0">
+                {/* פרטי ברירת מחדל — ממולא פעם אחת, כל הימים יורשים */}
+                <div className="border-2 border-orange-200 rounded-lg p-3 space-y-3 bg-orange-50/50">
+                  <p className="font-bold text-sm text-orange-700">פרטי הנסיעה — ברירת מחדל לכל הימים</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs">שעת התייצבות</Label>
+                      <Input type="time" value={form.defaults.pickupTime}
+                        onChange={e => setDefault("pickupTime", e.target.value)} className="h-9 bg-white" />
+                    </div>
+                    <div>
+                      <Label className="text-xs">שעת חזור</Label>
+                      <Input type="time" value={form.defaults.dropoffTime}
+                        onChange={e => setDefault("dropoffTime", e.target.value)} className="h-9 bg-white" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <Label className="text-xs">סוג רכב</Label>
+                      <AutoComplete options={lists.vehicles} value={form.defaults.vehicleTypeName}
+                        onChange={(v: string) => setDefault("vehicleTypeName", v)}
+                        onSelect={(o: ListItem) => { setDefault("vehicleTypeName", o.title); setDefault("vehicleTypeId", o.id) }}
+                        placeholder="" />
+                    </div>
+                    <div>
+                      <Label className="text-xs">נהג</Label>
+                      <AutoComplete options={lists.drivers} value={form.defaults.driverName}
+                        onChange={(v: string) => setDefault("driverName", v)}
+                        onSelect={(o: ListItem) => { setDefault("driverName", o.title); setDefault("driverId", o.id) }}
+                        placeholder="" />
+                    </div>
+                    <div>
+                      <Label className="text-xs">מס׳ רכב</Label>
+                      <Input value={form.defaults.vehicleNum}
+                        onChange={e => setDefault("vehicleNum", e.target.value)} className="h-8 text-sm text-right bg-white" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2">
+                    <div>
+                      <Label className="text-xs">מחיר לקוח לפני מע״מ</Label>
+                      <Input type="number" value={form.defaults.clientExcl}
+                        onChange={e => setDefaultVat(e.target.value, "excl", "client")} className="h-9 bg-white" />
+                    </div>
+                    <div>
+                      <Label className="text-xs">מחיר לקוח כולל מע״מ</Label>
+                      <Input type="number" value={form.defaults.clientIncl}
+                        onChange={e => setDefaultVat(e.target.value, "incl", "client")} className="h-9 font-bold bg-white" />
+                    </div>
+                    <div>
+                      <Label className="text-xs">מחיר נהג לפני מע״מ</Label>
+                      <Input type="number" value={form.defaults.driverExcl}
+                        onChange={e => setDefaultVat(e.target.value, "excl", "driver")} className="h-9 bg-white" />
+                    </div>
+                    <div>
+                      <Label className="text-xs">מחיר נהג כולל מע״מ</Label>
+                      <Input type="number" value={form.defaults.driverIncl}
+                        onChange={e => setDefaultVat(e.target.value, "incl", "driver")} className="h-9 font-bold bg-white" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-xs">הערות מנהל</Label>
+                      <Textarea value={form.defaults.managerNotes}
+                        onChange={e => setDefault("managerNotes", e.target.value)} className="text-right text-sm bg-white" rows={2} />
+                    </div>
+                    <div>
+                      <Label className="text-xs">הערות נהג</Label>
+                      <Textarea value={form.defaults.driverNotes}
+                        onChange={e => setDefault("driverNotes", e.target.value)} className="text-right text-sm bg-white" rows={2} />
+                    </div>
+                  </div>
+                </div>
+
                 {/* Day Selection */}
                 <div>
                   <p className="text-sm font-medium mb-2">ימים פעילים</p>
@@ -620,7 +701,7 @@ export function RecurringRidesPage() {
                 </div>
 
                 <div className="border-t pt-3" />
-                <p className="text-xs text-muted-foreground">שנה ערכים ליום ספציפי. שדות ריקים ישתמשו בברירת מחדל מטאב "פרטים".</p>
+                <p className="text-xs text-muted-foreground">כל יום יורש אוטומטית את ברירת המחדל שלמעלה. שנה ערך בפאנל של יום — רק אם הוא שונה באותו יום.</p>
 
                 {/* Per-day settings */}
                 <div className="space-y-2">
