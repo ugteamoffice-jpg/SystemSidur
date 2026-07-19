@@ -411,10 +411,6 @@ export function RecurringRidesPage() {
       cell: ({ row }) => row.original.defaults.vehicleTypeName || "-",
     },
     {
-      id: "driver", header: "שם נהג", size: 110, minSize: 60, enableResizing: true,
-      cell: ({ row }) => row.original.defaults.driverName || "-",
-    },
-    {
       id: "clientExcl", header: 'מחיר לקוח + מע"מ', size: 120, minSize: 70, enableResizing: true,
       cell: ({ row }) => row.original.defaults.clientExcl ? `₪${row.original.defaults.clientExcl}` : "-",
     },
