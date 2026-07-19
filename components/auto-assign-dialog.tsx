@@ -104,6 +104,40 @@ export function AutoAssignDialog({ open, onOpenChange, currentDate, existingReco
     let skipped = 0
 
     try {
+      // כרטיס הנהג = מקור האמת: שליפת מס' רכב + סוג רכב עדכניים לכל נהג
+      const driverInfo: Record<string, { carNumber: string; vehicleTypeId: string }> = {}
+      try {
+        const DF = tenantFields?.drivers
+        const CV = tenantFields?.companyVehicles
+        const [dRes, cvRes, vRes] = await Promise.all([
+          fetch(`/api/drivers?tenant=${tenantId}`).then(r => r.ok ? r.json() : { records: [] }).catch(() => ({ records: [] })),
+          fetch(`/api/company-vehicles?tenant=${tenantId}`).then(r => r.ok ? r.json() : { records: [] }).catch(() => ({ records: [] })),
+          fetch(`/api/vehicles?tenant=${tenantId}`).then(r => r.ok ? r.json() : { records: [] }).catch(() => ({ records: [] })),
+        ])
+        // מיפוי שם סוג רכב → מזהה
+        const typeNameToId: Record<string, string> = {}
+        for (const v of vRes.records || []) {
+          const title = v.fields && Object.values(v.fields)[0] ? String(Object.values(v.fields)[0]) : ""
+          if (title) typeNameToId[title.trim()] = v.id
+        }
+        // מיפוי מס' רכב → שם סוג רכב (מרכבי חברה)
+        const carToTypeName: Record<string, string> = {}
+        if (CV) for (const cv of cvRes.records || []) {
+          const carNum = String(cv.fields?.[CV.CAR_NUMBER] || "").trim()
+          const vType = cv.fields?.[CV.VEHICLE_TYPE]
+          let typeName = ""
+          if (Array.isArray(vType)) typeName = vType[0]?.title || vType[0]?.text || ""
+          else if (typeof vType === "object" && vType) typeName = (vType as any).title || (vType as any).text || ""
+          else if (vType) typeName = String(vType)
+          if (carNum && typeName) carToTypeName[carNum] = typeName.trim()
+        }
+        if (DF) for (const d of dRes.records || []) {
+          const carNumber = String(d.fields?.[DF.CAR_NUMBER] || "").trim()
+          const typeName = carNumber ? (carToTypeName[carNumber] || "") : ""
+          driverInfo[d.id] = { carNumber, vehicleTypeId: typeName ? (typeNameToId[typeName] || "") : "" }
+        }
+      } catch { /* אם השליפה נכשלה — נשתמש בערכי התבנית */ }
+
       const days = eachDayOfInterval({ start: startDate, end: endDate })
 
       // אסוף את כל הנסיעות ליצירה
@@ -116,6 +150,10 @@ export function AutoAssignDialog({ open, onOpenChange, currentDate, existingReco
 
         for (const t of dayTemplates) {
           const settings = getSettingsForDay(t, dayOfWeek)
+          // נתונים חיים מכרטיס הנהג גוברים על ההעתק השמור בתבנית
+          const live = settings.driverId ? driverInfo[settings.driverId] : undefined
+          const vehicleNum = (live?.carNumber || settings.vehicleNum) || null
+          const vehicleTypeId = (live?.vehicleTypeId || settings.vehicleTypeId) || null
 
           const isDuplicate = existingRecords.some(r =>
             r.fields[WS.DATE] === dateStr &&
@@ -133,7 +171,7 @@ export function AutoAssignDialog({ open, onOpenChange, currentDate, existingReco
             [WS.DESCRIPTION]: t.description,
             [WS.PICKUP_TIME]: settings.pickupTime || null,
             [WS.DROPOFF_TIME]: settings.dropoffTime || null,
-            [WS.VEHICLE_NUM]: settings.vehicleNum || null,
+            [WS.VEHICLE_NUM]: vehicleNum,
             [WS.MANAGER_NOTES]: settings.managerNotes || null,
             [WS.DRIVER_NOTES]: settings.driverNotes || null,
             [WS.ORDER_NAME]: t.orderName || null,
@@ -145,7 +183,7 @@ export function AutoAssignDialog({ open, onOpenChange, currentDate, existingReco
             [WS.PRICE_DRIVER_INCL]: settings.driverIncl ? parseFloat(settings.driverIncl) : null,
             [WS.CUSTOMER]: t.customerId ? [t.customerId] : null,
             [WS.DRIVER]: settings.driverId ? [settings.driverId] : null,
-            [WS.VEHICLE_TYPE]: settings.vehicleTypeId ? [settings.vehicleTypeId] : null,
+            [WS.VEHICLE_TYPE]: vehicleTypeId ? [vehicleTypeId] : null,
           }
           Object.keys(fields).forEach(k => fields[k] === undefined && delete fields[k])
           ridesToCreate.push({ fields })
