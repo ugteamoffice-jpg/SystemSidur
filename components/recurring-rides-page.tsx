@@ -599,23 +599,20 @@ export function RecurringRidesPage() {
                   <div className="space-y-1"><Label>ת.ז</Label><Input value={form.idNum}
                     onChange={e => setForm(p => ({ ...p, idNum: e.target.value }))} className="text-right" /></div>
                 </div>
-              </TabsContent>
 
-              {/* Tab: שיבוץ לפי יום */}
-              <TabsContent value="schedule" className="space-y-3 mt-0">
                 {/* פרטי ברירת מחדל — ממולא פעם אחת, כל הימים יורשים */}
-                <div className="border-2 border-orange-200 rounded-lg p-3 space-y-3 bg-orange-50/50">
-                  <p className="font-bold text-sm text-orange-700">פרטי הנסיעה — ברירת מחדל לכל הימים</p>
+                <div className="border rounded-lg p-3 space-y-3 bg-muted/30">
+                  <p className="font-bold text-sm">פרטי הנסיעה — ברירת מחדל לכל הימים</p>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <Label className="text-xs">שעת התייצבות</Label>
                       <Input type="time" value={form.defaults.pickupTime}
-                        onChange={e => setDefault("pickupTime", e.target.value)} className="h-9 bg-white" />
+                        onChange={e => setDefault("pickupTime", e.target.value)} className="h-9" />
                     </div>
                     <div>
                       <Label className="text-xs">שעת חזור</Label>
                       <Input type="time" value={form.defaults.dropoffTime}
-                        onChange={e => setDefault("dropoffTime", e.target.value)} className="h-9 bg-white" />
+                        onChange={e => setDefault("dropoffTime", e.target.value)} className="h-9" />
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
@@ -636,45 +633,48 @@ export function RecurringRidesPage() {
                     <div>
                       <Label className="text-xs">מס׳ רכב</Label>
                       <Input value={form.defaults.vehicleNum}
-                        onChange={e => setDefault("vehicleNum", e.target.value)} className="h-8 text-sm text-right bg-white" />
+                        onChange={e => setDefault("vehicleNum", e.target.value)} className="h-8 text-sm text-right" />
                     </div>
                   </div>
                   <div className="grid grid-cols-4 gap-2">
                     <div>
                       <Label className="text-xs">מחיר לקוח לפני מע״מ</Label>
                       <Input type="number" value={form.defaults.clientExcl}
-                        onChange={e => setDefaultVat(e.target.value, "excl", "client")} className="h-9 bg-white" />
+                        onChange={e => setDefaultVat(e.target.value, "excl", "client")} className="h-9" />
                     </div>
                     <div>
                       <Label className="text-xs">מחיר לקוח כולל מע״מ</Label>
                       <Input type="number" value={form.defaults.clientIncl}
-                        onChange={e => setDefaultVat(e.target.value, "incl", "client")} className="h-9 font-bold bg-white" />
+                        onChange={e => setDefaultVat(e.target.value, "incl", "client")} className="h-9 font-bold" />
                     </div>
                     <div>
                       <Label className="text-xs">מחיר נהג לפני מע״מ</Label>
                       <Input type="number" value={form.defaults.driverExcl}
-                        onChange={e => setDefaultVat(e.target.value, "excl", "driver")} className="h-9 bg-white" />
+                        onChange={e => setDefaultVat(e.target.value, "excl", "driver")} className="h-9" />
                     </div>
                     <div>
                       <Label className="text-xs">מחיר נהג כולל מע״מ</Label>
                       <Input type="number" value={form.defaults.driverIncl}
-                        onChange={e => setDefaultVat(e.target.value, "incl", "driver")} className="h-9 font-bold bg-white" />
+                        onChange={e => setDefaultVat(e.target.value, "incl", "driver")} className="h-9 font-bold" />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <Label className="text-xs">הערות מנהל</Label>
                       <Textarea value={form.defaults.managerNotes}
-                        onChange={e => setDefault("managerNotes", e.target.value)} className="text-right text-sm bg-white" rows={2} />
+                        onChange={e => setDefault("managerNotes", e.target.value)} className="text-right text-sm" rows={2} />
                     </div>
                     <div>
                       <Label className="text-xs">הערות נהג</Label>
                       <Textarea value={form.defaults.driverNotes}
-                        onChange={e => setDefault("driverNotes", e.target.value)} className="text-right text-sm bg-white" rows={2} />
+                        onChange={e => setDefault("driverNotes", e.target.value)} className="text-right text-sm" rows={2} />
                     </div>
                   </div>
                 </div>
+              </TabsContent>
 
+              {/* Tab: שיבוץ לפי יום */}
+              <TabsContent value="schedule" className="space-y-3 mt-0">
                 {/* Day Selection */}
                 <div>
                   <p className="text-sm font-medium mb-2">ימים פעילים</p>
