@@ -49,9 +49,16 @@ export function AutoAssignDialog({ open, onOpenChange, currentDate, existingReco
   // Load templates when dialog opens
   React.useEffect(() => {
     if (open) {
-      const rides = loadRecurringRides(tenantId).filter(r => r.active)
-      setTemplates(rides)
-      setSelectedIds(new Set(rides.map(r => r.id)))
+      setTemplates([])
+      loadRecurringRides(tenantId)
+        .then(all => {
+          const rides = all.filter(r => r.active)
+          setTemplates(rides)
+          setSelectedIds(new Set(rides.map(r => r.id)))
+        })
+        .catch(() => {
+          toast({ title: "שגיאה", description: "טעינת הנסיעות הקבועות מהשרת נכשלה", variant: "destructive" })
+        })
       setStartDate(currentDate)
       setEndDate(currentDate)
       setStartMonth(currentDate)

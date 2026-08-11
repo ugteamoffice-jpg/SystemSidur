@@ -74,6 +74,8 @@ export function RecurringRidesPage() {
   const { toast } = useToast()
 
   const [rides, setRides] = React.useState<RecurringRide[]>([])
+  const [loading, setLoading] = React.useState(true)
+  const [saving, setSaving] = React.useState(false)
   const [dialogOpen, setDialogOpen] = React.useState(false)
   const [editingId, setEditingId] = React.useState<string | null>(null)
   const [form, setForm] = React.useState<FormState>({ ...emptyForm })
@@ -122,7 +124,19 @@ export function RecurringRidesPage() {
     customers: [], drivers: [], vehicles: []
   })
 
-  React.useEffect(() => { setRides(loadRecurringRides(tenantId)) }, [tenantId])
+  const reload = React.useCallback(async (showLoading = false) => {
+    if (showLoading) setLoading(true)
+    try {
+      const data = await loadRecurringRides(tenantId)
+      setRides(data)
+    } catch {
+      toast({ title: "שגיאה", description: "טעינת הנסיעות הקבועות מהשרת נכשלה", variant: "destructive" })
+    } finally {
+      setLoading(false)
+    }
+  }, [tenantId, toast])
+
+  React.useEffect(() => { void reload(true) }, [reload])
 
   React.useEffect(() => {
     const load = async (url: string, isDrivers = false) => {
@@ -168,8 +182,6 @@ export function RecurringRidesPage() {
     })
   }, [tenantId, tenantFields])
 
-  const reload = () => setRides(loadRecurringRides(tenantId))
-
   const openNew = () => {
     setEditingId(null)
     setForm({ ...emptyForm, defaults: { ...EMPTY_DAY_SETTINGS }, dayOverrides: {} })
@@ -190,26 +202,42 @@ export function RecurringRidesPage() {
     setDialogOpen(true)
   }
 
-  const handleDuplicate = (ride: RecurringRide) => {
+  const handleDuplicate = async (ride: RecurringRide) => {
     const { id, createdAt, updatedAt, ...rest } = ride
-    addRecurringRide(tenantId, { ...rest, active: true })
-    reload()
-    toast({ title: "שוכפל בהצלחה" })
+    try {
+      const created = await addRecurringRide(tenantId, { ...rest, active: true })
+      setRides(prev => [...prev, created])
+      toast({ title: "שוכפל בהצלחה" })
+    } catch {
+      toast({ title: "שגיאה", description: "השכפול נכשל", variant: "destructive" })
+    }
   }
 
-  const handleDelete = (id: string) => {
-    deleteRecurringRide(tenantId, id)
-    reload()
+  const handleDelete = async (id: string) => {
+    const prev = rides
+    setRides(p => p.filter(r => r.id !== id)) // אופטימי
     setDeleteConfirm(null)
-    toast({ title: "נמחק בהצלחה" })
+    try {
+      await deleteRecurringRide(tenantId, id)
+      toast({ title: "נמחק בהצלחה" })
+    } catch {
+      setRides(prev)
+      toast({ title: "שגיאה", description: "המחיקה נכשלה", variant: "destructive" })
+    }
   }
 
-  const handleToggle = (ride: RecurringRide) => {
-    updateRecurringRide(tenantId, ride.id, { active: !ride.active })
-    reload()
+  const handleToggle = async (ride: RecurringRide) => {
+    const newActive = !ride.active
+    setRides(p => p.map(r => r.id === ride.id ? { ...r, active: newActive } : r)) // אופטימי
+    try {
+      await updateRecurringRide(tenantId, ride.id, { active: newActive })
+    } catch {
+      setRides(p => p.map(r => r.id === ride.id ? { ...r, active: ride.active } : r))
+      toast({ title: "שגיאה", description: "עדכון הסטטוס נכשל", variant: "destructive" })
+    }
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.customerName || !form.description) {
       toast({ title: "שגיאה", description: "יש למלא לקוח ומסלול", variant: "destructive" })
       return
@@ -227,15 +255,23 @@ export function RecurringRidesPage() {
       dayOverrides: form.dayOverrides, active: form.active,
     }
 
-    if (editingId) {
-      updateRecurringRide(tenantId, editingId, data)
-      toast({ title: "עודכן בהצלחה" })
-    } else {
-      addRecurringRide(tenantId, data)
-      toast({ title: "נוסף בהצלחה" })
+    setSaving(true)
+    try {
+      if (editingId) {
+        const updated = await updateRecurringRide(tenantId, editingId, data)
+        setRides(prev => prev.map(r => r.id === editingId ? updated : r))
+        toast({ title: "עודכן בהצלחה" })
+      } else {
+        const created = await addRecurringRide(tenantId, data)
+        setRides(prev => [...prev, created])
+        toast({ title: "נוסף בהצלחה" })
+      }
+      setDialogOpen(false)
+    } catch {
+      toast({ title: "שגיאה", description: "השמירה לשרת נכשלה, נסה שוב", variant: "destructive" })
+    } finally {
+      setSaving(false)
     }
-    setDialogOpen(false)
-    reload()
   }
 
   const toggleDay = (day: number) => {
@@ -578,7 +614,7 @@ export function RecurringRidesPage() {
             {table.getRowModel().rows.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
-                  {rides.length === 0 ? "אין נסיעות קבועות. לחץ \"צור נסיעה קבועה\" כדי להוסיף." : "לא נמצאו תוצאות"}
+                  {loading ? "טוען נסיעות קבועות..." : rides.length === 0 ? "אין נסיעות קבועות. לחץ \"צור נסיעה קבועה\" כדי להוסיף." : "לא נמצאו תוצאות"}
                 </TableCell>
               </TableRow>
             ) : (
@@ -758,7 +794,7 @@ export function RecurringRidesPage() {
 
           <DialogFooter className="flex-row-reverse gap-2 mt-2">
             <Button variant="outline" onClick={() => setDialogOpen(false)}>ביטול</Button>
-            <Button onClick={handleSave}>{editingId ? "עדכן" : "הוסף"}</Button>
+            <Button onClick={handleSave} disabled={saving}>{saving ? "שומר..." : editingId ? "עדכן" : "הוסף"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
