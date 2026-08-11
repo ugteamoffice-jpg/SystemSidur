@@ -438,12 +438,78 @@
     "recurring-rides": {
       "sheetName": "נסיעות קבועות",
       "csvFile": null,
-      "comment": "TODO: מוגדר כרגע כפלייסהולדר. כשמעבירים מ-localStorage — להדביק את מבנה ה-JSON ונעדכן את העמודות.",
+      "comment": "תבניות נסיעות קבועות. שדות מקוננים (ברירת מחדל, חריגות יום, ימים) נשמרים כ-JSON.",
       "columns": [
         {
-          "key": "template",
-          "header": "תבנית (JSON)",
+          "key": "customerId",
+          "header": "מזהה לקוח",
+          "type": "text",
+          "csv": null
+        },
+        {
+          "key": "customerName",
+          "header": "שם לקוח",
+          "type": "text",
+          "csv": null
+        },
+        {
+          "key": "description",
+          "header": "מסלול",
+          "type": "text",
+          "csv": null
+        },
+        {
+          "key": "orderName",
+          "header": "שם מזמין",
+          "type": "text",
+          "csv": null
+        },
+        {
+          "key": "mobile",
+          "header": "נייד",
+          "type": "text",
+          "csv": null
+        },
+        {
+          "key": "idNum",
+          "header": "ת.ז",
+          "type": "text",
+          "csv": null
+        },
+        {
+          "key": "activeDays",
+          "header": "ימים פעילים (JSON)",
           "type": "json",
+          "csv": null
+        },
+        {
+          "key": "defaults",
+          "header": "ברירת מחדל (JSON)",
+          "type": "json",
+          "csv": null
+        },
+        {
+          "key": "dayOverrides",
+          "header": "חריגות לפי יום (JSON)",
+          "type": "json",
+          "csv": null
+        },
+        {
+          "key": "active",
+          "header": "פעיל",
+          "type": "boolean",
+          "csv": null
+        },
+        {
+          "key": "createdAt",
+          "header": "נוצר בתאריך",
+          "type": "text",
+          "csv": null
+        },
+        {
+          "key": "updatedAt",
+          "header": "עודכן בתאריך",
+          "type": "text",
           "csv": null
         }
       ]
