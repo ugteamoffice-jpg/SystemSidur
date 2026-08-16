@@ -1200,8 +1200,8 @@ export function ReportPage({ reportType }: ReportPageProps) {
           </Button>
           )}
 
-          {/* Export Button + Search - side by side */}
-          {hasSearched && filteredData.length > 0 && (
+          {/* Export Button + Search - side by side (תמיד גלוי אחרי חיפוש, גם כשאין תוצאות — כדי שאפשר יהיה לנקות את החיפוש) */}
+          {hasSearched && (
             <div className="flex items-center gap-1.5 shrink-0">
               <Input
                 placeholder="חיפוש חופשי..."
@@ -1211,7 +1211,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
               />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="shrink-0 text-xs md:text-sm h-8 md:h-9 px-2 md:px-3">
+                  <Button variant="outline" size="sm" disabled={filteredData.length === 0} className="shrink-0 text-xs md:text-sm h-8 md:h-9 px-2 md:px-3">
                     <Download className="h-3.5 w-3.5 md:h-4 md:w-4 ml-1 md:ml-2" />
                     ייצוא דוח
                   </Button>
