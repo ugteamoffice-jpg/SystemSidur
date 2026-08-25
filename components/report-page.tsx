@@ -167,7 +167,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
     const mkP2 = (r: WorkScheduleRecord) => (Number(r.fields[WS.PRICE_CLIENT_INCL]) || 0).toLocaleString()
     const mkP3 = (r: WorkScheduleRecord) => (Number(r.fields[WS.PRICE_DRIVER_EXCL]) || 0).toLocaleString()
     const mkP4 = (r: WorkScheduleRecord) => (Number(r.fields[WS.PRICE_DRIVER_INCL]) || 0).toLocaleString()
-    const mkProfit = (r: WorkScheduleRecord) => (Number(r.fields[WS.PROFIT]) || 0).toLocaleString()
+    const mkProfit = (r: WorkScheduleRecord) => (Math.round((((Number(r.fields[WS.PRICE_CLIENT_EXCL]) || 0) - (Number(r.fields[WS.PRICE_DRIVER_EXCL]) || 0))) * 100) / 100).toLocaleString()
     const mkInvoice = (r: WorkScheduleRecord) => r.fields[INVOICE_FIELD_ID] || "-"
 
     if (reportType === "report-driver") {
@@ -492,7 +492,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
     p2: filteredData.reduce((s, r) => s + (Number(r.fields[WS.PRICE_CLIENT_INCL]) || 0), 0),
     p3: filteredData.reduce((s, r) => s + (Number(r.fields[WS.PRICE_DRIVER_EXCL]) || 0), 0),
     p4: filteredData.reduce((s, r) => s + (Number(r.fields[WS.PRICE_DRIVER_INCL]) || 0), 0),
-    p5: filteredData.reduce((s, r) => s + (Number(r.fields[WS.PROFIT]) || 0), 0),
+    p5: filteredData.reduce((s, r) => s + ((Number(r.fields[WS.PRICE_CLIENT_EXCL]) || 0) - (Number(r.fields[WS.PRICE_DRIVER_EXCL]) || 0)), 0),
     p6: filteredData.reduce((s, r) => s + ((Number(r.fields[WS.PRICE_CLIENT_INCL]) || 0) - (Number(r.fields[WS.PRICE_DRIVER_INCL]) || 0)), 0),
   }), [filteredData, WS])
 
@@ -604,7 +604,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
               Number(f[WS.PRICE_CLIENT_INCL]) || 0,
               Number(f[WS.PRICE_DRIVER_EXCL]) || 0,
               Number(f[WS.PRICE_DRIVER_INCL]) || 0,
-              Number(f[WS.PROFIT]) || 0,
+              Math.round((((Number(f[WS.PRICE_CLIENT_EXCL]) || 0) - (Number(f[WS.PRICE_DRIVER_EXCL]) || 0))) * 100) / 100,
             ]
         return baseRow.join(",")
       })
@@ -649,7 +649,7 @@ export function ReportPage({ reportType }: ReportPageProps) {
     const mkP2   = (f: any) => (Number(f[WS.PRICE_CLIENT_INCL]) || 0).toLocaleString("he-IL")
     const mkP3   = (f: any) => (Number(f[WS.PRICE_DRIVER_EXCL]) || 0).toLocaleString("he-IL")
     const mkP4   = (f: any) => (Number(f[WS.PRICE_DRIVER_INCL]) || 0).toLocaleString("he-IL")
-    const mkP5   = (f: any) => (Number(f[WS.PROFIT]) || 0).toLocaleString("he-IL")
+    const mkP5   = (f: any) => (Math.round((((Number(f[WS.PRICE_CLIENT_EXCL]) || 0) - (Number(f[WS.PRICE_DRIVER_EXCL]) || 0))) * 100) / 100).toLocaleString("he-IL")
 
     let cols: ColDef[] = []
 
