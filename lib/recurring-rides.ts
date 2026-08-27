@@ -26,6 +26,9 @@ export interface RecurringRide {
   orderName: string
   mobile: string
   idNum: string
+  // תוקף הקו (אופציונלי, yyyy-MM-dd; ריק = ללא הגבלה)
+  lineStartDate?: string
+  lineEndDate?: string
   // ברירת מחדל (לימים ללא הגדרה ספציפית)
   defaults: DaySettings
   // הגדרות ספציפיות ליום (0=ראשון..6=שבת) — רק שדות שונים מברירת מחדל
@@ -140,7 +143,14 @@ export async function getActiveRidesForDay(tenantId: string, dayOfWeek: number):
   return rides.filter(r => r.active && r.activeDays.includes(dayOfWeek))
 }
 
-/* ---------- Helpers (ללא שינוי) ---------- */
+/* ---------- Helpers ---------- */
+
+// האם הקו בתוקף בתאריך נתון (yyyy-MM-dd). שדה ריק = ללא הגבלה מהצד הזה.
+export function isRideActiveOnDate(ride: RecurringRide, dateStr: string): boolean {
+  if (ride.lineStartDate && dateStr < ride.lineStartDate) return false
+  if (ride.lineEndDate && dateStr > ride.lineEndDate) return false
+  return true
+}
 
 export function getSettingsForDay(ride: RecurringRide, dayOfWeek: number): DaySettings {
   const overrides = ride.dayOverrides[dayOfWeek] || {}
