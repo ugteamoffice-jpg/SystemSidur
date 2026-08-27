@@ -61,6 +61,8 @@ function rideToFields(ride: Partial<RecurringRide>, isUpdate = false): Record<st
   if (!isUpdate || ride.orderName !== undefined) set("שם מזמין", ride.orderName ?? "")
   if (!isUpdate || ride.mobile !== undefined) set("נייד", ride.mobile ?? "")
   if (!isUpdate || ride.idNum !== undefined) set("ת.ז", ride.idNum ?? "")
+  if (!isUpdate || ride.lineStartDate !== undefined) set("תאריך התחלה", ride.lineStartDate ?? "")
+  if (!isUpdate || ride.lineEndDate !== undefined) set("תאריך סיום", ride.lineEndDate ?? "")
   if (!isUpdate || ride.activeDays !== undefined) set("ימים פעילים (JSON)", JSON.stringify(ride.activeDays ?? []))
   if (!isUpdate || ride.defaults !== undefined) set("ברירת מחדל (JSON)", JSON.stringify(ride.defaults ?? EMPTY_DAY_SETTINGS))
   if (!isUpdate || ride.dayOverrides !== undefined) set("חריגות לפי יום (JSON)", JSON.stringify(ride.dayOverrides ?? {}))
@@ -81,6 +83,8 @@ function fieldsToRide(id: string, fields: Record<string, unknown>): RecurringRid
     orderName: str("שם מזמין"),
     mobile: str("נייד"),
     idNum: str("ת.ז"),
+    lineStartDate: str("תאריך התחלה"),
+    lineEndDate: str("תאריך סיום"),
     defaults,
     dayOverrides: safeParse<{ [day: number]: Partial<DaySettings> }>(fields["חריגות לפי יום (JSON)"], {}),
     activeDays: safeParse<number[]>(fields["ימים פעילים (JSON)"], []),
