@@ -17,7 +17,7 @@ import {
 import { useToast } from "@/hooks/use-toast"
 import { useTenant, useTenantFields } from "@/lib/tenant-context"
 import {
-  RecurringRide, loadRecurringRides, getSettingsForDay, DAY_NAMES_HE, DAY_LETTERS_HE
+  RecurringRide, loadRecurringRides, getSettingsForDay, isRideActiveOnDate, DAY_NAMES_HE, DAY_LETTERS_HE
 } from "@/lib/recurring-rides"
 
 interface AutoAssignDialogProps {
@@ -153,7 +153,7 @@ export function AutoAssignDialog({ open, onOpenChange, currentDate, existingReco
       for (const day of days) {
         const dayOfWeek = day.getDay()
         const dateStr = format(day, "yyyy-MM-dd")
-        const dayTemplates = selected.filter(t => t.activeDays.includes(dayOfWeek))
+        const dayTemplates = selected.filter(t => t.activeDays.includes(dayOfWeek) && isRideActiveOnDate(t, dateStr))
 
         for (const t of dayTemplates) {
           const settings = getSettingsForDay(t, dayOfWeek)
@@ -240,7 +240,8 @@ export function AutoAssignDialog({ open, onOpenChange, currentDate, existingReco
     let count = 0
     for (const day of days) {
       const dow = day.getDay()
-      count += selected.filter(t => t.activeDays.includes(dow)).length
+      const ds = format(day, "yyyy-MM-dd")
+      count += selected.filter(t => t.activeDays.includes(dow) && isRideActiveOnDate(t, ds)).length
     }
     return count
   }

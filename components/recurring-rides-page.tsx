@@ -53,6 +53,7 @@ function AutoComplete({ options, value, onChange, onSelect, placeholder }: any) 
 interface FormState {
   customerName: string; customerId: string
   description: string; orderName: string; mobile: string; idNum: string
+  lineStartDate: string; lineEndDate: string
   activeDays: number[]
   defaults: DaySettings
   dayOverrides: { [day: number]: Partial<DaySettings> }
@@ -62,6 +63,7 @@ interface FormState {
 const emptyForm: FormState = {
   customerName: "", customerId: "",
   description: "", orderName: "", mobile: "", idNum: "",
+  lineStartDate: "", lineEndDate: "",
   activeDays: [0, 1, 2, 3, 4],
   defaults: { ...EMPTY_DAY_SETTINGS },
   dayOverrides: {},
@@ -194,6 +196,7 @@ export function RecurringRidesPage() {
       customerName: ride.customerName, customerId: ride.customerId,
       description: ride.description, orderName: ride.orderName,
       mobile: ride.mobile, idNum: ride.idNum,
+      lineStartDate: ride.lineStartDate || "", lineEndDate: ride.lineEndDate || "",
       activeDays: [...ride.activeDays],
       defaults: { ...ride.defaults },
       dayOverrides: JSON.parse(JSON.stringify(ride.dayOverrides)),
@@ -246,11 +249,16 @@ export function RecurringRidesPage() {
       toast({ title: "שגיאה", description: "יש לבחור לפחות יום אחד", variant: "destructive" })
       return
     }
+    if (form.lineStartDate && form.lineEndDate && form.lineStartDate > form.lineEndDate) {
+      toast({ title: "שגיאה", description: "תאריך סיום הקו לפני תאריך ההתחלה", variant: "destructive" })
+      return
+    }
 
     const data: Omit<RecurringRide, "id" | "createdAt" | "updatedAt"> = {
       customerName: form.customerName, customerId: form.customerId,
       description: form.description, orderName: form.orderName,
       mobile: form.mobile, idNum: form.idNum,
+      lineStartDate: form.lineStartDate, lineEndDate: form.lineEndDate,
       activeDays: form.activeDays, defaults: form.defaults,
       dayOverrides: form.dayOverrides, active: form.active,
     }
@@ -512,6 +520,15 @@ export function RecurringRidesPage() {
       ),
     },
     {
+      id: "validity", header: "תוקף", size: 150, minSize: 90, enableResizing: true,
+      cell: ({ row }) => {
+        const s = row.original.lineStartDate, e = row.original.lineEndDate
+        if (!s && !e) return <span className="text-muted-foreground">-</span>
+        const fmt = (d?: string) => d ? d.split("-").reverse().join("/") : "…"
+        return <span className="text-xs whitespace-nowrap">{fmt(s)} - {fmt(e)}</span>
+      },
+    },
+    {
       id: "actions", header: "פעולות", size: 100, minSize: 80, enableResizing: false,
       cell: ({ row }) => (
         <div className="flex gap-1">
@@ -671,6 +688,17 @@ export function RecurringRidesPage() {
                     onChange={e => setForm(p => ({ ...p, mobile: e.target.value }))} className="text-right" /></div>
                   <div className="space-y-1"><Label>ת.ז</Label><Input value={form.idNum}
                     onChange={e => setForm(p => ({ ...p, idNum: e.target.value }))} className="text-right" /></div>
+                </div>
+
+                {/* תוקף הקו */}
+                <div className="border-t pt-3">
+                  <p className="text-sm font-medium mb-2">תוקף הקו (אופציונלי — ריק = ללא הגבלה)</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1"><Label className="text-xs">תאריך תחילת קו</Label><Input type="date" value={form.lineStartDate}
+                      onChange={e => setForm(p => ({ ...p, lineStartDate: e.target.value }))} className="h-9" /></div>
+                    <div className="space-y-1"><Label className="text-xs">תאריך סיום קו</Label><Input type="date" value={form.lineEndDate}
+                      onChange={e => setForm(p => ({ ...p, lineEndDate: e.target.value }))} className="h-9" /></div>
+                  </div>
                 </div>
 
                 {/* פרטי ברירת מחדל — ממולא פעם אחת, כל הימים יורשים */}
