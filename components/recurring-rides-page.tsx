@@ -1,7 +1,9 @@
 "use client"
 
 import * as React from "react"
-import { Plus, Pencil, Trash2, Copy, ToggleLeft, ToggleRight, Search, Filter } from "lucide-react"
+import { Plus, Pencil, Trash2, Copy, ToggleLeft, ToggleRight, Search, Filter, Calendar as CalendarIcon, X } from "lucide-react"
+import { format, parse } from "date-fns"
+import { he } from "date-fns/locale"
 import {
   ColumnDef, ColumnSizingState, ColumnOrderState, SortingState,
   flexRender, getCoreRowModel, getSortedRowModel, useReactTable,
@@ -18,6 +20,8 @@ import {
 } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useToast } from "@/hooks/use-toast"
 import { useTenant, useTenantFields } from "@/lib/tenant-context"
 import {
@@ -85,6 +89,8 @@ export function RecurringRidesPage() {
   const [searchFilter, setSearchFilter] = React.useState("")
   const [activeFilter, setActiveFilter] = React.useState<"all" | "active" | "inactive">("active")
   const [isResizing, setIsResizing] = React.useState(false)
+  const [startCalOpen, setStartCalOpen] = React.useState(false)
+  const [endCalOpen, setEndCalOpen] = React.useState(false)
 
   const COL_SIZE_KEY = `recurringRidesColSize_${tenantId}`
   const COL_ORDER_KEY = `recurringRidesColOrder_${tenantId}`
@@ -694,10 +700,52 @@ export function RecurringRidesPage() {
                 <div className="border-t pt-3">
                   <p className="text-sm font-medium mb-2">תוקף הקו (אופציונלי — ריק = ללא הגבלה)</p>
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1"><Label className="text-xs">תאריך תחילת קו</Label><Input type="date" value={form.lineStartDate}
-                      onChange={e => setForm(p => ({ ...p, lineStartDate: e.target.value }))} className="h-9" /></div>
-                    <div className="space-y-1"><Label className="text-xs">תאריך סיום קו</Label><Input type="date" value={form.lineEndDate}
-                      onChange={e => setForm(p => ({ ...p, lineEndDate: e.target.value }))} className="h-9" /></div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">תאריך תחילת קו</Label>
+                      <div className="flex gap-1">
+                        <Popover open={startCalOpen} onOpenChange={setStartCalOpen}>
+                          <PopoverTrigger asChild>
+                            <Button type="button" variant="outline" className="w-full justify-start text-right text-sm h-9">
+                              <CalendarIcon className="ml-2 h-4 w-4" />
+                              {form.lineStartDate ? format(parse(form.lineStartDate, "yyyy-MM-dd", new Date()), "dd/MM/yyyy") : "ללא הגבלה"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar mode="single"
+                              selected={form.lineStartDate ? parse(form.lineStartDate, "yyyy-MM-dd", new Date()) : undefined}
+                              onSelect={(d) => { setForm(p => ({ ...p, lineStartDate: d ? format(d, "yyyy-MM-dd") : "" })); setStartCalOpen(false) }}
+                              locale={he} dir="rtl" fixedWeeks />
+                          </PopoverContent>
+                        </Popover>
+                        {form.lineStartDate && (
+                          <Button type="button" variant="ghost" className="h-9 px-2 shrink-0" title="נקה"
+                            onClick={() => setForm(p => ({ ...p, lineStartDate: "" }))}><X className="h-4 w-4" /></Button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">תאריך סיום קו</Label>
+                      <div className="flex gap-1">
+                        <Popover open={endCalOpen} onOpenChange={setEndCalOpen}>
+                          <PopoverTrigger asChild>
+                            <Button type="button" variant="outline" className="w-full justify-start text-right text-sm h-9">
+                              <CalendarIcon className="ml-2 h-4 w-4" />
+                              {form.lineEndDate ? format(parse(form.lineEndDate, "yyyy-MM-dd", new Date()), "dd/MM/yyyy") : "ללא הגבלה"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar mode="single"
+                              selected={form.lineEndDate ? parse(form.lineEndDate, "yyyy-MM-dd", new Date()) : undefined}
+                              onSelect={(d) => { setForm(p => ({ ...p, lineEndDate: d ? format(d, "yyyy-MM-dd") : "" })); setEndCalOpen(false) }}
+                              locale={he} dir="rtl" fixedWeeks />
+                          </PopoverContent>
+                        </Popover>
+                        {form.lineEndDate && (
+                          <Button type="button" variant="ghost" className="h-9 px-2 shrink-0" title="נקה"
+                            onClick={() => setForm(p => ({ ...p, lineEndDate: "" }))}><X className="h-4 w-4" /></Button>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
 
