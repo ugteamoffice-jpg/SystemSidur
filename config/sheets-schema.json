@@ -511,6 +511,18 @@
           "header": "עודכן בתאריך",
           "type": "text",
           "csv": null
+        },
+        {
+          "key": "lineStartDate",
+          "header": "תאריך התחלה",
+          "type": "text",
+          "csv": null
+        },
+        {
+          "key": "lineEndDate",
+          "header": "תאריך סיום",
+          "type": "text",
+          "csv": null
         }
       ]
     },
