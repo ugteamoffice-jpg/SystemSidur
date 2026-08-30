@@ -764,7 +764,7 @@ function DataGrid({ schema }: { schema?: any }) {
       p2: rows.reduce((sum, row) => sum + (Number(row.original.fields[WS.PRICE_CLIENT_INCL]) || 0), 0),
       p3: rows.reduce((sum, row) => sum + (Number(row.original.fields[WS.PRICE_DRIVER_EXCL]) || 0), 0),
       p4: rows.reduce((sum, row) => sum + (Number(row.original.fields[WS.PRICE_DRIVER_INCL]) || 0), 0),
-      p5: rows.reduce((sum, row) => sum + (Number(row.original.fields[WS.PROFIT]) || 0), 0),
+      p5: rows.reduce((sum, row) => sum + ((Number(row.original.fields[WS.PRICE_CLIENT_EXCL]) || 0) - (Number(row.original.fields[WS.PRICE_DRIVER_EXCL]) || 0)), 0),
       p6: rows.reduce((sum, row) => sum + ((Number(row.original.fields[WS.PRICE_CLIENT_INCL]) || 0) - (Number(row.original.fields[WS.PRICE_DRIVER_INCL]) || 0)), 0),
     }
   }, [table.getFilteredRowModel().rows])

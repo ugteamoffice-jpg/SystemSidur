@@ -173,7 +173,7 @@ export function ReportDialog({ open, onOpenChange, reportType }: ReportDialogPro
     p2: filteredData.reduce((s, r) => s + (Number(r.fields[WS.PRICE_CLIENT_INCL]) || 0), 0),
     p3: filteredData.reduce((s, r) => s + (Number(r.fields[WS.PRICE_DRIVER_EXCL]) || 0), 0),
     p4: filteredData.reduce((s, r) => s + (Number(r.fields[WS.PRICE_DRIVER_INCL]) || 0), 0),
-    p5: filteredData.reduce((s, r) => s + (Number(r.fields[WS.PROFIT]) || 0), 0),
+    p5: filteredData.reduce((s, r) => s + ((Number(r.fields[WS.PRICE_CLIENT_EXCL]) || 0) - (Number(r.fields[WS.PRICE_DRIVER_EXCL]) || 0)), 0),
     p6: filteredData.reduce((s, r) => s + ((Number(r.fields[WS.PRICE_CLIENT_INCL]) || 0) - (Number(r.fields[WS.PRICE_DRIVER_INCL]) || 0)), 0),
   }), [filteredData, WS])
 
@@ -327,7 +327,7 @@ export function ReportDialog({ open, onOpenChange, reportType }: ReportDialogPro
                     <TableCell className="text-right">{(Number(record.fields[WS.PRICE_CLIENT_INCL]) || 0).toLocaleString()}</TableCell>
                     <TableCell className="text-right">{(Number(record.fields[WS.PRICE_DRIVER_EXCL]) || 0).toLocaleString()}</TableCell>
                     <TableCell className="text-right">{(Number(record.fields[WS.PRICE_DRIVER_INCL]) || 0).toLocaleString()}</TableCell>
-                    <TableCell className="text-right text-green-600 dark:text-green-400 font-medium">{(Number(record.fields[WS.PROFIT]) || 0).toLocaleString()}</TableCell>
+                    <TableCell className="text-right text-green-600 dark:text-green-400 font-medium">{(Math.round((((Number(record.fields[WS.PRICE_CLIENT_EXCL]) || 0) - (Number(record.fields[WS.PRICE_DRIVER_EXCL]) || 0))) * 100) / 100).toLocaleString()}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
