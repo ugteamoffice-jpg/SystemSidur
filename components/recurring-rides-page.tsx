@@ -104,7 +104,7 @@ export function RecurringRidesPage() {
       if (s) {
         const saved = JSON.parse(s)
         // Reset if old column IDs detected
-        if (saved.includes("time") || saved.includes("price") || !saved.includes("pickup")) {
+        if (saved.includes("time") || saved.includes("price") || !saved.includes("pickup") || !saved.includes("driver")) {
           localStorage.removeItem(COL_ORDER_KEY)
           return []
         }
@@ -496,6 +496,24 @@ export function RecurringRidesPage() {
     {
       id: "vehicle", header: "סוג רכב", size: 100, minSize: 60, enableResizing: true,
       cell: ({ row }) => row.original.defaults.vehicleTypeName || "-",
+    },
+    {
+      id: "driver", header: "נהג", size: 130, minSize: 70, enableResizing: true,
+      cell: ({ row }) => {
+        const t = row.original
+        const names = new Map<string, number[]>()
+        for (const d of [...t.activeDays].sort()) {
+          const ov = t.dayOverrides[d]
+          const name = ((ov && ov.driverName) ? ov.driverName : t.defaults.driverName) || ""
+          if (!name) continue
+          if (!names.has(name)) names.set(name, [])
+          names.get(name)!.push(d)
+        }
+        if (names.size === 0) return <span className="text-muted-foreground">-</span>
+        if (names.size === 1) return <span className="truncate block" title={[...names.keys()][0]}>{[...names.keys()][0]}</span>
+        const parts = [...names.entries()].map(([n, ds]) => ds.map(d => DAY_LETTERS_HE[d]).join(",") + ": " + n)
+        return <span className="text-xs truncate block" title={parts.join(" | ")}>{parts.join(" | ")}</span>
+      },
     },
     {
       id: "clientExcl", header: 'מחיר לקוח + מע"מ', size: 120, minSize: 70, enableResizing: true,
