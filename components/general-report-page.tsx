@@ -4,7 +4,7 @@ import * as React from "react"
 import { format } from "date-fns"
 import { he } from "date-fns/locale"
 import { requestQueue } from "@/lib/request-queue"
-import { Calendar as CalendarIcon, Loader2, Search, X, SlidersHorizontal, UserCog, DollarSign, Trash2 } from "lucide-react"
+import { Calendar as CalendarIcon, Loader2, Search, X, SlidersHorizontal, UserCog, DollarSign, Trash2, Download, FileSpreadsheet, Printer } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -18,6 +18,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useTenantFields, useTenant } from "@/lib/tenant-context"
 import { useToast } from "@/hooks/use-toast"
 import { RideDialog } from "@/components/new-ride-dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { loadReportSettings } from "@/components/report-settings-dialog"
 
 interface RideRecord { id: string; fields: { [key: string]: any } }
 
@@ -29,6 +31,8 @@ const renderLink = (value: any): string => {
   if (typeof value === "object" && value.title) return value.title
   return String(value)
 }
+
+const escapeHtml = (str: string) => String(str ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
 
 interface FilterState {
   startDate: Date | undefined; endDate: Date | undefined
@@ -379,6 +383,124 @@ export function GeneralReportPage() {
     })
   }, [filteredData, grSortCol, grSortDir])
 
+  // --- ייצוא דוח כללי ---
+  const driverNameOf = (f: any): string => f._driverName || renderLink(f[WS.DRIVER])
+  const num = (v: any) => Number(v) || 0
+  const profitOf = (f: any) => Math.round((num(f[WS.PRICE_CLIENT_EXCL]) - num(f[WS.PRICE_DRIVER_EXCL])) * 100) / 100
+
+  const exportToCsv = () => {
+    if (sortedGrData.length === 0) return
+    const q = (v: any) => `"${String(v ?? "").replace(/"/g, '""')}"`
+    const headers = ["תאריך", "שם לקוח", "הלוך", "מסלול", "חזור", "סוג רכב", "שם נהג", "מספר רכב", 'לקוח לפני מע"מ', 'לקוח כולל מע"מ', 'נהג לפני מע"מ', 'נהג כולל מע"מ', "רווח"]
+    const rows = sortedGrData.map(r => {
+      const f = r.fields
+      return [
+        f[WS.DATE] ? format(new Date(f[WS.DATE]), "dd/MM/yyyy") : "",
+        q(renderLink(f[WS.CUSTOMER])), q(f[WS.PICKUP_TIME] || ""), q(f[WS.DESCRIPTION] || ""), q(f[WS.DROPOFF_TIME] || ""),
+        q(renderLink(f[WS.VEHICLE_TYPE])), q(driverNameOf(f)), q(f[WS.VEHICLE_NUM] || ""),
+        num(f[WS.PRICE_CLIENT_EXCL]), num(f[WS.PRICE_CLIENT_INCL]), num(f[WS.PRICE_DRIVER_EXCL]), num(f[WS.PRICE_DRIVER_INCL]), profitOf(f),
+      ].join(",")
+    })
+    const totalRow = ["", "", "", q('סה"כ'), "", "", "", "", totals.p1, totals.p2, totals.p3, totals.p4, totals.p5].join(",")
+    const blob = new Blob(["\uFEFF" + [headers.join(","), ...rows, totalRow].join("\n")], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `דוח נסיעות כללי_${format(new Date(), "dd-MM-yyyy")}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const exportToPdf = () => {
+    if (sortedGrData.length === 0) return
+    const settings = loadReportSettings(tenantId)
+    const he2 = (v: number) => v.toLocaleString("he-IL")
+    type Col = { header: string; width?: string; cls?: string; get: (f: any) => string; total?: "p1" | "p2" | "p3" | "p4" | "p5" }
+    const cols: Col[] = [
+      { header: "תאריך", width: "70px", cls: "c", get: f => f[WS.DATE] ? format(new Date(f[WS.DATE]), "dd/MM/yyyy") : "" },
+      { header: "שם לקוח", width: "100px", get: f => escapeHtml(renderLink(f[WS.CUSTOMER])) },
+      { header: "הלוך", width: "50px", cls: "c", get: f => escapeHtml(f[WS.PICKUP_TIME] || "-") },
+      { header: "מסלול", cls: "route", get: f => escapeHtml(f[WS.DESCRIPTION] || "-") },
+      { header: "חזור", width: "50px", cls: "c", get: f => escapeHtml(f[WS.DROPOFF_TIME] || "-") },
+      { header: "סוג רכב", width: "85px", cls: "c", get: f => escapeHtml(renderLink(f[WS.VEHICLE_TYPE])) },
+      { header: "שם נהג", width: "95px", get: f => escapeHtml(driverNameOf(f)) },
+      { header: "מספר רכב", width: "75px", cls: "c", get: f => escapeHtml(f[WS.VEHICLE_NUM] || "-") },
+      { header: 'לקוח לפני מע"מ', width: "70px", cls: "l", get: f => he2(num(f[WS.PRICE_CLIENT_EXCL])), total: "p1" },
+      { header: 'לקוח כולל מע"מ', width: "70px", cls: "l", get: f => he2(num(f[WS.PRICE_CLIENT_INCL])), total: "p2" },
+      { header: 'נהג לפני מע"מ', width: "70px", cls: "l", get: f => he2(num(f[WS.PRICE_DRIVER_EXCL])), total: "p3" },
+      { header: 'נהג כולל מע"מ', width: "70px", cls: "l", get: f => he2(num(f[WS.PRICE_DRIVER_INCL])), total: "p4" },
+      { header: "רווח", width: "65px", cls: "lprofit", get: f => he2(profitOf(f)), total: "p5" },
+    ]
+    const tdCls = (c?: string) => c === "lprofit" ? "l profit-cell" : c === "route" ? "route-cell" : (c || "")
+    const thCls = (c?: string) => c === "c" ? "c" : (c || "").startsWith("l") ? "l" : ""
+    const tableRows = sortedGrData.map((r, i) =>
+      `<tr><td class="c text-muted" style="width:25px">${i + 1}</td>${cols.map(c => `<td class="${tdCls(c.cls)}">${c.get(r.fields)}</td>`).join("")}</tr>`
+    ).join("")
+    const firstTotal = cols.findIndex(c => c.total)
+    const totalsRow = `<tr class="total"><td colspan="${firstTotal + 1}" style="text-align:right;">סה"כ:</td>${cols.slice(firstTotal).map(c =>
+      c.total ? `<td class="l${c.cls === "lprofit" ? " profit-cell" : ""}">${he2((totals as any)[c.total])} ₪</td>` : "<td></td>").join("")}</tr>`
+    const thead = `<th class="c" style="width:25px">#</th>` + cols.map(c => `<th class="${thCls(c.cls)}" ${c.width ? `style="width:${c.width}"` : ""}>${c.header}</th>`).join("")
+
+    const logoHtml = settings.logoBase64 ? `<img src="${settings.logoBase64}" class="logo" alt="לוגו חברה"/>` : ""
+    const fp: string[] = []
+    if (settings.address) fp.push(escapeHtml(settings.address))
+    if (settings.phone) fp.push(`טלפון: ${escapeHtml(settings.phone)}`)
+    if (settings.email) fp.push(escapeHtml(settings.email))
+    const companyDetailsHtml = fp.length > 0 ? `<div class="cd">${fp.join(" | ")}</div>` : ""
+    const footerLine2 = settings.footerText ? `<div class="fc">${escapeHtml(settings.footerText)}</div>` : ""
+    const title = "דוח נסיעות כללי"
+
+    const html = `<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="UTF-8"/>
+<title>${title}</title>
+<style>
+@page { size: A4 landscape; margin: 10mm; }
+* { box-sizing: border-box; font-family: Tahoma, sans-serif !important; }
+body { direction: rtl; padding: 10px 16px; font-size: 12px; color: #1e293b; line-height: 1.5; background: #fff; }
+.hdr { text-align:center; margin-bottom:18px; border-bottom:2px solid #e2e8f0; padding-bottom:14px; }
+.logo { max-height:65px; max-width:180px; object-fit:contain; margin:0 auto 8px; display:block; }
+.company-name { margin:0 0 4px 0; font-size:24px; color:#0f172a; font-weight:800; }
+.cd { font-size:13px; color:#64748b; margin-bottom:8px; }
+.report-title { margin:8px 0 4px 0; font-size:20px; color:#0f172a; font-weight:700; }
+.mi { font-size:13px; color:#475569; margin-bottom:3px; }
+table { width:100%; border-collapse:collapse; margin-bottom:20px; }
+th { background:#f8fafc; color:#334155; font-weight:700; padding:9px 5px; text-align:right; border-bottom:2px solid #cbd5e1; white-space:nowrap; font-size:12px; }
+td { padding:7px 5px; border-bottom:1px solid #f1f5f9; vertical-align:middle; font-size:12px; }
+tr:nth-child(even) td { background:#fdfdfd; }
+.c { text-align:center; } .l { text-align:left; }
+.text-muted { color:#94a3b8; }
+.route-cell { max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.profit-cell { color:#16a34a; font-weight:600; }
+tr.total td { background:#f1f5f9; font-weight:700; border-top:2px solid #94a3b8; border-bottom:none; padding:11px 5px; color:#0f172a; font-size:13px; }
+.ftr { margin-top:30px; text-align:center; font-size:12px; color:#94a3b8; border-top:1px solid #e2e8f0; padding-top:15px; }
+.fc { margin-top:5px; color:#64748b; }
+@media print { body { padding:0; } }
+</style>
+</head>
+<body>
+<div class="hdr">
+${logoHtml}
+${settings.companyName ? `<div class="company-name">${escapeHtml(settings.companyName)}</div>` : ""}
+${companyDetailsHtml}
+<div class="report-title">${title}</div>
+${filterSummary ? `<div class="mi">${escapeHtml(filterSummary)}</div>` : ""}
+<div class="mi">תאריך הפקה: ${format(new Date(), "dd/MM/yyyy")} | סה"כ רשומות: ${sortedGrData.length}</div>
+</div>
+<table>
+<thead><tr>${thead}</tr></thead>
+<tbody>${tableRows}${totalsRow}</tbody>
+</table>
+<div class="ftr">${footerLine2}<div style="font-weight:800;font-size:14px;color:#1e293b;margin-top:6px;">הופק באמצעות מערכת לו&quot;ז - ניהול סידור עבודה</div></div>
+<script>window.onload=function(){setTimeout(function(){window.print();},500);}</script>
+</body>
+</html>`
+    const w = window.open("", "_blank")
+    if (w) { w.document.write(html); w.document.close() }
+    else toast({ title: "שגיאה", description: "הדפדפן חסם פתיחת חלון חדש. אנא אשר חלונות קופצים לאתר זה.", variant: "destructive" })
+  }
+
   const renderCell = (col: string, rec: RideRecord) => {
     const f = rec.fields
     switch (col) {
@@ -674,6 +796,27 @@ export function GeneralReportPage() {
           {hasSearched && (
             <Input placeholder="חיפוש חופשי..." value={globalFilter} onChange={e => setGlobalFilter(e.target.value)}
               className="w-[120px] md:w-[200px] h-8 md:h-9 text-xs md:text-sm shrink-0" />
+          )}
+
+          {hasSearched && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" disabled={filteredData.length === 0} className="shrink-0 text-xs md:text-sm h-8 md:h-9 px-2 md:px-3">
+                  <Download className="h-3.5 w-3.5 md:h-4 md:w-4 ml-1 md:ml-2" />
+                  ייצוא דוח
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" dir="rtl">
+                <DropdownMenuItem onClick={exportToCsv} className="cursor-pointer">
+                  <FileSpreadsheet className="h-4 w-4 ml-2 text-green-600" />
+                  ייצוא לאקסל (CSV)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={exportToPdf} className="cursor-pointer">
+                  <Printer className="h-4 w-4 ml-2 text-blue-600" />
+                  ייצוא ל-PDF / הדפסה
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
 
           {hasSearched && (
