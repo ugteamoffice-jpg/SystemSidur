@@ -158,6 +158,13 @@ export function getSettingsForDay(ride: RecurringRide, dayOfWeek: number): DaySe
   for (const [k, v] of Object.entries(overrides)) {
     if (v !== undefined && v !== "") (merged as any)[k] = v
   }
+  // נהג: חריגה ליום עם שם ריק = "בלי נהג" לאותו יום (לא נופלים לברירת המחדל)
+  if (overrides.driverName !== undefined || overrides.driverId !== undefined) {
+    merged.driverName = overrides.driverName ?? ""
+    merged.driverId = overrides.driverId ?? ""
+  }
+  // מזהה נהג בלי שם = נהג שנמחק מהתבנית — לא משבצים אותו
+  if (!merged.driverName?.trim()) { merged.driverId = ""; merged.driverName = "" }
   return merged
 }
 

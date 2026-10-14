@@ -190,6 +190,18 @@ class TableStore {
   get hasDirty(): boolean {
     return this.dirty.size > 0
   }
+
+  get dirtyCount(): number {
+    return this.dirty.size
+  }
+
+  get sheetName(): string {
+    return this.schema.sheetName
+  }
+
+  get nextRowIndex(): number {
+    return this.nextRow
+  }
 }
 
 /* ---------- Store גלובלי לכל הטננטים ---------- */
@@ -198,6 +210,9 @@ class SheetsStore {
   private tables = new Map<string, TableStore>() // key: `${tenantId}:${tableKey}`
   private flushTimer: ReturnType<typeof setInterval> | null = null
   private flushing = false
+  /** השגיאה האחרונה של flush (null = הכתיבה האחרונה הצליחה) */
+  lastFlushError: { at: string; spreadsheetId: string; message: string } | null = null
+  lastFlushOk: string | null = null
 
   getTable(tenantId: string, spreadsheetId: string, tableKey: string): TableStore {
     const key = `${tenantId}:${tableKey}`
@@ -246,8 +261,11 @@ class SheetsStore {
       for (const [sid, entry] of bySpreadsheet) {
         try {
           await api.batchUpdateValues(sid, entry.data)
+          this.lastFlushOk = new Date().toISOString()
+          this.lastFlushError = null
         } catch (e) {
           console.error(`[sheets-store] flush failed for ${sid}, re-queueing:`, e)
+          this.lastFlushError = { at: new Date().toISOString(), spreadsheetId: sid, message: String((e as any)?.message || e) }
           entry.tables.forEach((t, i) => t.markDirty(entry.ids[i]))
         }
       }
@@ -258,6 +276,27 @@ class SheetsStore {
 }
 
 type G = typeof globalThis & { __luzSheetsStore?: SheetsStore }
+
+/** מצב הסנכרון מול Google Sheets — לבדיקה לפני deploy (redeploy מאפס את הזיכרון!) */
+export function getSyncStatus() {
+  const store = getSheetsStore() as any
+  const tables: Array<{ tenant: string; table: string; sheet: string; records: number; pendingWrites: number; nextRow: number }> = []
+  let pendingWrites = 0
+  for (const [key, t] of (store.tables as Map<string, TableStore>).entries()) {
+    const [tenant, table] = key.split(":")
+    tables.push({ tenant, table, sheet: t.sheetName, records: t.list().length, pendingWrites: t.dirtyCount, nextRow: t.nextRowIndex })
+    pendingWrites += t.dirtyCount
+  }
+  const lastFlushError = store.lastFlushError as SheetsStore["lastFlushError"]
+  return {
+    safeToDeploy: pendingWrites === 0 && !lastFlushError,
+    pendingWrites,
+    lastFlushOk: store.lastFlushOk as string | null,
+    lastFlushError,
+    tables,
+    checkedAt: new Date().toISOString(),
+  }
+}
 export function getSheetsStore(): SheetsStore {
   const g = globalThis as G
   if (!g.__luzSheetsStore) g.__luzSheetsStore = new SheetsStore()

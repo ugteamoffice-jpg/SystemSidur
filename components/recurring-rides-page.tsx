@@ -321,8 +321,18 @@ export function RecurringRidesPage() {
   // Get effective value for a day field (override or default)
   const getDayVal = (day: number, field: keyof DaySettings): string => {
     const override = form.dayOverrides[day]
+    // נהג: חריגה מפורשת (גם ריקה) גוברת על ברירת המחדל — "בלי נהג" ליום הזה
+    if ((field === "driverName" || field === "driverId") && override && override[field] !== undefined) return override[field] as string
     if (override && override[field] !== undefined && override[field] !== "") return override[field] as string
     return form.defaults[field]
+  }
+
+  // מזהה נהג לפי שם מדויק מהרשימה; שם שלא ברשימה (או ריק) = בלי מזהה
+  const driverIdFor = (name: string): string => {
+    const t = name.trim()
+    if (!t) return ""
+    const o = lists.drivers.find((d: ListItem) => d.title === t)
+    return o ? o.id : ""
   }
 
   const setDayOverride = (day: number, field: string, value: string) => {
@@ -399,7 +409,7 @@ export function RecurringRidesPage() {
           <div>
             <Label className="text-xs">נהג</Label>
             <AutoComplete options={lists.drivers} value={getDayVal(day, "driverName")}
-              onChange={(v: string) => setDayOverride(day, "driverName", v)}
+              onChange={(v: string) => { setDayOverride(day, "driverName", v); setDayOverride(day, "driverId", driverIdFor(v)) }}
               onSelect={(o: ListItem) => {
                 setDayOverride(day, "driverName", o.title); setDayOverride(day, "driverId", o.id)
                 if (o.carNumber) setDayOverride(day, "vehicleNum", o.carNumber)
@@ -793,7 +803,7 @@ export function RecurringRidesPage() {
                     <div>
                       <Label className="text-xs">נהג</Label>
                       <AutoComplete options={lists.drivers} value={form.defaults.driverName}
-                        onChange={(v: string) => setDefault("driverName", v)}
+                        onChange={(v: string) => { setDefault("driverName", v); setDefault("driverId", driverIdFor(v)) }}
                         onSelect={(o: ListItem) => {
                           setDefault("driverName", o.title); setDefault("driverId", o.id)
                           if (o.carNumber) setDefault("vehicleNum", o.carNumber)
